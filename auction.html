@@ -263,6 +263,9 @@ button.link{background:none;border:none;color:var(--accent);text-decoration:unde
 .nc-save{width:100%;min-height:54px;font-size:17px!important;margin:4px 0 14px}
 .nc-quick summary{cursor:pointer;padding:4px 0;font-size:16px}
 .jr-look{display:block;text-align:center;font-size:14px;padding:10px;color:var(--accent)}
+.nc-lad tr.anc-max{background:#DFF0E5}.nc-lad tr.anc-max td{font-weight:700;color:#1D6B3F}
+.nc-lad tr.anc-ham{background:#F3E9D2}.nc-lad tr.anc-ham td{font-weight:700;color:#6E5112}
+.nc-lad tr.anc-max td button,.nc-lad tr.anc-ham td button{color:inherit;font-weight:800}
 
 </style>
 </head><body>
@@ -834,24 +837,32 @@ function vCalcNew(){
      ${back?`<div class="m"><span>Bid step here is ${money(back.inc,c)}: bid up to</span><span>${money(back.round,c)}</span></div>`:""}
     </div></section>`;
   }
-  // next-bid ladder
-  let start=cur!=null?cur:(num(l.estLow)!=null?num(l.estLow):(H!=null?H:null));
-  if(start!=null){
-    const rows=[];let b=start,over=0;
-    for(let i=0;i<24&&over<2;i++){const a=landedFromHammer(b,c,bp);rows.push([b,b*(1+bp/100),a]);if(max!=null&&a>max)over++;else if(max==null&&i>=9)break;b+=increment(b)}
-    out+=`<section class="panel nc-lad"><div class="eyebrow">Next bids${cur!=null?" from current "+money(cur,c):" from low estimate"}</div>
-     <div class="tablewrap"><table><thead><tr><th>Bid</th><th>+ prem.</th><th>All-in</th><th>Max</th></tr></thead><tbody>
-     ${rows.map(([bb,wp,a])=>`<tr class="${myBid!=null&&Math.round(bb)===Math.round(myBid)?"mine":""}${H!=null&&Math.round(bb)===Math.round(H)?" sel":""}"><td><button type="button" class="link" data-act="ncrow" data-v="${bb}">${money(bb,c)}</button>${cur!=null&&bb===cur?' <small>current</small>':""}${myBid!=null&&Math.round(bb)===Math.round(myBid)?' <small>my max</small>':""}</td><td>${money(wp,c)}</td><td><b>${money(a,"USD")}</b></td><td>${max==null?"":a<=max?'<span class="ok">✓</span>':'<span class="ov">over</span>'}</td></tr>`).join("")}
-     </tbody></table></div><div class="small muted">Tap a bid to load it above. Steps follow the usual ladder; check the house's own increments.</div></section>`;
+  // hammer table: anchor row + 5 bids over (expandable)
+  const typedHam=n.last==="ham"&&n.ham!=="";
+  let anchor=null,kind="";
+  if(typedHam&&H!=null){anchor=H;kind="ham"}
+  else{const src=n.last==="allin"&&A!=null?A:max;const r=src!=null?hammerFromUSD(src,c,bp):null;if(r){anchor=r.round;kind="max"}else if(H!=null){anchor=H;kind="ham"}}
+  if(anchor!=null){
+    const extra=5+(n.more||0),rows=[];let b=anchor;
+    for(let i=0;i<=extra;i++){rows.push([b,b*(1+bp/100),landedFromHammer(b,c,bp)]);b+=increment(b)}
+    const lbl=kind==="ham"?"Your hammer":"Max hammer";
+    out+=`<section class="panel nc-lad"><div class="eyebrow">${kind==="ham"?"Your hammer + next bids":"Max hammer for "+money(n.last==="allin"&&A!=null?A:max,"USD")+" all-in + next bids"}</div>
+     <div class="tablewrap"><table><thead><tr><th>Hammer</th><th>+ prem.</th><th>Total cost</th>${max!=null?"<th>vs max</th>":""}</tr></thead><tbody>
+     ${rows.map(([bb,wp,a],i)=>`<tr class="${i===0?(kind==="ham"?"anc-ham":"anc-max"):""}"><td><button type="button" class="link" data-act="ncrow" data-v="${bb}">${money(bb,c)}</button>${i===0?` <small>${lbl}</small>`:` <small>+${i} bid${i>1?"s":""}</small>`}${cur!=null&&Math.round(bb)===Math.round(cur)?' <small>current</small>':""}${myBid!=null&&Math.round(bb)===Math.round(myBid)?' <small>saved max</small>':""}</td><td>${money(wp,c)}</td><td><b>${money(a,"USD")}</b></td>${max!=null?`<td>${a<=max?'<span class="ok">✓</span>':'<span class="ov">+'+money(a-max,"USD")+'</span>'}</td>`:""}</tr>`).join("")}
+     </tbody></table></div>
+     <div class="row" style="justify-content:space-between;align-items:center"><button type="button" class="ghost" data-act="ncmore">Show 5 more bids</button>${n.more?'<button type="button" class="link" data-act="ncless">Fewer</button>':""}</div>
+     <div class="small muted">Tap a hammer to load it above. Steps follow the usual ladder; check the house's own increments.</div></section>`;
   }
   const saveBid=back?back.round:(H!=null?Math.floor(H/increment(H))*increment(H):null);
   if(saveBid!=null)out+=`<button type="button" class="primary nc-save" data-act="ncsave" data-id="${l.id}" data-v="${saveBid}">Save ${money(saveBid,c)} as my max bid for Lot ${esc(l.lotNo||"")}</button>`;
   return out+quick;
 }
 document.addEventListener("input",e=>{const t=e.target;if(t.dataset.act!=="nc")return;const n=S.nc;n[t.dataset.k]=t.value;if(t.dataset.k!=="max")n.last=t.dataset.k;clearTimeout(S.nct);S.nct=setTimeout(render,400)});
-document.addEventListener("change",e=>{const t=e.target;if(t.dataset.act!=="nclot")return;S.nc={lotId:t.value,ham:"",allin:"",max:"",last:"ham"};render()});
+document.addEventListener("change",e=>{const t=e.target;if(t.dataset.act!=="nclot")return;S.nc={lotId:t.value,ham:"",allin:"",max:"",last:"ham",more:0};render()});
 document.addEventListener("click",e=>{const b=e.target.closest("button[data-act]");if(!b)return;
   if(b.dataset.act==="ncrow"){S.nc.ham=String(Math.round(num(b.dataset.v)));S.nc.last="ham";render();window.scrollTo({top:0,behavior:"smooth"})}
+  else if(b.dataset.act==="ncmore"){S.nc.more=(S.nc.more||0)+5;render()}
+  else if(b.dataset.act==="ncless"){S.nc.more=0;render()}
   else if(b.dataset.act==="ncsave"){const l=S.lots.find(x=>x.id===b.dataset.id);if(!l)return;l.bid=String(Math.round(num(b.dataset.v)));const m=S.nc.max!==""?num(S.nc.max):null;if(m!=null)l.maxUSD=String(m);if(S.draft)delete S.draft[l.id];store.saveLot(l,true);toast(note("Max bid saved for Lot "+(l.lotNo||"")));render()}
 });
 
