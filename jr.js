@@ -19,7 +19,7 @@
     token: function () { return get('jr_token'); },
     name: function () { return get('jr_name'); },
     signOut: function () {
-      ['jr_token', 'jr_pin', 'jr_apps'].forEach(function (k) { set(k, null); });
+      ['jr_token', 'jr_pin', 'jr_apps', 'jr_list_cache', 'jr_cache'].forEach(function (k) { set(k, null); });
       try { sessionStorage.removeItem('jr_token'); } catch (e) {}
       if (MOD !== 'tasks') location.replace('index.html'); else location.reload();
     },
@@ -50,6 +50,10 @@
         if (k === 'withUserObject') return function (o) { return runner({ ok: h.ok, fail: h.fail, uo: o }); };
         return function () {
           var args = [].slice.call(arguments);
+          if (MOD === 'captions' && k === 'setupStatus') {   // nothing to check: sign-in is shared
+            setTimeout(function () { if (h.ok) h.ok({ needsSetup: false }, h.uo); }, 0);
+            return;
+          }
           JR.rpc(MOD, String(k), args).then(function (r) {
             if (h.ok) h.ok(r, h.uo);
             if (MOD === 'tasks' && k === 'login' && r && r.token) { set('jr_name', r.name); }
@@ -100,9 +104,9 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bar); else bar();
 
   /* remember which parts this person may open (for the menu) */
-  if (JR.token()) JR.rpc('auth', 'me', []).then(function (r) {
-    if (r && r.apps) set('jr_apps', JSON.stringify(r.apps));
-  }).catch(function () {});
+  if (JR.token()) setTimeout(function () {             // after the page's own loading
+    JR.rpc('auth', 'me', []).then(function (r) { if (r && r.apps) set('jr_apps', JSON.stringify(r.apps)); }).catch(function () {});
+  }, get('jr_apps') ? 4000 : 0);
 
   /* lets the phone add it to the home screen */
   if ('serviceWorker' in navigator && location.protocol === 'https:') {

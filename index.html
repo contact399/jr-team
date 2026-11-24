@@ -3,6 +3,7 @@
 <head>
 <title>JR Team · Tasks</title><script>window.JR_MOD="tasks";</script><script src="jr.js"></script>
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://script.google.com"><link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
 <meta name="theme-color" content="#24508f"><link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 
@@ -226,7 +227,7 @@ async function api(action,data,okMsg){
   try{const r=await call("api",token,action,data||{});
     if(r.signedOut){signOut("You were signed out. Enter your PIN again.");return}
     if(r.error){say(r.error)}else if(okMsg)say(okMsg);
-    if(r.tasks){tasks=r.tasks;packages=r.packages||[];requests=r.requests||[];links=r.links||[];me=r.me;TODAY=r.today;render()}
+    if(r.tasks){tasks=r.tasks;packages=r.packages||[];requests=r.requests||[];links=r.links||[];me=r.me;TODAY=r.today;render();try{localStorage.setItem("jr_list_cache",JSON.stringify({tasks:r.tasks,packages:r.packages,requests:r.requests,links:r.links,me:r.me,today:r.today}))}catch(e){}}
   }catch(e){say("Couldn't reach the server. Check your connection and try again.")}
 }
 const patch=(t,fields,msg)=>{Object.assign(t,fields);render();return api("update",{id:t.id,fields},msg)};
@@ -598,7 +599,7 @@ function printSheets(people){
 
 /* ---------- start ---------- */
 token=load("jr_token");
-if(token){$("main").append(el("p","hint","Loading…"));api("list").then(()=>{if(!me)loginView()})}else loginView();
+if(token){let c=null;try{c=JSON.parse(localStorage.getItem("jr_list_cache")||"null")}catch(e){}if(c&&c.me&&c.me===load("jr_name")){tasks=c.tasks||[];packages=c.packages||[];requests=c.requests||[];links=c.links||[];me=c.me;TODAY=c.today;tab=tab||me;try{render()}catch(e){}}else $("main").append(el("p","hint","Loading…"));api("list").then(()=>{if(!me)loginView()})}else loginView();
 setInterval(()=>{if(token&&me&&!document.hidden&&!openEd.size&&!askOpen.size&&!pOpen.size){const a=document.activeElement;if((!a||a.tagName!=="INPUT")&&!$("viewer"))api("list")}},60000);
 </script>
 </body>
