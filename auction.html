@@ -784,7 +784,7 @@ function vShortlist(a){
 }
 /* ===== New look: lot calculator (hammer <-> all-in, why, next bids) ===== */
 function ncLots(){
-  let G=[];try{G=saleGroups(S.lots).filter(g=>!isArchived(g.auction))}catch(e){}
+  let G=[];try{const all=saleGroups(S.lots);G=all.filter(g=>!isArchived(g.auction)).concat(all.filter(g=>isArchived(g.auction)).map(g=>({...g,title:"Archive · "+(g.title||"")})))}catch(e){}
   if(!G.length)G=[{title:"All lots",house:"",L:S.lots.slice()}];
   return G;
 }
