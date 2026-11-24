@@ -260,7 +260,7 @@ $('goBtn').onclick = () => {
     .withSuccessHandler(r => {
       updateGo();
       if (r.notFound) { $('status').textContent = ''; return showErr('formErr', 'SKU ' + r.sku + ' isn\'t in the catalog. Check the number, or ask Karan to refresh the catalog.'); }
-      $('status').textContent = 'Sent: ' + (r.title || r.jobId) + '. Captions will be ready within the hour.';
+      $('status').textContent = 'Sent: ' + (r.title || r.jobId) + (r.instant ? '. Claude is writing the captions now: usually ready in a few minutes.' : '. Captions will be ready within the hour.');
       clearForm(); loadJobs();
     })
     .withFailureHandler(err => {
