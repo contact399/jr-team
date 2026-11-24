@@ -336,7 +336,7 @@ function loadJobs() {
       JOBS = list || [];
       if (!JOBS.length) { $('jobsList').innerHTML = '<p class="small">Nothing sent yet.</p>'; return; }
       $('jobsList').innerHTML = JOBS.map((j, i) => {
-        const label = j.status === 'done' ? 'Ready' : j.status === 'error' ? 'Problem' : 'Waiting';
+        const label = j.status === 'done' ? 'Ready' : j.status === 'error' ? 'Problem' : j.status === 'processing' ? 'Claude writing…' : 'Waiting';
         const cls = j.status === 'done' ? 'done' : j.status === 'error' ? 'error' : 'pending';
         return '<div class="job" data-i="' + i + '"><div><b>' + esc(j.title || ('SKU ' + j.sku)) + '</b><br><span class="small">' + (j.sku ? 'SKU ' + esc(j.sku) : 'No SKU') + ' · ' + esc(j.submitted) + '</span></div><span class="pill ' + cls + '">' + label + '</span></div>';
       }).join('');
