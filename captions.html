@@ -118,7 +118,7 @@
   <!-- MY CAPTIONS -->
   <section id="jobsView" class="card hidden">
     <div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">My captions</h2><button class="ghost" id="refreshBtn">Refresh</button></div>
-    <p class="small">Captions are written within the hour. Tap a ready item to open it.</p>
+    <p class="small">Captions usually come back within a few minutes. Tap a ready item to open it.</p>
     <div id="jobsList"></div>
   </section>
 
@@ -353,7 +353,7 @@ $('refreshBtn').onclick = loadJobs;
 function openJob(j) {
   if (j.status === 'done' && j.result) return render(j.result);
   if (j.status === 'error') return alertBox('Problem with SKU ' + j.sku, j.error || 'Something went wrong. Ask Karan.');
-  alertBox('Still waiting', 'SKU ' + j.sku + ' is in the queue. Captions are written within the hour. Tap Refresh to check.');
+  alertBox('Still waiting', 'SKU ' + j.sku + ' is in the queue. Claude is writing the captions, usually within a few minutes. Tap Refresh to check.');
 }
 function alertBox(title, msg) { render({ _msg: true, title: title, msg: msg }); }
 
