@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>window.JR_MOD="melt";</script><script src="jr.js"></script>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#24508f"><link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta charset="utf-8">
+<title>JR Melt Bag Tracker</title>
+<style>
+  :root{
+    --bg:#f6f5f2; --card:#fff; --ink:#1b1d21; --muted:#6b6f76; --line:#e3e1dc;
+    --gold:#a8790f; --gold-soft:#f6ecd4; --navy:#1f3864; --ok:#1d7a46; --ok-soft:#e3f3e9;
+    --warn:#a35c00; --warn-soft:#fdf0dc; --bad:#b3261e; --bad-soft:#fbe6e4;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{--bg:#141517;--card:#1e2023;--ink:#ecebe8;--muted:#9a9ea5;--line:#30333a;
+      --gold:#e0b34d;--gold-soft:#3a3020;--navy:#9db4e0;--ok:#6fcf97;--ok-soft:#1b3326;
+      --warn:#f0b35c;--warn-soft:#3a2c17;--bad:#f28b82;--bad-soft:#3d2120;}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  header{padding:16px 16px 8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  header h1{font-size:18px;margin:0;font-weight:650;letter-spacing:-.01em}
+  header .sub{color:var(--muted);font-size:13px}
+  .status{margin-left:auto;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+  .dot.ok{background:var(--ok)} .dot.bad{background:var(--bad)}
+  nav{display:flex;gap:6px;padding:0 12px 10px;overflow-x:auto;position:sticky;top:0;background:var(--bg);z-index:5}
+  nav button{flex:1 0 auto;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:10px 12px;border-radius:10px;font-weight:600;font-size:14px}
+  nav button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+  @media (prefers-color-scheme: dark){nav button.on{color:#141517}}
+  main{padding:0 12px 40px;max-width:760px;margin:0 auto}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+  .card h2{font-size:15px;margin:0 0 10px;font-weight:650}
+  .step{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:4px}
+  label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+  input,select,textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font-size:16px;background:var(--bg);color:var(--ink)}
+  input:focus,select:focus{outline:2px solid var(--gold);outline-offset:0}
+  .scan{font-size:18px;letter-spacing:.02em}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .btn{display:block;width:100%;margin-top:14px;padding:14px;border:0;border-radius:12px;background:var(--gold);color:#fff;font-size:16px;font-weight:700}
+  .btn:disabled{opacity:.45}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:600}
+  .msg{padding:10px 12px;border-radius:10px;margin-top:10px;font-size:14px}
+  .msg.ok{background:var(--ok-soft);color:var(--ok)} .msg.warn{background:var(--warn-soft);color:var(--warn)} .msg.bad{background:var(--bad-soft);color:var(--bad)}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .chip{background:var(--gold-soft);color:var(--ink);border-radius:8px;padding:6px 8px;font-size:13px;display:flex;gap:6px;align-items:center}
+  .chip b{font-weight:600} .chip .x{border:0;background:none;color:var(--muted);font-size:16px;padding:0 2px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+  .stat .n{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+  .stat .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .calc{display:grid;grid-template-columns:1fr auto;gap:4px 12px;margin-top:12px;font-variant-numeric:tabular-nums;font-size:14px}
+  .calc .k{color:var(--muted)} .calc .v{text-align:right;font-weight:600}
+  .calc .total{border-top:1px solid var(--line);padding-top:6px}
+  table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+  th,td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  th{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+  .tbl{overflow-x:auto}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700}
+  .p-setter{background:var(--warn-soft);color:var(--warn)} .p-back{background:var(--gold-soft);color:var(--gold)}
+  .p-pre{background:#e4ecfa;color:var(--navy)} .p-poured{background:var(--ok-soft);color:var(--ok)}
+  @media (prefers-color-scheme: dark){.p-pre{background:#22304a}}
+  .flag{color:var(--bad);font-weight:700}
+  .muted{color:var(--muted)} .small{font-size:12px}
+  .check{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:10px;margin-top:6px}
+  .check input{width:auto}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Melt Bag Tracker</h1>
+    <div class="sub">Pre-scan Unvault SKUs → setter bag → melt bag + stone bag → pre-melt → bar → lots</div>
+  </div>
+  <div class="status"><span class="dot" id="dot"></span><span id="statusTxt">Connecting…</span>
+    <button class="btn ghost" style="margin:0;padding:6px 10px;width:auto;font-size:12px" id="reloadBtn">Refresh</button></div>
+</header>
+
+<nav id="nav">
+  <button data-v="overview" class="on">Bags</button>
+  <button data-v="lots">Lots</button>
+  <button data-v="prescan">0 · Pre-scan</button>
+  <button data-v="send">1 · Send</button>
+  <button data-v="p2ship">P2 Ship</button>
+  <button data-v="return">2 · Return</button>
+  <button data-v="premelt">3 · Pre-melt</button>
+  <button data-v="pour">4 · Post-melt</button>
+</nav>
+
+<main>
+  <div id="globalMsg"></div>
+
+  <!-- OVERVIEW -->
+  <section id="v-overview">
+    <div class="stats">
+      <div class="stat"><div class="n" id="cSetter">–</div><div class="l">At setter</div></div>
+      <div class="stat"><div class="n" id="cBack">–</div><div class="l">Back</div></div>
+      <div class="stat"><div class="n" id="cPre">–</div><div class="l">Pre-melt</div></div>
+      <div class="stat"><div class="n" id="cPoured">–</div><div class="l">Poured</div></div>
+    </div>
+    <div class="card">
+      <h2>Every bag, end to end</h2>
+      <div class="tbl"><table id="ovTable"><thead><tr>
+        <th>Bag</th><th>Stage</th><th>SKUs</th><th>Sent g</th><th>Gold back g</th><th>Stones g</th><th>Setter loss</th><th>Pre-melt g</th><th>Bar</th><th>Bar g</th><th>Melt loss</th><th>Setter CSV</th>
+      </tr></thead><tbody></tbody></table></div>
+      <div class="small muted" style="margin-top:8px">Bar g is ALLOCATED by pre-melt share when one bar holds more than one melt bag. Losses over 1% are flagged in red.</div>
+    </div>
+  </section>
+
+  <!-- LOTS -->
+  <section id="v-lots" class="hidden">
+    <div class="card">
+      <h2>Back to Unvault's lots</h2>
+      <div class="tbl"><table id="lotTable"><thead><tr>
+        <th>Lot / list</th><th>On file</th><th>File gross g</th><th>Pre-scanned</th><th>Missing</th><th>Sent</th><th>Sent gross g</th><th>Gold back g</th><th>Bar g</th>
+      </tr></thead><tbody></tbody></table></div>
+      <div class="small muted" style="margin-top:8px">Gold back and bar grams are ALLOCATED to lots by each SKU's Unvault gross inside its setter bag. A bag holding a SKU with gross MISSING can't be split, so its share shows as MISSING.</div>
+    </div>
+  </section>
+
+  <!-- PRE-SCAN -->
+  <section id="v-prescan" class="hidden">
+    <div class="card">
+      <div class="step">Step 0 · Check pieces against Unvault's list</div>
+      <h2>Pre-scan</h2>
+      <label>Check against (lot or daily file, from the Items tab)</label>
+      <select id="qList"></select>
+      <label>Scan each piece</label>
+      <div style="display:flex;gap:8px"><input id="qSku" class="scan" placeholder="Scan or type SKU, press Enter" autocomplete="off" autocapitalize="off"><button class="btn camBtn" data-target="qSku" style="margin:0;width:auto;padding:0 16px">Camera</button></div>
+      <div id="qScanMsg"></div>
+      <div class="stats" style="margin-top:12px">
+        <div class="stat"><div class="n" id="qMatched">0</div><div class="l">Matched</div></div>
+        <div class="stat"><div class="n" id="qMissing">0</div><div class="l">Missing</div></div>
+        <div class="stat"><div class="n" id="qExtra">0</div><div class="l">Extra</div></div>
+        <div class="stat"><div class="n" id="qDup">0</div><div class="l">Duplicate</div></div>
+      </div>
+      <div class="calc" id="qCalc"></div>
+      <button class="btn" id="qSave">Save this pre-scan</button>
+      <div id="qMsg"></div>
+    </div>
+    <div class="card"><h2>This session</h2><div class="tbl"><table id="qSess"><thead><tr><th>SKU</th><th>Result</th><th>Lot / list</th><th>Gross g</th></tr></thead><tbody></tbody></table></div></div>
+    <div class="card"><h2>Missing (on the list, not scanned yet)</h2><div class="tbl"><table id="qMiss"><thead><tr><th>SKU</th><th>Item</th><th>Karat</th><th>Gross g</th></tr></thead><tbody></tbody></table></div></div>
+  </section>
+
+  <!-- SEND -->
+  <section id="v-send" class="hidden">
+    <div class="card">
+      <div class="step">Step 1 · Before it goes to the setter</div>
+      <h2>Fill a setter bag</h2>
+      <label>Setter bag ID (scan the JR-S label or keep the suggested one)</label>
+      <input id="sBatch" class="scan" autocomplete="off">
+      <label>Scan item SKUs (scanner adds each one on Enter)</label>
+      <div style="display:flex;gap:8px"><input id="sSku" class="scan" placeholder="Scan or type SKU, press Enter" autocomplete="off" autocapitalize="off"><button class="btn camBtn" data-target="sSku" style="margin:0;width:auto;padding:0 16px">Camera</button></div>
+      <div id="sScanMsg"></div>
+      <div class="chips" id="sChips"></div>
+      <div class="calc" id="sCalc"></div>
+      <div class="row">
+        <div><label>Whole bag weight on scale (g)</label><input id="sWeight" type="number" inputmode="decimal" step="0.01"></div>
+        <div><label>Note (optional)</label><input id="sNote"></div>
+      </div>
+      <button class="btn" id="sSend">Close bag &amp; send to setter</button>
+      <button class="btn ghost" id="sClear">Clear this bag</button>
+      <div id="sMsg"></div>
+    </div>
+  </section>
+
+  <!-- P2 SHIP -->
+  <section id="v-p2ship" class="hidden">
+    <div class="card">
+      <div class="step">P2 shipment · no bag weight needed</div>
+      <h2>Ship P2 pieces</h2>
+      <label>Shipment ID (keep the suggested one or type your own)</label>
+      <input id="p2Id" class="scan" autocomplete="off">
+      <label>Scan P2 pieces</label>
+      <div style="display:flex;gap:8px"><input id="p2Sku" class="scan" placeholder="Scan or type SKU, press Enter" autocomplete="off" autocapitalize="off"><button class="btn camBtn" data-target="p2Sku" style="margin:0;width:auto;padding:0 16px">Camera</button></div>
+      <div id="p2ScanMsg"></div>
+      <div class="chips" id="p2Chips"></div>
+      <div class="calc" id="p2Calc"></div>
+      <label>Note (optional, e.g. who it's going to)</label><input id="p2Note">
+      <button class="btn" id="p2Ship">Close &amp; ship P2</button>
+      <button class="btn ghost" id="p2Clear">Clear this shipment</button>
+      <div id="p2Msg"></div>
+    </div>
+    <div class="card"><h2>P2 shipments</h2><div class="tbl"><table id="p2Table"><thead><tr><th>Shipment</th><th>Shipped</th><th>Pieces</th><th>Gross g</th><th>Net g</th><th>Note</th><th>CSV</th></tr></thead><tbody></tbody></table></div></div>
+  </section>
+
+  <!-- RETURN -->
+  <section id="v-return" class="hidden">
+    <div class="card">
+      <div class="step">Step 2 · Back from the setter</div>
+      <h2>One melt bag + one stone bag</h2>
+      <label>Setter bag (scan the JR-S label or pick)</label>
+      <input id="rScan" class="scan" placeholder="Scan JR-S-…" autocomplete="off">
+      <select id="rBatch"></select>
+      <div class="row">
+        <div><label>Melt bag gold (g)</label><input id="rGold" type="number" inputmode="decimal" step="0.01"></div>
+        <div><label>Stone bag weight (g)</label><input id="rStoneG" type="number" inputmode="decimal" step="0.01"></div>
+      </div>
+      <div class="row">
+        <div><label>Stones (ct)</label><input id="rStoneCt" type="number" inputmode="decimal" step="0.01"></div>
+        <div><label>Stone count</label><input id="rStoneN" type="number" inputmode="numeric" step="1"></div>
+      </div>
+      <label>Note (optional)</label><input id="rNote">
+      <div class="calc" id="rCalc"></div>
+      <button class="btn" id="rSave">Record return</button>
+      <div id="rMsg"></div>
+    </div>
+  </section>
+
+  <!-- PRE-MELT -->
+  <section id="v-premelt" class="hidden">
+    <div class="card">
+      <div class="step">Step 3 · Just before the melt</div>
+      <h2>Weigh the melt bag again</h2>
+      <label>Melt bag (scan or pick)</label>
+      <input id="pScan" class="scan" placeholder="Scan JR-S-… -G" autocomplete="off">
+      <select id="pBag"></select>
+      <label>Pre-melt weight (g)</label><input id="pWeight" type="number" inputmode="decimal" step="0.01">
+      <label>Note (optional)</label><input id="pNote">
+      <div class="calc" id="pCalc"></div>
+      <button class="btn" id="pSave">Record pre-melt weight</button>
+      <div id="pMsg"></div>
+    </div>
+  </section>
+
+  <!-- POUR -->
+  <section id="v-pour" class="hidden">
+    <div class="card">
+      <div class="step">Step 4 · After the melt</div>
+      <h2>Bar out of the pour</h2>
+      <label>Bar ID (type it as written on the bar; the suggestion can be changed)</label>
+      <input id="bId" class="scan" autocomplete="off">
+      <label>Melt bags in this pour (tick every bag that went in)</label>
+      <div id="bBags"></div>
+      <div class="row">
+        <div><label>Bar weight (g)</label><input id="bWeight" type="number" inputmode="decimal" step="0.01"></div>
+        <div><label>Karat / assay</label><input id="bKarat" placeholder="e.g. 14K or 585"></div>
+      </div>
+      <label>Note (optional)</label><input id="bNote">
+      <div class="calc" id="bCalc"></div>
+      <button class="btn" id="bSave">Record bar</button>
+      <div id="bMsg"></div>
+    </div>
+  </section>
+</main>
+<div id="cam" style="position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:50;display:none;flex-direction:column;align-items:center;justify-content:center;padding:12px">
+  <video id="camVideo" playsinline muted style="width:100%;max-width:520px;border-radius:12px;background:#000"></video>
+  <canvas id="camCanvas" class="hidden"></canvas>
+  <div id="camMsg" style="color:#fff;margin:10px 0;font-size:16px;text-align:center;min-height:44px">Point at a QR code</div>
+  <div style="display:flex;gap:8px;width:100%;max-width:520px">
+    <button class="btn" id="camPhoto" style="margin:0">Take photo instead</button>
+    <button class="btn ghost" id="camClose" style="margin:0;color:#fff;border-color:#888">Done</button>
+  </div>
+  <input id="camFile" type="file" accept="image/*" capture="environment" class="hidden">
+</div>
+
+<script>
+const LOSS_FLAG = 1; // percent
+let S = { p2:{}, uuid:{}, items:{}, master:new Set(), prescanned:{}, batches:{}, returns:{}, melt:{}, pours:[] };
+let sess = []; // [{sku,result,list,gross}]
+let draft = { batch:"", skus:[] };
+let p2draft = { id:"", skus:[] };
+
+const $ = id => document.getElementById(id);
+const r2 = n => Math.round(n*100)/100;
+const f2 = n => (n==null||isNaN(n)) ? "–" : r2(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const num = v => { if(v==null||v==="") return null; const n = parseFloat(String(v).replace(/[,%\s]/g,"")); return isNaN(n)?null:n; };
+const esc = s => String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const now = () => { const d=new Date(), p=x=>String(x).padStart(2,"0"); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; };
+const txt = s => "'" + String(s); // keep IDs as text in Sheets
+const meltId = b => b + "-G", stoneId = b => b + "-ST";
+function msg(el, kind, html){ $(el).innerHTML = html ? `<div class="msg ${kind}">${html}</div>` : ""; }
+function pct(loss, base){ return base ? loss/base*100 : null; }
+function lossCell(g, p){ if(g==null) return "–"; const c = p!=null && p>LOSS_FLAG ? "flag" : ""; return `<span class="${c}">${f2(g)} g · ${p==null?"–":f2(p)+"%"}</span>`; }
+
+/* ---------- Sheets I/O ---------- */
+function errText(e){
+  return "Google Sheet error: " + esc(e && e.message || e);
+}
+function gs(fn, ...args){
+  return new Promise((res, rej)=>google.script.run.withSuccessHandler(res).withFailureHandler(rej)[fn](...args));
+}
+async function read(range){ return ((await gs("readRange", range)) || []).slice(1); }
+async function writeAll(steps){
+  // steps: [[tab, rows], ...] — written in one locked call on the server
+  await gs("appendBatch", steps.filter(([,rows])=>rows.length));
+}
+
+/* ---------- Load & derive state ---------- */
+async function load(){
+  $("statusTxt").textContent = "Loading sheet…"; $("dot").className="dot";
+  try{
+    const [items, sb, sr, mb, pb, master, scans, p2] = await Promise.all([
+      read("Items!A:O"), read("Setter_Batches!A:I"), read("Setter_Returns!A:L"), read("Melt_Bags!A:G"), read("Pours_Bars!A:K"),
+      read("Master!C:D"), read("Scans!A:F"), read("P2_Shipments!A:I")
+    ]);
+    const st = { p2:{}, items:{}, master:new Set(), prescanned:{}, batches:{}, returns:{}, melt:{}, pours:[] };
+    for(const r of items){ if(r[0]){ const k=String(r[0]).trim();
+      st.items[k] = {lot:r[5]||"", name:r[4]||"", path:String(r[6]||"").trim().toUpperCase(), state:r[7]||"", metal:r[9]||"", karat:r[10]||"", gross:num(r[11]), net:num(r[12]), src:r[14]||""};
+      st.items[k].list = st.items[k].lot || st.items[k].src || "(no lot or file)"; } }
+    st.uuid={}; for(const r of master){ if(r[0]){ const sl=String(r[0]).trim(); st.master.add(sl); if(r[1]) st.uuid[String(r[1]).trim().toLowerCase()]=sl; } }
+    for(const r of scans){ if(r[1]==="PRE-SCAN" && r[3] && /^MATCHED/.test(r[5]||"")) st.prescanned[String(r[3]).trim()] = r[0]; }
+    for(const r of sb){
+      const id=r[1]; if(!id) continue;
+      const b = st.batches[id] ||= {id, skus:[], sent:null, sentAt:"", count:0, itemGross:0, missing:0};
+      if(r[2]==="SKU IN"){ b.skus.push(String(r[3]||"")); const g=num(r[5]); if(g==null) b.missing++; else b.itemGross+=g; }
+      if(r[2]==="SENT"){ b.sent=num(r[6]); b.sentAt=r[0]; b.count=num(r[7])||0; }
+    }
+    st.p2={}; for(const r of p2){ const id=r[1]; if(!id) continue; const x=st.p2[id] ||= {id, skus:[], at:"", count:0, note:""};
+      if(r[2]==="ITEM IN") x.skus.push(String(r[3]||"").trim()); if(r[2]==="SHIPPED"){ x.at=r[0]; x.count=num(r[7])||0; x.note=r[8]||""; } }
+    for(const r of sr){ if(r[1]) st.returns[r[1]] = {at:r[0], meltBag:r[2], gold:num(r[3]), stoneBag:r[4], stoneG:num(r[5]), ct:num(r[6]), n:num(r[7]), sent:num(r[8]), loss:num(r[9]), lossPct:num(r[10])}; }
+    for(const r of mb){
+      const id=r[1]; if(!id) continue;
+      const m = st.melt[id] ||= {id, batch:r[2], returned:null, pre:null, poured:null, bar:""};
+      if(r[3]==="RETURNED") m.returned=num(r[4]);
+      if(r[3]==="PRE-MELT") m.pre=num(r[4]);
+      if(r[3]==="POURED"){ m.poured=num(r[4]); m.bar=(r[6]||"").replace(/^Bar /,""); }
+    }
+    for(const r of pb){ if(r[1]) st.pours.push({at:r[0], bar:r[1], bag:r[2], pre:num(r[3]), barTotal:num(r[4]), barForBag:num(r[5]), alloc:r[6], karat:r[7], loss:num(r[8]), lossPct:num(r[9])}); }
+    S = st; S.p2=st.p2;
+    $("statusTxt").textContent = "Synced " + now().slice(11,16); $("dot").className="dot ok";
+    msg("globalMsg","","");
+    renderAll();
+    return true;
+  }catch(e){
+    $("statusTxt").textContent = "Not synced"; $("dot").className="dot bad";
+    msg("globalMsg","bad", errText(e) + " Nothing was changed.");
+    return false;
+  }
+}
+
+function stageOf(id){
+  const m = S.melt[meltId(id)];
+  if(m && m.poured!=null) return ["POURED","p-poured"];
+  if(m && m.pre!=null) return ["PRE-MELT","p-pre"];
+  if(S.returns[id]) return ["BACK","p-back"];
+  return ["AT SETTER","p-setter"];
+}
+function nextId(prefix, existing, pad){
+  let max=0; for(const id of existing){ const m=String(id).match(new RegExp("^"+prefix.replace(/[-]/g,"\\-")+"(\\d+)$")); if(m) max=Math.max(max,+m[1]); }
+  return prefix + String(max+1).padStart(pad,"0");
+}
+
+/* ---------- Render ---------- */
+function refocus(){ const v=document.querySelector("#nav button.on")?.dataset.v; const f={prescan:"qSku",send:"sSku",p2ship:"p2Sku",return:"rScan",premelt:"pScan"}[v]; if(f && document.activeElement?.tagName!=="INPUT" && document.activeElement?.tagName!=="SELECT") $(f).focus(); }
+function renderAll(){ setTimeout(refocus,0); renderP2(); renderOverview(); renderLots(); renderPrescan(); renderSend(); renderReturn(); renderPre(); renderPour(); }
+
+function renderOverview(){
+  const ids = Object.keys(S.batches).sort().reverse();
+  const c = {"AT SETTER":0,"BACK":0,"PRE-MELT":0,"POURED":0};
+  const rows = ids.map(id=>{
+    const b=S.batches[id], r=S.returns[id], m=S.melt[meltId(id)]||{}, [stg,cls]=stageOf(id); c[stg]++;
+    const pr = S.pours.find(p=>p.bag===meltId(id));
+    return `<tr><td><b>${esc(id)}</b><div class="small muted">${esc(String(b.sentAt).slice(0,10))}</div></td>
+      <td><span class="pill ${cls}">${stg}</span></td><td>${b.skus.length}</td><td>${f2(b.sent)}</td>
+      <td>${r?f2(r.gold):"–"}</td><td>${r?f2(r.stoneG):"–"}${r&&r.ct!=null?`<div class="small muted">${f2(r.ct)} ct</div>`:""}</td>
+      <td>${r?lossCell(r.loss,r.lossPct):"–"}</td><td>${f2(m.pre)}</td>
+      <td>${pr?esc(pr.bar):"–"}${pr&&pr.alloc==="ALLOCATED"?`<div class="small muted">ALLOCATED</div>`:""}</td>
+      <td>${pr?f2(pr.barForBag):"–"}</td><td>${pr?lossCell(pr.loss,pr.lossPct):"–"}</td>
+      <td><button class="btn ghost csvBtn" style="margin:0;padding:6px 10px;width:auto;font-size:12px" data-batch="${esc(id)}">CSV</button></td></tr>`;
+  });
+  $("ovTable").querySelector("tbody").innerHTML = rows.join("") || `<tr><td colspan="12" class="muted" style="text-align:left">No bags yet. Start with “1 · Send”.</td></tr>`;
+  $("cSetter").textContent=c["AT SETTER"]; $("cBack").textContent=c["BACK"]; $("cPre").textContent=c["PRE-MELT"]; $("cPoured").textContent=c["POURED"];
+}
+
+function renderSend(){
+  if(!draft.batch || S.batches[draft.batch]) { draft.batch = nextId("JR-S-", Object.keys(S.batches), 4); }
+  if(document.activeElement!==$("sBatch")) $("sBatch").value = draft.batch;
+  $("sChips").innerHTML = draft.skus.map((s,i)=>{
+    const it=S.items[s]; return `<span class="chip"><b>${esc(s)}</b><span class="muted">${it&&it.gross!=null?f2(it.gross)+" g":"gross MISSING"}</span><button class="x" data-i="${i}" aria-label="Remove">×</button></span>`;
+  }).join("");
+  let known=0, missing=0; for(const s of draft.skus){ const g=S.items[s]&&S.items[s].gross; if(g==null) missing++; else known+=g; }
+  const w=num($("sWeight").value);
+  let h = `<span class="k">SKUs scanned</span><span class="v">${draft.skus.length}</span>
+           <span class="k">Item gross from tracker</span><span class="v">${f2(known)} g${missing?` <span class="flag">(${missing} MISSING)</span>`:""}</span>`;
+  if(w!=null && !missing && draft.skus.length) h += `<span class="k total">Scale vs items</span><span class="v total">${f2(w-known)} g</span>`;
+  if(draft.skus.length) h += `<span class="k total">Makeup by lot</span><span class="v total"></span>` + lotMakeup(draft.skus);
+  $("sCalc").innerHTML = h;
+  $("sSend").disabled = !draft.skus.length || w==null || w<=0;
+  try{ localStorage.setItem("jr_bag_draft", JSON.stringify(draft)); }catch(e){}
+}
+
+function addSku(raw){
+  const s = String(raw||"").trim(); if(!s) return;
+  if(draft.skus.includes(s)) return msg("sScanMsg","warn",`${esc(s)} is already in this bag.`);
+  if(!S.items[s]) return msg("sScanMsg","bad",`${esc(s)} is not on any Unvault list in the tracker. Not added.`);
+  if(isNotForMelt(S.items[s])) return msg("sScanMsg","bad",`${esc(s)} is ${S.items[s].path==="P4"?"P4 (bought whole)":"marked "+esc(S.items[s].state||S.items[s].metal)}: not for the melt. Not added.`);
+  if(!S.prescanned[s]) return msg("sScanMsg","bad",`${esc(s)} hasn't been pre-scanned yet. Pre-scan it first (step 0).`);
+  const shipped = Object.values(S.p2).find(x=>x.skus.includes(s));
+  if(shipped) return msg("sScanMsg","bad",`${esc(s)} already went out in P2 shipment ${esc(shipped.id)}. Not added.`);
+  const other = Object.values(S.batches).find(b=>b.skus.includes(s));
+  if(other) return msg("sScanMsg","bad",`${esc(s)} was already sent in ${esc(other.id)}. Not added.`);
+  draft.skus.push(s);
+  const it=S.items[s];
+  msg("sScanMsg", it?"ok":"warn", it ? `Added ${esc(s)}${it.lot?` · lot ${esc(it.lot)}`:""}` : `Added ${esc(s)} · not in the Items tab yet, gross MISSING`);
+  renderSend();
+}
+
+function renderReturn(){
+  const open = Object.keys(S.batches).filter(id=>!S.returns[id]).sort();
+  const cur = $("rBatch").value;
+  $("rBatch").innerHTML = open.length ? open.map(id=>`<option ${id===cur?"selected":""}>${esc(id)}</option>`).join("") : `<option value="">No bags at the setter</option>`;
+  calcReturn();
+}
+function calcReturn(){
+  const id=$("rBatch").value, b=S.batches[id];
+  const g=num($("rGold").value), sg=num($("rStoneG").value);
+  if(!b){ $("rCalc").innerHTML=""; $("rSave").disabled=true; return; }
+  let h=`<span class="k">Sent (whole bag)</span><span class="v">${f2(b.sent)} g · ${b.skus.length} SKUs</span>
+         <span class="k">Melt bag ID</span><span class="v">${esc(meltId(id))}</span>
+         <span class="k">Stone bag ID</span><span class="v">${esc(stoneId(id))}</span>`;
+  if(g!=null && sg!=null){ const loss=b.sent-(g+sg), p=pct(loss,b.sent);
+    h+=`<span class="k total">Setter loss</span><span class="v total">${lossCell(loss,p)}</span>`;
+    if(loss<0) h+=`<span class="k flag">More came back than was sent</span><span class="v"></span>`; }
+  $("rCalc").innerHTML=h; $("rSave").disabled = g==null || sg==null;
+}
+
+function renderPre(){
+  const open = Object.values(S.melt).filter(m=>m.returned!=null && m.pre==null).map(m=>m.id).sort();
+  const cur=$("pBag").value;
+  $("pBag").innerHTML = open.length ? open.map(id=>`<option ${id===cur?"selected":""}>${esc(id)}</option>`).join("") : `<option value="">No melt bags waiting</option>`;
+  calcPre();
+}
+function calcPre(){
+  const m=S.melt[$("pBag").value], w=num($("pWeight").value);
+  if(!m){ $("pCalc").innerHTML=""; $("pSave").disabled=true; return; }
+  let h=`<span class="k">Weight when returned</span><span class="v">${f2(m.returned)} g</span>`;
+  if(w!=null){ const d=w-m.returned; h+=`<span class="k total">Change since return</span><span class="v total ${Math.abs(d)>=0.05?"flag":""}">${d>0?"+":""}${f2(d)} g</span>`; }
+  $("pCalc").innerHTML=h; $("pSave").disabled = w==null || w<=0;
+}
+
+function renderPour(){
+  if(!$("bId").value || S.pours.some(p=>p.bar===$("bId").value)){
+    const y=new Date().getFullYear(); $("bId").value = nextId(`JR-B-${y}-`, S.pours.map(p=>p.bar), 3);
+  }
+  const ready = Object.values(S.melt).filter(m=>m.pre!=null && m.poured==null).sort((a,b)=>a.id<b.id?-1:1);
+  const checked = new Set([...document.querySelectorAll("#bBags input:checked")].map(i=>i.value));
+  $("bBags").innerHTML = ready.length ? ready.map(m=>`<label class="check"><input type="checkbox" value="${esc(m.id)}" ${checked.has(m.id)?"checked":""}><span><b>${esc(m.id)}</b> <span class="muted">· pre-melt ${f2(m.pre)} g</span></span></label>`).join("")
+    : `<div class="muted small">No melt bags have a pre-melt weight yet (step 3).</div>`;
+  calcPour();
+}
+function calcPour(){
+  const ids=[...document.querySelectorAll("#bBags input:checked")].map(i=>i.value);
+  const w=num($("bWeight").value);
+  const pre = ids.reduce((a,id)=>a+S.melt[id].pre,0);
+  let h=`<span class="k">Melt bags</span><span class="v">${ids.length}</span><span class="k">Total pre-melt</span><span class="v">${f2(pre)} g</span>`;
+  if(w!=null && ids.length){ const loss=pre-w; h+=`<span class="k total">Melt loss</span><span class="v total">${lossCell(loss,pct(loss,pre))}</span>`;
+    if(ids.length>1) h+=`<span class="k">Bar weight split by pre-melt share</span><span class="v">ALLOCATED</span>`; }
+  $("bCalc").innerHTML=h; $("bSave").disabled = !ids.length || w==null || w<=0;
+}
+
+function karat(v){
+  const s=String(v||"").trim(); if(!s) return null;
+  let m=s.match(/(\d+(?:\.\d+)?)\s*k/i); if(m) return +m[1];
+  const n=num(s); if(n==null) return null;
+  if(n<=1) return n*24; if(n<=24) return n; if(n<=1000) return n/1000*24; return null;
+}
+function fine(it){ const k=karat(it.karat); return (it.net==null||k==null)?null:it.net*k/24; }
+function lotMakeup(skus){
+  const L={}; let tot=0, totMiss=0;
+  for(const s of skus){ const it=S.items[s]||{}; const o=L[it.lot||it.list||"(none)"] ||= {n:0,gross:0,net:0,fine:0,miss:0,fineMiss:0};
+    o.n++; if(it.gross==null){o.miss++; totMiss++;} else {o.gross+=it.gross; tot+=it.gross;}
+    if(it.net!=null) o.net+=it.net; const f=fine(it); if(f==null) o.fineMiss++; else o.fine+=f; }
+  return Object.entries(L).map(([lot,o])=>`<span class="k">${esc(lot)} · ${o.n} pcs</span><span class="v">${f2(o.gross)} g gross · ${f2(o.net)} g net · ${o.fineMiss?'<span class="flag">fine MISSING</span>':f2(o.fine)+" g fine"} · ${tot&&!totMiss?f2(o.gross/tot*100)+"%":"–"}${o.miss?` <span class="flag">(${o.miss} gross MISSING)</span>`:""}</span>`).join("");
+}
+function isNotForMelt(it){
+  return /excluded|not for melt/i.test(it.state||"") || (it.metal && !/^gold$/i.test(it.metal)) || it.path==="P4";
+}
+/* ---------- Pre-scan ---------- */
+function listItems(list){ return Object.entries(S.items).filter(([k,it])=>it.list===list && !isNotForMelt(it)); }
+function renderPrescan(){
+  const lists = [...new Set(Object.values(S.items).map(it=>it.list))].sort();
+  const cur = $("qList").value;
+  $("qList").innerHTML = lists.length ? lists.map(l=>`<option ${l===cur?"selected":""}>${esc(l)}</option>`).join("") : `<option value="">No Unvault list in the tracker yet</option>`;
+  calcPrescan();
+}
+function calcPrescan(){
+  const list=$("qList").value, exp=listItems(list);
+  const seen = new Set([...Object.keys(S.prescanned), ...sess.filter(x=>x.result==="MATCHED").map(x=>x.sku)]);
+  const matched = exp.filter(([k])=>seen.has(k)), missing = exp.filter(([k])=>!seen.has(k));
+  const extra = sess.filter(x=>x.result!=="MATCHED" && x.result!=="DUPLICATE"), dup = sess.filter(x=>x.result==="DUPLICATE");
+  const g = arr => arr.reduce((a,[,it])=>a+(it.gross||0),0), gm = arr => arr.filter(([,it])=>it.gross==null).length;
+  $("qMatched").textContent = `${matched.length}/${exp.length}`; $("qMissing").textContent = missing.length;
+  $("qExtra").textContent = extra.length; $("qDup").textContent = dup.length;
+  $("qCalc").innerHTML = `<span class="k">Matched gross</span><span class="v">${f2(g(matched))} g${gm(matched)?` <span class="flag">(${gm(matched)} MISSING)</span>`:""}</span>
+    <span class="k">Missing gross</span><span class="v">${f2(g(missing))} g${gm(missing)?` <span class="flag">(${gm(missing)} MISSING)</span>`:""}</span>
+    <span class="k">Scans not saved yet</span><span class="v">${sess.length}</span>`;
+  const cls = r => r==="MATCHED"?"p-poured":r==="DUPLICATE"?"p-back":"p-setter";
+  $("qSess").querySelector("tbody").innerHTML = sess.slice().reverse().map(x=>`<tr><td><b>${esc(x.sku)}</b></td><td><span class="pill ${cls(x.result)}">${esc(x.result)}</span></td><td>${esc(x.list||"–")}</td><td>${f2(x.gross)}</td></tr>`).join("") || `<tr><td colspan="4" class="muted" style="text-align:left">Nothing scanned yet.</td></tr>`;
+  $("qMiss").querySelector("tbody").innerHTML = missing.map(([k,it])=>`<tr><td><b>${esc(k)}</b></td><td style="text-align:left;white-space:normal">${esc(it.name)}</td><td>${esc(it.karat)}</td><td>${it.gross==null?'<span class="flag">MISSING</span>':f2(it.gross)}</td></tr>`).join("") || `<tr><td colspan="4" class="muted" style="text-align:left">None.</td></tr>`;
+  $("qSave").disabled = !sess.length;
+  try{ localStorage.setItem("jr_prescan_sess", JSON.stringify(sess)); }catch(e){}
+}
+function prescanSku(raw){
+  const s=toSlug(raw); raw=String(raw||"").trim(); if(!s) return;
+  const list=$("qList").value, it=S.items[s];
+  let result, kind;
+  if(S.prescanned[s] || sess.some(x=>x.sku===s)) { result="DUPLICATE"; kind="warn"; }
+  else if(it && it.list===list && !isNotForMelt(it)) { result="MATCHED"; kind="ok"; }
+  else if(it && isNotForMelt(it)) { result="NOT FOR MELT"; kind="bad"; }
+  else if(it) { result="EXTRA · OTHER LIST"; kind="warn"; }
+  else if(S.master.has(s)) { result="EXTRA · ALREADY IN MASTER"; kind="bad"; }
+  else { result="EXTRA · UNKNOWN"; kind="bad"; }
+  if(result==="EXTRA · UNKNOWN" && raw!==s) result+=" ("+String(raw).slice(0,80)+")";
+  sess.push({sku:s, result, list: it?it.list:"", gross: it?it.gross:null});
+  msg("qScanMsg", kind, `${esc(s)}: ${esc(result)}${it&&it.gross!=null?` · ${f2(it.gross)} g`:""}`);
+  calcPrescan();
+}
+
+/* ---------- Lots (allocation back to Unvault lots) ---------- */
+function renderLots(){
+  const L = {};
+  const lot = list => L[list] ||= {list, n:0, gross:0, gMiss:0, pre:0, sent:0, sentGross:0, gold:0, bar:0, goldMiss:false, barMiss:false};
+  for(const [k,it] of Object.entries(S.items)){ if(isNotForMelt(it)) continue; const o=lot(it.list); o.n++; if(it.gross==null) o.gMiss++; else o.gross+=it.gross; if(S.prescanned[k]) o.pre++; }
+  for(const b of Object.values(S.batches)){
+    const gs = b.skus.map(k=>S.items[k]&&S.items[k].gross);
+    const known = !gs.some(g=>g==null), tot = known ? gs.reduce((a,g)=>a+g,0) : 0;
+    const r = S.returns[b.id], pr = S.pours.find(p=>p.bag===meltId(b.id));
+    b.skus.forEach((k,i)=>{
+      const o = lot(S.items[k] ? S.items[k].list : "(not on any list)"); o.sent++;
+      if(gs[i]!=null) o.sentGross+=gs[i];
+      const share = known && tot ? gs[i]/tot : null;
+      if(r){ if(share==null) o.goldMiss=true; else o.gold += r.gold*share; }
+      if(pr){ if(share==null) o.barMiss=true; else o.bar += pr.barForBag*share; }
+    });
+  }
+  const rows = Object.values(L).sort((a,b)=>a.list<b.list?-1:1).map(o=>`<tr><td><b>${esc(o.list)}</b></td><td>${o.n}</td>
+    <td>${f2(o.gross)}${o.gMiss?` <span class="flag">+${o.gMiss} MISSING</span>`:""}</td><td>${o.pre}</td><td class="${o.n-o.pre>0?"flag":""}">${Math.max(o.n-o.pre,0)}</td>
+    <td>${o.sent}</td><td>${f2(o.sentGross)}</td>
+    <td>${o.goldMiss?'<span class="flag">MISSING</span>':(o.gold?f2(o.gold)+'<div class="small muted">ALLOCATED</div>':"–")}</td>
+    <td>${o.barMiss?'<span class="flag">MISSING</span>':(o.bar?f2(o.bar)+'<div class="small muted">ALLOCATED</div>':"–")}</td></tr>`);
+  $("lotTable").querySelector("tbody").innerHTML = rows.join("") || `<tr><td colspan="9" class="muted" style="text-align:left">No Unvault lists in the tracker yet.</td></tr>`;
+}
+
+/* ---------- Writes ---------- */
+async function guarded(btn, out, fn){
+  const b=$(btn); b.disabled=true; const t=b.textContent; b.textContent="Saving…";
+  try{ await fn(); }
+  catch(e){ msg(out,"bad", errText(e) + "<br>Some rows may already be in the sheet. Tap Refresh and check before trying again."); }
+  finally{ b.textContent=t; await load(); }
+}
+
+$("qSave").onclick = () => guarded("qSave","qMsg", async ()=>{
+  if(!await load()) throw {message:"Couldn\u2019t read the sheet, so nothing was saved."};
+  const t=now(), rows = sess.map(x=>[t, "PRE-SCAN", x.list?txt(x.list):txt($("qList").value), txt(x.sku), "", x.result]);
+  await writeAll([["Scans", rows]]);
+  const m = sess.filter(x=>x.result==="MATCHED").length;
+  msg("qMsg","ok",`Saved ${rows.length} scans: ${m} matched, ${rows.length-m} need a look.`);
+  sess = []; msg("qScanMsg","","");
+});
+scanBox($("qSku"), v=>prescanSku(toSlug(v)));
+$("qList").onchange = calcPrescan;
+try{ const q=JSON.parse(localStorage.getItem("jr_prescan_sess")||"null"); if(Array.isArray(q)) sess=q; }catch(e){}
+
+$("p2Ship").onclick = () => guarded("p2Ship","p2Msg", async ()=>{
+  if(!await load()) throw {message:"Couldn\u2019t read the sheet, so nothing was saved."};
+  const id=$("p2Id").value.trim();
+  if(!id) throw {message:"Give the shipment an ID."};
+  if(S.p2[id]) throw {message:`${id} already exists. Use a new shipment ID.`};
+  const dup=p2draft.skus.filter(s=>Object.values(S.p2).some(x=>x.skus.includes(s))||Object.values(S.batches).some(b=>b.skus.includes(s)));
+  if(dup.length) throw {message:`Already sent elsewhere: ${dup.join(", ")}`};
+  const t=now(), note=$("p2Note").value.trim();
+  const rows=p2draft.skus.map(s=>{ const it=S.items[s]||{}; return [t, txt(id), "ITEM IN", txt(s), it.lot||"", it.gross!=null?r2(it.gross):"MISSING", it.net!=null?r2(it.net):"MISSING", "", ""]; });
+  rows.push([t, txt(id), "SHIPPED", "", "", "", "", p2draft.skus.length, note]);
+  await writeAll([["P2_Shipments", rows], ["Scans", p2draft.skus.map(s=>[t, "P2 SHIP", txt(id), txt(s), txt(id), note])]]);
+  const n=p2draft.skus.length; const tt=p2Totals(p2draft.skus);
+  msg("p2Msg","ok",`${esc(id)} closed and shipped: ${n} P2 pieces, ${f2(tt.g)} g gross / ${f2(tt.n)} g net.<br><button class="btn csvBtn" style="margin-top:8px" data-batch="${esc(id)}">Make CSV for ${esc(id)}</button>`);
+  { const cb=document.querySelector("#p2Msg .csvBtn"); if(cb) makeCsv(cb); }
+  p2draft={id:"",skus:[]}; $("p2Note").value=""; msg("p2ScanMsg","","");
+});
+scanBox($("p2Sku"), v=>addP2(toSlug(v)));
+$("p2Id").addEventListener("change",()=>{ p2draft.id=$("p2Id").value.trim(); renderP2(); });
+$("p2Chips").addEventListener("click",e=>{ const i=e.target.dataset.p2i; if(i!=null){ p2draft.skus.splice(+i,1); renderP2(); }});
+$("p2Clear").onclick=()=>{ p2draft={id:"",skus:[]}; msg("p2ScanMsg","",""); renderP2(); };
+try{ const d=JSON.parse(localStorage.getItem("jr_p2_draft")||"null"); if(d&&Array.isArray(d.skus)) p2draft=d; }catch(e){}
+
+$("sSend").onclick = () => guarded("sSend","sMsg", async ()=>{
+  if(!await load()) throw {message:"Couldn\u2019t read the sheet, so nothing was saved."};
+  const id = $("sBatch").value.trim();
+  if(S.batches[id]) throw {message:`${id} already exists in the sheet. Use a new bag ID.`};
+  const dup = draft.skus.filter(s=>Object.values(S.batches).some(b=>b.skus.includes(s)));
+  if(dup.length) throw {message:`Already sent in another bag: ${dup.join(", ")}`};
+  const t=now(), w=r2(num($("sWeight").value)), note=$("sNote").value.trim();
+  const sbRows = draft.skus.map(s=>{ const it=S.items[s]; return [t, txt(id), "SKU IN", txt(s), it?it.lot:"", it&&it.gross!=null?r2(it.gross):"MISSING", "", "", ""]; });
+  sbRows.push([t, txt(id), "SENT", "", "", "", w, draft.skus.length, note]);
+  const scanRows = draft.skus.map(s=>[t, "SEND TO SETTER", txt(id), txt(s), txt(id), ""]);
+  await writeAll([["Setter_Batches", sbRows], ["Scans", scanRows]]);
+  msg("sMsg","ok",`${esc(id)} closed and sent: ${draft.skus.length} SKUs, ${f2(w)} g.<br><button class="btn csvBtn" style="margin-top:8px" data-batch="${esc(id)}">Make setter CSV for ${esc(id)}</button>`);
+  { const cb=document.querySelector("#sMsg .csvBtn"); if(cb) makeCsv(cb); }
+  draft = {batch:"", skus:[]}; $("sWeight").value=""; $("sNote").value=""; msg("sScanMsg","","");
+});
+
+$("rSave").onclick = () => guarded("rSave","rMsg", async ()=>{
+  if(!await load()) throw {message:"Couldn\u2019t read the sheet, so nothing was saved."};
+  const id=$("rBatch").value, b=S.batches[id];
+  if(!b || S.returns[id]) throw {message:`${id} is not waiting at the setter.`};
+  const g=r2(num($("rGold").value)), sg=r2(num($("rStoneG").value)), ct=num($("rStoneCt").value), n=num($("rStoneN").value);
+  const loss=r2(b.sent-(g+sg)), p=r2(pct(b.sent-(g+sg), b.sent)), t=now(), note=$("rNote").value.trim();
+  await writeAll([
+    ["Setter_Returns", [[t, txt(id), txt(meltId(id)), g, txt(stoneId(id)), sg, ct==null?"":r2(ct), n==null?"":n, r2(b.sent), loss, p, note]]],
+    ["Melt_Bags", [[t, txt(meltId(id)), txt(id), "RETURNED", g, 0, note]]],
+    ["Scans", [[t, "SETTER RETURN", txt(id), "", txt(meltId(id)), `stone bag ${stoneId(id)}`]]]
+  ]);
+  msg("rMsg", p>LOSS_FLAG?"warn":"ok", `${esc(id)} back: ${f2(g)} g gold, ${f2(sg)} g stones. Setter loss ${f2(loss)} g (${f2(p)}%)${p>LOSS_FLAG?" is over 1%.":"."}`);
+  ["rGold","rStoneG","rStoneCt","rStoneN","rNote"].forEach(i=>$(i).value="");
+});
+
+$("pSave").onclick = () => guarded("pSave","pMsg", async ()=>{
+  if(!await load()) throw {message:"Couldn\u2019t read the sheet, so nothing was saved."};
+  const id=$("pBag").value, m=S.melt[id];
+  if(!m || m.pre!=null) throw {message:`${id} is not waiting for a pre-melt weight.`};
+  const w=r2(num($("pWeight").value)), d=r2(w-m.returned), t=now();
+  await writeAll([["Melt_Bags", [[t, txt(id), txt(m.batch), "PRE-MELT", w, d, $("pNote").value.trim()]]]]);
+  msg("pMsg", Math.abs(d)>=0.05?"warn":"ok", `${esc(id)} pre-melt ${f2(w)} g (${d>0?"+":""}${f2(d)} g vs return).`);
+  $("pWeight").value=""; $("pNote").value="";
+});
+
+$("bSave").onclick = () => {
+  const ids=[...document.querySelectorAll("#bBags input:checked")].map(i=>i.value);
+  return guarded("bSave","bMsg", async ()=>{
+    if(!await load()) throw {message:"Couldn\u2019t read the sheet, so nothing was saved."};
+    const bar=$("bId").value.trim();
+    if(S.pours.some(p=>p.bar===bar)) throw {message:`${bar} already exists. Use a new bar ID.`};
+    for(const id of ids){ const m=S.melt[id]; if(!m || m.pre==null || m.poured!=null) throw {message:`${id} is not ready to pour.`}; }
+    const W=num($("bWeight").value), karat=$("bKarat").value.trim(), note=$("bNote").value.trim(), t=now();
+    const pre = ids.reduce((a,id)=>a+S.melt[id].pre,0);
+    const alloc = ids.length>1 ? "ALLOCATED" : "DIRECT";
+    // allocate bar weight by pre-melt share; last bag takes the rounding remainder so parts add up to the bar
+    let used=0; const pbRows=[], mbRows=[], scRows=[];
+    ids.forEach((id,i)=>{
+      const m=S.melt[id];
+      const part = i===ids.length-1 ? r2(W-used) : r2(W*m.pre/pre); used=r2(used+part);
+      const loss=r2(m.pre-part), p=r2(pct(m.pre-part,m.pre));
+      pbRows.push([t, txt(bar), txt(id), r2(m.pre), r2(W), part, alloc, karat, loss, p, note]);
+      mbRows.push([t, txt(id), txt(m.batch), "POURED", part, r2(part-m.returned), "Bar "+bar]);
+      scRows.push([t, "INTO POUR", txt(m.batch), "", txt(id), "Bar "+bar]);
+    });
+    await writeAll([["Pours_Bars", pbRows], ["Melt_Bags", mbRows], ["Scans", scRows]]);
+    const L=pre-W;
+    msg("bMsg", pct(L,pre)>LOSS_FLAG?"warn":"ok", `${esc(bar)}: ${f2(W)} g from ${ids.length} melt bag(s). Melt loss ${f2(L)} g (${f2(pct(L,pre))}%).`);
+    $("bWeight").value=""; $("bKarat").value=""; $("bNote").value=""; $("bId").value="";
+  });
+};
+
+/* ---------- P2 shipments (no bag weight) ---------- */
+function p2Totals(skus){ let g=0,n=0,gm=0,nm=0,f=0,fm=0; for(const s of skus){ const it=S.items[s]||{}; if(it.gross==null) gm++; else g+=it.gross; if(it.net==null) nm++; else n+=it.net; const x=fine(it); if(x==null) fm++; else f+=x; } return {g,n,f,gm,nm,fm}; }
+function renderP2(){
+  if(!p2draft.id || S.p2[p2draft.id]) p2draft.id = nextId("JR-P2-", Object.keys(S.p2), 4);
+  if(document.activeElement!==$("p2Id")) $("p2Id").value=p2draft.id;
+  $("p2Chips").innerHTML = p2draft.skus.map((s,i)=>{ const it=S.items[s]; return `<span class="chip"><b>${esc(s)}</b><span class="muted">${it&&it.gross!=null?f2(it.gross)+" g":"gross MISSING"}</span><button class="x" data-p2i="${i}" aria-label="Remove">×</button></span>`; }).join("");
+  const t=p2Totals(p2draft.skus);
+  let h=`<span class="k">Pieces</span><span class="v">${p2draft.skus.length}</span>
+    <span class="k">Gross (Unvault)</span><span class="v">${f2(t.g)} g${t.gm?` <span class="flag">(${t.gm} MISSING)</span>`:""}</span>
+    <span class="k">Net (Unvault)</span><span class="v">${f2(t.n)} g${t.nm?` <span class="flag">(${t.nm} MISSING)</span>`:""}</span>
+    <span class="k">Fine gold</span><span class="v">${t.fm?'<span class="flag">MISSING for '+t.fm+'</span>':f2(t.f)+" g"}</span>`;
+  if(p2draft.skus.length) h += `<span class="k total">Makeup by lot</span><span class="v total"></span>` + lotMakeup(p2draft.skus);
+  $("p2Calc").innerHTML=h; $("p2Ship").disabled=!p2draft.skus.length;
+  const rows=Object.values(S.p2).filter(x=>x.at).sort((a,b)=>a.id<b.id?1:-1).map(x=>{ const t=p2Totals(x.skus);
+    return `<tr><td><b>${esc(x.id)}</b></td><td>${esc(String(x.at).slice(0,16))}</td><td>${x.skus.length}</td><td>${f2(t.g)}</td><td>${f2(t.n)}</td><td style="text-align:left;white-space:normal">${esc(x.note)}</td><td><button class="btn ghost csvBtn" style="margin:0;padding:6px 10px;width:auto;font-size:12px" data-batch="${esc(x.id)}">CSV</button></td></tr>`; });
+  $("p2Table").querySelector("tbody").innerHTML = rows.join("") || `<tr><td colspan="7" class="muted" style="text-align:left">No P2 shipments yet.</td></tr>`;
+  try{ localStorage.setItem("jr_p2_draft", JSON.stringify(p2draft)); }catch(e){}
+}
+function addP2(raw){
+  const s=String(raw||"").trim(); if(!s) return;
+  const it=S.items[s];
+  if(p2draft.skus.includes(s)) return msg("p2ScanMsg","warn",`${esc(s)} is already in this shipment.`);
+  if(!it) return msg("p2ScanMsg","bad",`${esc(s)} is not on any Unvault list in the tracker. Not added.`);
+  if(it.path!=="P2") return msg("p2ScanMsg","bad",`${esc(s)} is ${esc(it.path||"no path")}, not P2. Not added.`);
+  if(isNotForMelt(it)) return msg("p2ScanMsg","bad",`${esc(s)} is marked ${esc(it.state||it.metal)}. Not added.`);
+  if(!S.prescanned[s]) return msg("p2ScanMsg","bad",`${esc(s)} hasn't been pre-scanned yet. Pre-scan it first (step 0).`);
+  const shipped=Object.values(S.p2).find(x=>x.skus.includes(s)); if(shipped) return msg("p2ScanMsg","bad",`${esc(s)} already went out in ${esc(shipped.id)}. Not added.`);
+  const bag=Object.values(S.batches).find(b=>b.skus.includes(s)); if(bag) return msg("p2ScanMsg","bad",`${esc(s)} already went to the setter in ${esc(bag.id)}. Not added.`);
+  p2draft.skus.push(s);
+  msg("p2ScanMsg","ok",`Added ${esc(s)}${it.lot?` · lot ${esc(it.lot)}`:""} · ${it.gross!=null?f2(it.gross)+" g":"gross MISSING"}`);
+  renderP2();
+}
+
+/* ---------- Setter CSV ---------- */
+async function makeCsv(btn){
+  const id=btn.dataset.batch; const t=btn.textContent; btn.disabled=true; btn.textContent="Making CSV…";
+  try{
+    const r=await gs("exportBatchCsv", id);
+    let h=`<b>${esc(r.name)}</b>: ${r.found} of ${r.pieces} pieces with Unvault's full details and image links.<br>
+      <a href="${esc(r.download)}" target="_blank" rel="noopener">Download CSV</a> · <a href="${esc(r.url)}" target="_blank" rel="noopener">Open in Drive</a>`;
+    if(r.missing.length) h+=`<br><span class="flag">${r.missing.length} piece(s) not in a raw lot file in Drive: ${esc(r.missing.slice(0,10).join(", "))}${r.missing.length>10?"…":""}</span>`;
+    if(r.noFile.length) h+=`<br><span class="flag">Raw lot file not found in Drive: ${esc(r.noFile.join(", "))}. Put it in the JR Melt Tracker – PRIVATE folder.</span>`;
+    msg("globalMsg", r.missing.length?"warn":"ok", h); window.scrollTo(0,0);
+  }catch(e){ msg("globalMsg","bad", errText(e)); window.scrollTo(0,0); }
+  finally{ btn.disabled=false; btn.textContent=t; }
+}
+document.addEventListener("click",e=>{ const b=e.target.closest(".csvBtn"); if(b) makeCsv(b); });
+
+/* ---------- What a scanned code means: Slug, Unvault item ID, or a link holding either ---------- */
+function toSlug(raw){
+  let v=String(raw||"").trim(); if(!v) return v;
+  try{ v=decodeURIComponent(v); }catch(e){}
+  if(S.items[v]||S.master.has(v)) return v;
+  const up=v.toUpperCase(); if(S.items[up]||S.master.has(up)) return up;
+  const u=v.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+  if(u && S.uuid[u[0].toLowerCase()]) return S.uuid[u[0].toLowerCase()];
+  const parts=v.split(/[^A-Za-z0-9]+/).filter(Boolean).map(x=>x.toUpperCase());
+  for(const p of parts.reverse()) if(S.items[p]||S.master.has(p)) return p;
+  const m=v.match(/\b([A-Z]{2}\d{4})\b/i); if(m) return m[1].toUpperCase();
+  return v;
+}
+/* ---------- Scanner input: Enter, Tab, or a fast burst with no suffix ---------- */
+function scanBox(el, onScan){
+  let first=0, timer=null;
+  const commit=()=>{ clearTimeout(timer); const v=el.value.trim(); el.value=""; first=0; if(v) onScan(v); el.focus(); };
+  el.addEventListener("keydown",e=>{
+    if(e.key==="Enter"||e.key==="Tab"||e.key==="NumpadEnter"){ if(el.value.trim()){ e.preventDefault(); commit(); } else if(e.key!=="Tab"){ e.preventDefault(); } return; }
+    if(!first) first=Date.now();
+  });
+  el.addEventListener("input",()=>{
+    clearTimeout(timer);
+    if(!el.value) { first=0; return; }
+    // a scanner types the whole code in well under half a second; a person doesn't
+    if(first && Date.now()-first<400 && el.value.trim().length>=4) timer=setTimeout(commit,150);
+  });
+}
+/* ---------- Camera QR scanning (phone) ---------- */
+let camStream=null, camTarget=null, camLast="", camLastAt=0, camRun=false, detector=null, jsqrReady=null;
+function loadJsQR(){ if(window.jsQR) return Promise.resolve(); if(jsqrReady) return jsqrReady;
+  jsqrReady=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"; sc.onload=res; sc.onerror=rej; document.head.appendChild(sc); });
+  return jsqrReady; }
+async function decodeFrom(src, w, h){
+  if(!detector && "BarcodeDetector" in window){ try{ detector=new BarcodeDetector({formats:["qr_code","code_128","code_39","ean_13","upc_a"]}); }catch(e){ detector=false; } }
+  if(detector){ try{ const r=await detector.detect(src); if(r && r.length) return r[0].rawValue; }catch(e){} }
+  await loadJsQR().catch(()=>{});
+  if(!window.jsQR) return null;
+  const c=$("camCanvas"), x=c.getContext("2d",{willReadFrequently:true}); c.width=w; c.height=h; x.drawImage(src,0,0,w,h);
+  const q=jsQR(x.getImageData(0,0,w,h).data,w,h); return q?q.data:null;
+}
+function camFeed(code){
+  const now=Date.now(); if(code===camLast && now-camLastAt<3000) return; camLast=code; camLastAt=now;
+  const slug=toSlug(code);
+  if(camTarget==="qSku") prescanSku(slug); else if(camTarget==="p2Sku") addP2(slug); else addSku(slug);
+  const box={qSku:"qScanMsg",p2Sku:"p2ScanMsg"}[camTarget]||"sScanMsg";
+  $("camMsg").innerHTML=$(box).innerHTML||esc(slug);
+  try{ navigator.vibrate && navigator.vibrate(80); }catch(e){}
+}
+async function camLoop(){
+  const v=$("camVideo");
+  while(camRun){
+    if(v.readyState>=2 && v.videoWidth){ const w=Math.min(v.videoWidth,800), h=Math.round(v.videoHeight*w/v.videoWidth);
+      const code=await decodeFrom(v,w,h); if(code) camFeed(code); }
+    await new Promise(r=>setTimeout(r,180));
+  }
+}
+async function camOpen(target){
+  camTarget=target; camLast=""; $("cam").style.display="flex"; $("camMsg").textContent="Starting camera…";
+  try{
+    camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"},audio:false});
+    const v=$("camVideo"); v.srcObject=camStream; await v.play(); camRun=true;
+    $("camMsg").textContent="Point at a QR code. Each code is added automatically."; camLoop();
+  }catch(e){
+    $("camVideo").classList.add("hidden");
+    $("camMsg").textContent="Live camera isn't allowed here. Tap “Take photo instead” for each piece.";
+  }
+}
+function camCloseFn(){ camRun=false; if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null; } $("camVideo").classList.remove("hidden"); $("cam").style.display="none"; }
+document.addEventListener("click",e=>{ const b=e.target.closest(".camBtn"); if(b) camOpen(b.dataset.target); });
+$("camClose").onclick=camCloseFn;
+$("camPhoto").onclick=()=>$("camFile").click();
+$("camFile").addEventListener("change",async()=>{
+  const f=$("camFile").files[0]; if(!f) return; $("camMsg").textContent="Reading photo…";
+  try{ const img=await createImageBitmap(f); const w=Math.min(img.width,1600), h=Math.round(img.height*w/img.width);
+    const code=await decodeFrom(img,w,h); if(code){ camLast=""; camFeed(code); } else $("camMsg").textContent="No QR code found in that photo. Try again, a bit closer.";
+  }catch(e){ $("camMsg").textContent="Couldn't read that photo."; }
+  $("camFile").value="";
+});
+
+/* ---------- Wiring ---------- */
+document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#nav button").forEach(x=>x.classList.toggle("on",x===b));
+  document.querySelectorAll("main section").forEach(s=>s.classList.toggle("hidden", s.id!=="v-"+b.dataset.v));
+  const f={prescan:"qSku",send:"sSku",p2ship:"p2Sku",return:"rScan",premelt:"pScan",pour:"bId"}[b.dataset.v]; if(f) setTimeout(()=>$(f).focus(),50);
+});
+scanBox($("sSku"), v=>addSku(toSlug(v)));
+$("sBatch").addEventListener("change",()=>{ draft.batch=$("sBatch").value.trim(); renderSend(); });
+$("sBatch").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); draft.batch=$("sBatch").value.trim(); $("sSku").focus(); }});
+$("sChips").addEventListener("click",e=>{ const i=e.target.dataset.i; if(i!=null){ draft.skus.splice(+i,1); renderSend(); }});
+$("sWeight").addEventListener("input",renderSend);
+$("sClear").onclick=()=>{ draft={batch:"",skus:[]}; msg("sScanMsg","",""); renderSend(); };
+function scanPick(inputId, selId, transform, after){
+  scanBox($(inputId), raw=>{ const v=transform(raw); const o=[...$(selId).options].find(o=>o.value===v);
+    if(o){ $(selId).value=v; after(); } else { $(inputId).placeholder=`${v} is not waiting here`; } });
+}
+scanPick("rScan","rBatch", v=>v.replace(/-(G|ST)$/,""), calcReturn);
+scanPick("pScan","pBag", v=>/-G$/.test(v)?v:v.replace(/-ST$/,"")+"-G", calcPre);
+$("rBatch").onchange=calcReturn; ["rGold","rStoneG"].forEach(i=>$(i).addEventListener("input",calcReturn));
+$("pBag").onchange=calcPre; $("pWeight").addEventListener("input",calcPre);
+$("bBags").addEventListener("change",calcPour); $("bWeight").addEventListener("input",calcPour);
+$("reloadBtn").onclick=()=> load();
+try{ const d=JSON.parse(localStorage.getItem("jr_bag_draft")||"null"); if(d&&Array.isArray(d.skus)) draft=d; }catch(e){}
+
+async function init(){ renderAll(); load(); }
+init();
+</script>
+</body>
+</html>

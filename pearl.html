@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script>window.JR_MOD="pearl";</script><script src="jr.js"></script>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#24508f"><link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f3f5f7; --surface:#ffffff; --fg:#17212b; --muted:#5c6b78; --line:#d9e0e6;
+  --accent:#1f5f66; --accent-ink:#ffffff; --input:#fffbea; --input-line:#e6d79a;
+  --ok:#2e7d4f; --warn:#b3261e; --soft:#e8eef1;
+  --display:"Newsreader",Georgia,serif; --body:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0f1519; --surface:#172026; --fg:#e4eaee; --muted:#93a3ae; --line:#2a363e;
+  --accent:#6cb7bd; --accent-ink:#0f1519; --input:#2a2716; --input-line:#5a5128;
+  --ok:#6cc792; --warn:#f2867d; --soft:#1d2a31; color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:1100px;margin:0 auto;padding:24px 16px 64px;display:grid;gap:20px}
+h1,h2{font-family:var(--display);font-weight:600;margin:0;text-wrap:balance}
+h1{font-size:30px} h2{font-size:20px}
+.eyebrow{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.bar{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px;display:grid;gap:14px;min-width:0}
+button{font:500 14px var(--body);border-radius:6px;padding:8px 14px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--fg)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button.danger{color:var(--warn);border-color:var(--warn)}
+button:disabled{opacity:.5;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+a{color:var(--accent);cursor:pointer}
+input,select{font:400 14px var(--body);color:var(--fg);background:var(--input);border:1px solid var(--input-line);border-radius:5px;padding:7px 9px;width:100%;min-width:0}
+input.n{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+label{display:grid;gap:4px;font-size:12px;color:var(--muted);font-weight:500}
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.ledger{width:100%;border-collapse:collapse}
+.ledger th{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);text-align:left;padding:8px;border-bottom:1px solid var(--line);font-weight:600}
+.ledger td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.ledger .r{text-align:right}
+.scroll{overflow-x:auto}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--soft);color:var(--muted)}
+.pill.ok{color:var(--ok)} .pill.warn{color:var(--warn)}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start}
+@media (max-width:860px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.results{position:sticky;top:12px}
+.rl{display:flex;justify-content:space-between;gap:12px;padding:4px 0}
+.rl b{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:500}
+.big b{font-size:20px;color:var(--accent)}
+.sec{border-top:1px solid var(--line);padding-top:10px;display:grid;gap:2px}
+.flag{font-size:13px;padding:8px 10px;border-radius:6px;background:var(--soft)}
+.flag.warn{color:var(--warn)} .flag.ok{color:var(--ok)}
+.pearls td{padding:4px 6px}
+.pearls input{padding:5px 7px}
+.pearls td.idx{color:var(--muted);font-family:var(--mono);width:36px}
+.pearls td.out{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.hint{font-size:13px;color:var(--muted)}
+.status{font-size:12px;color:var(--muted)}
+.empty{padding:28px;text-align:center;color:var(--muted)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+canvas{width:100%;max-width:520px;aspect-ratio:1;border:1px solid var(--line);border-radius:6px;background:#fff}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="empty">Loading SKUs…</div></div>
+
+<script>
+const START_SKU = new URLSearchParams(location.search).get("sku") || "";
+const APP_URL = location.origin + location.pathname;
+const K = {carat:0.0283, div:4, chau:0.6518, g2ct:5};
+const app = document.getElementById('app');
+let editing = null, saveTimer = null, saving = false, dirty = false;
+
+function num(v){const n=parseFloat(String(v??'').replace(',','.'));return isFinite(n)&&n>0?n:null}
+function f(n,d){return n==null||n===''||!isFinite(n)?'—':Number(n).toFixed(d)}
+function el(tag,attrs={},...kids){const e=document.createElement(tag);for(const[k,v]of Object.entries(attrs)){if(k==='class')e.className=v;else if(k.startsWith('on'))e.addEventListener(k.slice(2),v);else if(v!==false&&v!=null)e.setAttribute(k,v===true?'':v)}for(const c of kids.flat()){if(c==null)continue;e.append(c.nodeType?c:document.createTextNode(String(c)))}return e}
+function run(fn,...args){return new Promise((res,rej)=>google.script.run.withSuccessHandler(res).withFailureHandler(rej)[fn](...args))}
+function linkFor(sku){return APP_URL+'?sku='+encodeURIComponent(sku)}
+async function copy(text,btn){try{await navigator.clipboard.writeText(text);const t=btn.textContent;btn.textContent='Copied';setTimeout(()=>btn.textContent=t,1500)}catch(e){const i=el('input',{value:text,readonly:true});btn.replaceWith(i);i.select()}}
+
+function pearlCarat(p){const ct=num(p.ct);if(ct)return ct;const L=num(p.l);if(!L)return null;if(!p.drop)return L*L*L*K.carat/K.div;const W=num(p.w)||L,H=num(p.h)||W;return L*W*H*K.carat/K.div}
+function calc(s){
+  const pearls=(s.pearls||[]).map(p=>{const c=pearlCarat(p);return{c,chau:c==null?null:c*c*K.chau}});
+  const valid=pearls.filter(p=>p.c!=null),n=valid.length;
+  const aCt=n?valid.reduce((a,p)=>a+p.c,0):null, aChau=n?valid.reduce((a,p)=>a+p.chau,0):null;
+  const certCount=parseInt(s.certCount)||null, w=num(s.certWeight), ded=s.clasp==='Y'?(parseFloat(s.deduction)||0):0;
+  const bCt=w?(s.unit==='ct'?(w-ded):(w-ded)*K.g2ct):null, bN=certCount||n||null;
+  const avg=bCt&&bN?bCt/bN:null, per=avg?avg*avg*K.chau:null, bChau=per?per*bN:null;
+  return{pearls,n,aCt,aChau,certCount,bCt,bN,avg,per,bChau,wG:w&&s.unit!=='ct'?w-ded:null,
+    diffChau:aChau!=null&&bChau!=null?aChau-bChau:null, diffCt:aCt!=null&&bCt!=null?aCt-bCt:null};
+}
+
+/* ---------- list view ---------- */
+async function showList(){
+  await flush();
+  editing=null;
+  app.replaceChildren(el('div',{class:'empty'},'Loading SKUs…'));
+  let list=[];
+  try{list=await run('listSkus')}catch(e){app.replaceChildren(el('div',{class:'panel empty'},'Couldn’t load SKUs: '+e.message));return}
+  const head=el('div',{class:'bar'},
+    el('div',{},el('div',{class:'eyebrow'},'Pearl measurement'),el('h1',{},'Pearl Chau Sheets')),
+    el('div',{class:'hint'},'Carat = L × W × H × 0.0283 ÷ 4 · Chau = carat² × 0.6518'));
+  const inp=el('input',{id:'newsku',placeholder:'SKU exactly as in Uploadify',style:'max-width:320px'});
+  const msg=el('div',{class:'hint'});
+  const add=el('form',{class:'panel'},el('h2',{},'Add a SKU'),
+    el('div',{class:'hint'},'Each SKU gets its own link to send to whoever is measuring.'),
+    el('div',{class:'row'},inp,el('button',{class:'primary',type:'submit'},'Create SKU')),msg);
+  add.addEventListener('submit',async e=>{e.preventDefault();msg.textContent='Creating…';
+    try{const r=await run('createSku',inp.value);openSku(r.sku)}catch(err){msg.textContent=err.message}});
+  const panel=el('div',{class:'panel'},el('h2',{},'SKUs'));
+  if(!list.length)panel.append(el('div',{class:'empty'},'No SKUs yet. Add one above, then copy its link for your team.'));
+  else{
+    const tb=el('tbody');
+    list.forEach(s=>{
+      const b=el('button',{type:'button'},'Copy link');b.addEventListener('click',()=>copy(linkFor(s.sku),b));
+      const a=el('a',{},s.sku);a.addEventListener('click',()=>openSku(s.sku));
+      tb.append(el('tr',{},el('td',{},a),
+        el('td',{},s.pearls?el('span',{class:'pill ok'},s.pearls+' pearls'):el('span',{class:'pill'},'Not started')),
+        el('td',{class:'r num'},f(s.aCt,2)),el('td',{class:'r num'},f(s.aChau,2)),el('td',{class:'r num'},f(s.bChau,2)),
+        el('td',{class:'r'},b)));
+    });
+    panel.append(el('div',{class:'scroll'},el('table',{class:'ledger'},
+      el('thead',{},el('tr',{},el('th',{},'SKU'),el('th',{},'Status'),el('th',{class:'r'},'Carat (A)'),el('th',{class:'r'},'Chau (A)'),el('th',{class:'r'},'Est. chau (B)'),el('th',{}))),tb)));
+  }
+  app.replaceChildren(head,add,panel);
+}
+
+/* ---------- saving ---------- */
+function setStatus(t){const s=document.getElementById('status');if(s)s.textContent=t}
+function scheduleSave(){dirty=true;setStatus('Unsaved changes…');clearTimeout(saveTimer);saveTimer=setTimeout(doSave,1500)}
+async function doSave(){
+  if(!editing)return;
+  if(saving){saveTimer=setTimeout(doSave,700);return}
+  saving=true;dirty=false;setStatus('Saving…');
+  try{await run('saveSku',editing);setStatus(dirty?'Unsaved changes…':'Saved at '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}))}
+  catch(e){dirty=true;setStatus('Not saved: '+e.message+'. Click Save to try again.')}
+  saving=false;
+}
+async function flush(){if(dirty&&editing){clearTimeout(saveTimer);await doSave()}}
+window.addEventListener('beforeunload',e=>{if(dirty){doSave();e.preventDefault();e.returnValue=''}});
+
+/* ---------- SKU view ---------- */
+async function openSku(sku){
+  await flush();
+  app.replaceChildren(el('div',{class:'empty'},'Loading '+sku+'…'));
+  let d;
+  try{d=await run('getSku',sku)}catch(e){app.replaceChildren(el('div',{class:'panel empty'},'Couldn’t load: '+e.message));return}
+  if(!d){const back=el('a',{},'See all SKUs');back.addEventListener('click',showList);
+    app.replaceChildren(el('div',{class:'panel empty'},'No SKU called “'+sku+'”. ',back));return}
+  editing=d; d.pearls=d.pearls||[];
+  if(!d.pearls.length){const n=parseInt(d.certCount)||10;for(let i=0;i<n;i++)d.pearls.push({l:'',w:'',h:'',ct:''})}
+
+  const field=(key,label,o={})=>{
+    const inp=o.select?el('select',{id:'f-'+key},...o.select.map(([v,t])=>el('option',{value:v,selected:d[key]===v},t)))
+      :el('input',{id:'f-'+key,type:o.type||'text',value:d[key]??'',inputmode:o.inputmode,class:o.n?'n':''});
+    inp.addEventListener(o.select?'change':'input',()=>{d[key]=inp.value;update();scheduleSave()});
+    return el('label',{for:'f-'+key},label,inp);
+  };
+  const back=el('a',{},'← All SKUs');back.addEventListener('click',showList);
+  const saveBtn=el('button',{type:'button',class:'primary'},'Save');saveBtn.addEventListener('click',()=>{clearTimeout(saveTimer);dirty=true;doSave()});
+  const cl=el('button',{type:'button'},'Copy link');cl.addEventListener('click',()=>copy(linkFor(d.sku),cl));
+  const titleBox=el('div',{},el('h1',{},d.sku));
+  const renameBtn=el('button',{type:'button'},'Rename SKU');
+  renameBtn.addEventListener('click',()=>{
+    const inp=el('input',{id:'renameSku',value:d.sku,style:'max-width:280px;font-size:18px'});
+    const msg=el('div',{class:'hint'});
+    const ok=el('button',{type:'button',class:'primary'},'Save name'),no=el('button',{type:'button'},'Cancel');
+    no.addEventListener('click',()=>titleBox.replaceChildren(el('h1',{},d.sku)));
+    ok.addEventListener('click',async()=>{const nv=inp.value.trim();if(!nv||nv===d.sku){titleBox.replaceChildren(el('h1',{},d.sku));return}
+      ok.disabled=true;msg.textContent='Renaming…';
+      try{await flush();const r=await run('renameSku',d.sku,nv);dirty=false;editing=null;openSku(r.sku)}catch(e){ok.disabled=false;msg.textContent=e.message}});
+    titleBox.replaceChildren(el('div',{class:'row'},inp,ok,no),msg);inp.focus();inp.select();
+  });
+  const head=el('div',{class:'bar'},
+    el('div',{},back,el('div',{class:'eyebrow',style:'margin-top:8px'},'Pearl strand'),titleBox),
+    el('div',{class:'row'},el('span',{id:'status',class:'status'},'Changes save automatically'),saveBtn,renameBtn,cl));
+
+  const details=el('div',{class:'panel'},el('h2',{},'Strand details'),
+    el('div',{class:'fields'},
+      field('supplier','Supplier'),field('measuredBy','Measured by'),field('date','Date measured',{type:'date'}),
+      field('certCount','Pearl count on cert',{n:true,inputmode:'numeric'}),
+      field('certWeight','Total weight on cert',{n:true,inputmode:'decimal'}),
+      field('unit','Weight unit',{select:[['g','grams (g)'],['ct','carats (ct)']]}),
+      field('clasp','Weight includes clasp / silk?',{select:[['N','No'],['Y','Yes']]}),
+      field('deduction','Clasp / silk deduction (same unit)',{n:true,inputmode:'decimal'})),
+    field('notes','Notes'));
+
+  const tb=el('tbody');
+  const mk=(t,fn)=>{const b=el('button',{type:'button'},t);b.addEventListener('click',fn);return b};
+  const isBlank=p=>!p.l&&!p.w&&!p.h&&!p.ct;
+  let sortMode='strand';
+  const SORT_LABEL={strand:'Sort: strand order',desc:'Sort: largest first',asc:'Sort: smallest first'};
+  const sortBtn=el('button',{type:'button',title:'Change the order pearls are listed in. Pearl numbers stay the same.'},SORT_LABEL.strand);
+  sortBtn.addEventListener('click',()=>{sortMode=sortMode==='strand'?'desc':sortMode==='desc'?'asc':'strand';sortBtn.textContent=SORT_LABEL[sortMode];drawRows();update()});
+  const tbl=el('div',{class:'panel'},
+    el('div',{class:'bar'},el('h2',{},'Pearl measurements'),el('div',{class:'hint'},'Enter one size per pearl. Tick Drop for a drop pearl, then enter all 3 sizes.')),
+    el('div',{class:'scroll'},el('table',{class:'ledger pearls'},
+      el('thead',{},el('tr',{},el('th',{},'#'),el('th',{},'Size mm'),el('th',{},'Drop'),el('th',{},'2nd mm'),el('th',{},'3rd mm'),el('th',{class:'r'},'Carat'),el('th',{class:'r'},'Chau'),el('th',{},''))),tb)),
+    el('div',{class:'row'},
+      mk('Add pearl',()=>{d.pearls.push({l:'',w:'',h:'',ct:''});drawRows();update();scheduleSave()}),
+      mk('Match cert count',()=>{const n=parseInt(d.certCount);if(!n)return;while(d.pearls.length<n)d.pearls.push({l:'',w:'',h:'',ct:''});while(d.pearls.length>n&&isBlank(d.pearls[d.pearls.length-1]))d.pearls.pop();drawRows();update();scheduleSave()}),
+      mk('Remove last row',()=>{if(d.pearls.length>1){d.pearls.pop();drawRows();update();scheduleSave()}}),
+      sortBtn));
+
+  const cv=el('canvas',{width:1600,height:1600});
+  const dmsg=el('div',{class:'hint'});
+  const driveBtn=el('button',{type:'button',class:'primary'},'Save to Drive');
+  driveBtn.addEventListener('click',async()=>{
+    driveBtn.disabled=true;dmsg.textContent='Saving photo and summary to Drive…';
+    try{await drawPhoto(cv,d);clearTimeout(saveTimer);dirty=false;
+      const b64=cv.toDataURL('image/png').split(',')[1];
+      const r=await run('saveToDrive',d,b64);
+      setStatus('Saved at '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
+      const a1=el('a',{href:r.folderUrl,target:'_blank'},'SKU folder'),a2=el('a',{href:r.photoUrl,target:'_blank'},'photo'),a3=el('a',{href:r.sheetUrl,target:'_blank'},'summary sheet');
+      dmsg.replaceChildren('Saved. Open the ',a1,', the ',a2,' or the ',a3,'.');
+    }catch(e){dmsg.textContent='Couldn’t save to Drive: '+e.message}
+    driveBtn.disabled=false});
+  const photo=el('div',{class:'panel'},
+    el('div',{class:'bar'},el('h2',{},'Uploadify listing photo'),driveBtn),
+    el('div',{class:'hint'},'Saves a square PNG named [SKU]-chau.png and a summary sheet into Pearl Chau / '+d.sku+' in Google Drive. The photo shows Method A only.'),
+    dmsg,cv);
+
+  const res=el('div',{class:'panel results'});
+  const delBtn=el('button',{type:'button',class:'danger'},'Delete this SKU');let armed=false;
+  delBtn.addEventListener('click',async()=>{if(!armed){armed=true;delBtn.textContent='Click again to delete for good';setTimeout(()=>{armed=false;delBtn.textContent='Delete this SKU'},4000);return}
+    try{dirty=false;await run('deleteSku',d.sku);showList()}catch(e){delBtn.textContent='Couldn’t delete'}});
+  app.replaceChildren(head,el('div',{class:'grid2'},el('div',{style:'display:grid;gap:20px;min-width:0'},details,tbl,photo),res),el('div',{class:'row'},delBtn));
+
+  let drawT=null;
+  function drawRows(){
+    const size=p=>{const v=parseFloat(String(p.l||'').replace(',','.'));return isFinite(v)?v:-1};
+    const order=d.pearls.map((p,i)=>i);
+    if(sortMode==='desc')order.sort((a,b)=>size(d.pearls[b])-size(d.pearls[a])||a-b);
+    else if(sortMode==='asc')order.sort((a,b)=>{const x=size(d.pearls[a]),y=size(d.pearls[b]);return (x<0)-(y<0)||x-y||a-b});
+    tb.replaceChildren(...order.map(i=>{const p=d.pearls[i];
+      const cell=(k,lab)=>{const inp=el('input',{id:'p'+i+k,class:'n',inputmode:'decimal',value:p[k]??'','aria-label':'Pearl '+(i+1)+' '+lab});
+        inp.addEventListener('input',()=>{p[k]=inp.value;update();scheduleSave()});return el('td',{},inp)};
+      const cb=el('input',{type:'checkbox',id:'p'+i+'drop','aria-label':'Pearl '+(i+1)+' is a drop',style:'width:20px;height:20px;cursor:pointer'});cb.checked=!!p.drop;
+      cb.addEventListener('change',()=>{p.drop=cb.checked;if(!p.drop){p.w='';p.h=''}drawRows();update();scheduleSave();if(p.drop){const w=document.getElementById('p'+i+'w');if(w)w.focus()}});
+      const blank=()=>el('td',{class:'out'},'');
+      const acts=el('td',{style:'white-space:nowrap'});
+      if(sortMode==='strand'){
+        const add=el('button',{type:'button',title:'Insert a new pearl after #'+(i+1),'aria-label':'Insert a pearl after #'+(i+1),style:'padding:3px 9px'},'+');
+        add.addEventListener('click',()=>{d.pearls.splice(i+1,0,{l:'',w:'',h:'',ct:''});drawRows();update();scheduleSave();const n=document.getElementById('p'+(i+1)+'l');if(n)n.focus()});
+        const rm=el('button',{type:'button',title:'Remove pearl #'+(i+1),'aria-label':'Remove pearl #'+(i+1),style:'padding:3px 9px;margin-left:4px'},'−');let armed=false;
+        rm.addEventListener('click',()=>{if(isBlank(p)||armed){d.pearls.splice(i,1);if(!d.pearls.length)d.pearls.push({l:'',w:'',h:'',ct:''});drawRows();update();scheduleSave();return}
+          armed=true;rm.textContent='Remove #'+(i+1)+'?';rm.classList.add('danger');setTimeout(()=>{armed=false;rm.textContent='−';rm.classList.remove('danger')},3000)});
+        acts.append(add,rm);
+      }
+      return el('tr',{},el('td',{class:'idx'},i+1),cell('l','size'),el('td',{style:'text-align:center'},cb),p.drop?cell('w','2nd size'):blank(),p.drop?cell('h','3rd size'):blank(),el('td',{class:'out',id:'oc'+i}),el('td',{class:'out',id:'oh'+i}),acts);
+    }));
+  }
+  function update(){
+    const r=calc(d);
+    r.pearls.forEach((p,i)=>{const a=document.getElementById('oc'+i),b=document.getElementById('oh'+i);if(a)a.textContent=f(p.c,3);if(b)b.textContent=f(p.chau,3)});
+    const L=(t,v,c)=>el('div',{class:'rl'+(c?' '+c:'')},el('span',{},t),el('b',{},v));
+    const flags=[];
+    if(r.certCount&&r.n&&r.n!==r.certCount)flags.push(['warn','Pearl count mismatch: '+r.n+' measured vs '+r.certCount+' on cert.']);
+    else if(r.certCount&&r.n===r.certCount)flags.push(['ok','Pearl count matches the cert.']);
+    if(d.clasp==='Y'&&!(parseFloat(d.deduction)>0))flags.push(['warn','Weight includes clasp/silk. Enter the deduction for Method B.']);
+    if(r.diffCt!=null&&r.bCt){const pc=r.diffCt/r.bCt;flags.push(Math.abs(pc)>0.1?['warn','Method A carat is '+f(pc*100,1)+'% off the cert weight. Recheck sizes, drop/baroque shapes or drill holes.']:['ok','Method A carat is within '+f(Math.abs(pc*100),1)+'% of the cert weight.'])}
+    res.replaceChildren(el('h2',{},'Results'),
+      el('div',{class:'sec'},el('div',{class:'eyebrow'},'Method A · by mm'),L('Pearls measured',r.n||'—'),L('Total carat',f(r.aCt,2)),L('Total chau',f(r.aChau,2),'big')),
+      el('div',{class:'sec'},el('div',{class:'eyebrow'},'Method B · estimated from weight'),
+        L('Pearls-only weight',r.wG!=null?f(r.wG,2)+' g / '+f(r.bCt,2)+' ct':(r.bCt!=null?f(r.bCt,2)+' ct':'—')),
+        L('Pearl count used',r.bN||'—'),L('Average carat',f(r.avg,3)),L('Chau per pearl',f(r.per,3)),L('Estimated strand chau',f(r.bChau,2),'big'),
+        el('div',{class:'hint'},'Runs low on graduated strands.')),
+      el('div',{class:'sec'},el('div',{class:'eyebrow'},'Comparison'),
+        L('Chau A − B',r.diffChau==null?'—':f(r.diffChau,2)+' ('+f(r.diffChau/r.bChau*100,1)+'%)'),
+        L('Carat A − cert',r.diffCt==null?'—':f(r.diffCt,2)+' ('+f(r.diffCt/r.bCt*100,1)+'%)')),
+      ...flags.map(([c,t])=>el('div',{class:'flag '+c},t)));
+    clearTimeout(drawT);drawT=setTimeout(()=>drawPhoto(cv,d),300);
+  }
+  drawRows();update();
+}
+
+/* ---------- listing photo ---------- */
+function sizeText(p){const L=num(p.l),W=num(p.w),H=num(p.h);if(!L)return num(p.ct)?'—':'';if(!p.drop)return L.toFixed(2);return [L,W||L,H||W||L].map(v=>v.toFixed(2)).join(' × ')}
+async function drawPhoto(cv,d){
+  try{await document.fonts.ready}catch(e){}
+  const x=cv.getContext('2d'),S=1600,M=100,r=calc(d);
+  const ink='#17212b',mute='#5c6b78',line='#d9e0e6',acc='#1f5f66';
+  x.textAlign='left';x.fillStyle='#ffffff';x.fillRect(0,0,S,S);
+  x.fillStyle=mute;x.font='600 26px "IBM Plex Sans", sans-serif';x.fillText('PEARL STRAND  ·  CHAU REPORT',M,150);
+  x.fillStyle=ink;x.font='600 72px "Newsreader", Georgia, serif';
+  let sku=d.sku||'';while(x.measureText(sku).width>S-2*M&&sku.length>4)sku=sku.slice(0,-2);x.fillText(sku,M,240);
+  x.fillStyle=line;x.fillRect(M,285,S-2*M,2);
+  const valid=(d.pearls||[]).map((p,i)=>({p,i,c:r.pearls[i]})).filter(o=>o.c&&o.c.c!=null);
+  const dia=valid.map(o=>num(o.p.l)).filter(Boolean);
+  const mn=Math.min(...dia),mx=Math.max(...dia);
+  const range=dia.length?(mn===mx?mn.toFixed(2):mn.toFixed(2)+' – '+mx.toFixed(2))+' mm':'—';
+  const stats=[['Pearls',r.n?String(r.n):'—'],['Size range',range],['Total carat',f(r.aCt,2)],['Total chau',f(r.aChau,2)]];
+  const cw=(S-2*M)/4;
+  stats.forEach(([k,v],j)=>{const sx=M+j*cw;
+    x.fillStyle=mute;x.font='500 24px "IBM Plex Sans", sans-serif';x.fillText(k.toUpperCase(),sx,350);
+    x.fillStyle=j===3?acc:ink;x.font=(j>=2?'500 54px':'500 40px')+' "IBM Plex Mono", monospace';
+    let t=v;while(x.measureText(t).width>cw-20&&t.length>3)t=t.slice(0,-1);x.fillText(t,sx,j>=2?420:412)});
+  x.fillStyle=line;x.fillRect(M,465,S-2*M,2);
+  const top=530,bottom=S-150,n=valid.length;
+  if(n){
+    const cols=n<=25?1:n<=60?2:n<=105?3:4, rows=Math.ceil(n/cols);
+    const lh=Math.min(38,(bottom-top-40)/rows), fs=Math.max(11,Math.min(24,lh*0.66)), colW=(S-2*M)/cols;
+    for(let c=0;c<cols;c++){
+      const cx=M+c*colW;
+      x.fillStyle=mute;x.font='600 '+Math.max(12,fs*0.8)+'px "IBM Plex Sans", sans-serif';
+      x.textAlign='left';x.fillText('#',cx,top);x.fillText('SIZE MM',cx+fs*2.2,top);
+      x.textAlign='right';x.fillText('CT',cx+colW-30-fs*5,top);x.fillText('CHAU',cx+colW-30,top);
+      for(let k=0;k<rows;k++){const o=valid[c*rows+k];if(!o)break;const y=top+40+k*lh;
+        x.font='400 '+fs+'px "IBM Plex Mono", monospace';
+        x.textAlign='left';x.fillStyle=mute;x.fillText(String(o.i+1),cx,y);
+        x.fillStyle=ink;x.fillText(sizeText(o.p),cx+fs*2.2,y);
+        x.textAlign='right';x.fillText(o.c.c.toFixed(3),cx+colW-30-fs*5,y);x.fillText(o.c.chau.toFixed(3),cx+colW-30,y)}
+      x.textAlign='left';
+    }
+  }else{x.fillStyle=mute;x.font='400 30px "IBM Plex Sans", sans-serif';x.fillText('Enter pearl sizes to fill this report.',M,top+20)}
+  x.fillStyle=line;x.fillRect(M,S-120,S-2*M,2);
+  x.fillStyle=mute;x.font='400 22px "IBM Plex Sans", sans-serif';x.fillText('Chau calculated per pearl from measured size',M,S-80);
+  x.textAlign='right';x.fillText(d.date?new Date(d.date+'T12:00:00').toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}):'',S-M,S-80);x.textAlign='left';
+}
+
+if(START_SKU) openSku(START_SKU); else showList();
+</script>
+</body>
+</html>

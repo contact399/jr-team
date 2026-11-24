@@ -8,7 +8,9 @@
     { id: 'tasks', label: 'Tasks', href: 'index.html' },
     { id: 'captions', label: 'Instagram', href: 'captions.html' },
     { id: 'auction', label: 'Auction', href: 'auction.html' },
-    { id: 'bins', label: 'Bins', href: 'bins.html' }
+    { id: 'bins', label: 'Bins', href: 'bins.html' },
+    { id: 'melt', label: 'Melt', href: 'melt.html' },
+    { id: 'pearl', label: 'Pearl Chau', href: 'pearl.html' }
   ];
   function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }
