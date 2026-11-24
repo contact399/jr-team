@@ -328,12 +328,28 @@ function clearForm() {
   updateGo();
 }
 
-let JOBS = [];
-function loadJobs() {
-  $('jobsList').innerHTML = '<p class="small">Loading…</p>';
+let JOBS = [], JR_SEEN = null, JR_POLL = null;
+function jrAskNotify() { try { if (window.Notification && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {} }
+function jrNotify(j) {
+  const title = 'Captions ready', body = (j.title || ('SKU ' + j.sku)) + (j.status === 'error' ? ': there was a problem' : '');
+  try {
+    if (!window.Notification || Notification.permission !== 'granted') return;
+    const opts = { body: body, icon: 'icon-192.png', badge: 'icon-192.png', tag: 'cap-' + j.jobId, data: { url: location.href } };
+    if (navigator.serviceWorker && navigator.serviceWorker.ready) navigator.serviceWorker.ready.then(r => r.showNotification(j.status === 'error' ? 'Caption problem' : title, opts)).catch(() => new Notification(title, opts));
+    else new Notification(title, opts);
+  } catch (e) {}
+}
+function loadJobs(quiet) {
+  if (!quiet) $('jobsList').innerHTML = '<p class="small">Loading…</p>';
   google.script.run
     .withSuccessHandler(list => {
       JOBS = list || [];
+      const seen = {}; JOBS.forEach(j => { seen[j.jobId || (j.sku + j.submitted)] = j.status; });
+      if (JR_SEEN) JOBS.forEach(j => { const k = j.jobId || (j.sku + j.submitted), was = JR_SEEN[k]; if (was && was !== j.status && (j.status === 'done' || j.status === 'error')) jrNotify(j); });
+      JR_SEEN = seen;
+      const busy = JOBS.some(j => j.status === 'pending' || j.status === 'processing');
+      if (busy && !JR_POLL) JR_POLL = setInterval(() => loadJobs(true), 20000);
+      if (!busy && JR_POLL) { clearInterval(JR_POLL); JR_POLL = null; }
       if (!JOBS.length) { $('jobsList').innerHTML = '<p class="small">Nothing sent yet.</p>'; return; }
       $('jobsList').innerHTML = JOBS.map((j, i) => {
         const label = j.status === 'done' ? 'Ready' : j.status === 'error' ? 'Problem' : j.status === 'processing' ? 'Claude writing…' : 'Waiting';
@@ -348,7 +364,8 @@ function loadJobs() {
     })
     .listJobs(TOKEN);
 }
-$('refreshBtn').onclick = loadJobs;
+$('refreshBtn').onclick = () => { jrAskNotify(); loadJobs(); };
+$('goBtn').addEventListener('click', jrAskNotify);
 
 function openJob(j) {
   if (j.status === 'done' && j.result) return render(j.result);
