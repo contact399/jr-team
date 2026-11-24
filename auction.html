@@ -236,6 +236,34 @@ td:first-child{font-family:var(--f-data);font-weight:600;white-space:nowrap}
 .howto b{color:var(--ink)}
 .stats{font-size:14px;color:var(--ink)}
 button.link{background:none;border:none;color:var(--accent);text-decoration:underline;padding:6px 4px;cursor:pointer;font:inherit}
+.nc-sub{font-size:15px;color:#4A5A52;margin-top:6px}
+.nc-pair{display:flex;gap:10px;align-items:flex-end}
+.nc-pair .field{flex:1;min-width:0}
+.nc-sw{font-size:24px;color:#4A5A52;padding-bottom:12px}
+.nc-big{font-size:24px!important;font-weight:700;min-height:58px}
+.nc-big.on{border:2px solid var(--accent)!important}
+.nc-vs{display:flex;justify-content:space-between;gap:10px;border-radius:10px;padding:10px 12px;font-weight:600;font-size:15px;margin-top:10px}
+.nc-vs.ok{background:#DFF0E5;color:#1D6B3F}.nc-vs.over{background:#F8E3D8;color:#8A3A16}
+.nc-why{display:flex;flex-direction:column;gap:8px;font-size:16px}
+.nc-why>div{display:flex;justify-content:space-between;gap:12px}
+.nc-why>div>span:first-child{color:#4A5A52}
+.nc-why>div>span:last-child{font-weight:600}
+.nc-why .t{border-top:1px solid var(--line);padding-top:8px}
+.nc-why .t>span:first-child{color:var(--ink)}
+.nc-why .b>span{font-weight:700!important;color:var(--accent)!important}
+.nc-why .m{background:var(--accent-soft);border-radius:8px;padding:8px 10px}
+.nc-lad table{width:100%;border-collapse:collapse;font-size:15px}
+.nc-lad th{text-align:left;font-size:13px;color:#4A5A52;padding:8px 6px;background:var(--sunk)}
+.nc-lad td{padding:6px;border-top:1px solid var(--line)}
+.nc-lad td:nth-child(n+2),.nc-lad th:nth-child(n+2){text-align:right}
+.nc-lad tr.mine{background:var(--accent-soft)}
+.nc-lad tr.sel td:first-child button{font-weight:800}
+.nc-lad .ok{color:#1D6B3F;font-weight:700}.nc-lad .ov{color:#8A3A16;font-weight:700}
+.nc-lad button.link{font-size:16px!important;min-height:36px;padding:0}
+.nc-save{width:100%;min-height:54px;font-size:17px!important;margin:4px 0 14px}
+.nc-quick summary{cursor:pointer;padding:4px 0;font-size:16px}
+.jr-look{display:block;text-align:center;font-size:14px;padding:10px;color:var(--accent)}
+
 </style>
 </head><body>
 <div class="wrap">
@@ -751,6 +779,82 @@ function vShortlist(a){
   ${L.length?`<div class="row"><button type="button" data-act="slcopy" data-id="${a.id}">Copy list to send to the house</button></div><div class="msgbox" id="sltext" hidden>${esc(shortlistText(a))}</div>`:""}
   </section>`;
 }
+/* ===== New look: lot calculator (hammer <-> all-in, why, next bids) ===== */
+function ncLots(){
+  let G=[];try{G=saleGroups(S.lots).filter(g=>!isArchived(g.auction))}catch(e){}
+  if(!G.length)G=[{title:"All lots",house:"",L:S.lots.slice()}];
+  return G;
+}
+function ncLot(){
+  const all=S.lots;if(!all.length)return null;
+  const n=S.nc||(S.nc={lotId:"",ham:"",allin:"",max:"",last:"ham"});
+  let l=all.find(x=>x.id===n.lotId);
+  if(!l){const G=ncLots();l=(G[0]&&G[0].L[0])||all[0];n.lotId=l.id;n.ham="";n.allin="";n.max="";n.last="ham"}
+  return l;
+}
+function ncFmt(v){return v==null||!isFinite(v)?"":Math.round(v).toLocaleString("en-US")}
+function vCalcNew(){
+  if(S.state==="loading")return `<div class="empty">Loading lots…</div>`;
+  const l=ncLot();
+  const quick=`<details class="panel nc-quick"><summary><b>Quick calculator (no lot) &amp; today's rates</b></summary>${vCalc()}</details>`;
+  if(!l)return `<div class="empty">No lots yet. Add a lot first, or use the quick calculator below.</div>`+quick;
+  const n=S.nc,f=lotFigures(l),c=f.cur,bp=bpOf(f.h),fx=fxOf(c);
+  const costs=num(S.settings.costs)||0,buf=num(S.settings.buffer)||0;
+  const maxSaved=num(dval(l,"maxUSD"))!=null?num(dval(l,"maxUSD")):calcTotal(calcVals(l));
+  const max=n.max!==""?num(n.max):maxSaved;
+  let H=null,A=null,back=null;
+  if(n.last==="allin"){A=num(n.allin);back=hammerFromUSD(A,c,bp);H=back?back.ham:null}
+  else{H=num(n.ham);if(H==null){const b=num(dval(l,"bid"));if(b!=null)H=b;else if(max!=null){const r=hammerFromUSD(max,c,bp);if(r)H=r.round}}A=landedFromHammer(H,c,bp)}
+  const hamBox=n.last==="ham"&&n.ham!==""?n.ham:ncFmt(H),allBox=n.last==="allin"&&n.allin!==""?n.allin:ncFmt(A);
+  const missing=!fx?`Set today's ${c}→USD rate in the quick calculator below.`:(bp==null?`Add ${f.h?esc(f.h.name):"the house"}'s buyer's premium on the Appts tab.`:"");
+  const est=l.estLow||l.estHigh?money(num(l.estLow),c)+"–"+money(num(l.estHigh),c).replace(/^\D+/,""):"";
+  const cur=num(dval(l,"curBid")),myBid=num(dval(l,"bid"));
+  const G=ncLots();
+  let out=`<section class="panel nc-lot"><label class="field full"><span>Lot</span><select id="nc-lot" data-act="nclot">${G.map(g=>`<optgroup label="${esc((g.house?g.house+" · ":"")+(g.title||""))}">${g.L.map(x=>`<option value="${x.id}"${x.id===l.id?" selected":""}>${esc("Lot "+(x.lotNo||"—")+" · "+(x.desc||"Untitled").slice(0,48))}</option>`).join("")}</optgroup>`).join("")}</select></label>
+   <div class="nc-sub">${esc([f.h?f.h.name:"",est&&"Est. "+est,l.weight?l.weight+" "+f.unit:"",cur!=null?"Current "+money(cur,c):""].filter(Boolean).join(" · "))}</div></section>`;
+  if(missing)return out+`<div class="flag">${missing}</div>`+quick;
+  out+=`<section class="panel"><div class="eyebrow">Type either one · the other updates</div>
+   <div class="nc-pair">
+    <label class="field"><span>Hammer (${c})</span><input id="nc-ham" class="num nc-big${n.last==="ham"?" on":""}" inputmode="decimal" data-act="nc" data-k="ham" value="${esc(hamBox)}" placeholder="e.g. 18000"></label>
+    <span class="nc-sw" aria-hidden="true">⇄</span>
+    <label class="field"><span>All-in (USD)</span><input id="nc-allin" class="num nc-big${n.last==="allin"?" on":""}" inputmode="decimal" data-act="nc" data-k="allin" value="${esc(allBox)}" placeholder="e.g. 25000"></label>
+   </div>
+   <label class="field"><span>My max all-in (USD)${maxSaved!=null&&n.max===""?" · from lot":""}</span><input id="nc-max" class="num" inputmode="decimal" data-act="nc" data-k="max" value="${esc(n.max!==""?n.max:ncFmt(maxSaved))}" placeholder="what it's worth to you, all-in"></label>
+   ${A!=null&&max!=null?`<div class="nc-vs ${A<=max?"ok":"over"}"><span>My max ${money(max,"USD")}</span><span>${A<=max?money(max-A,"USD")+" to spare":money(A-max,"USD")+" over"}</span></div>`:""}
+  </section>`;
+  if(H!=null&&A!=null){
+    const prem=H*bp/100,inv=H+prem,usd=inv*fx*(1+buf/100),ship=usd*costs/100;
+    out+=`<section class="panel"><div class="eyebrow">Why ${money(A,"USD")}</div><div class="nc-why">
+     <div><span>Hammer</span><span>${money(H,c)}</span></div>
+     <div><span>+ ${bp}% ${f.h?esc(f.h.name)+" ":""}premium</span><span>${money(prem,c)}</span></div>
+     <div class="t"><span>Invoice from the house</span><span>${money(inv,c)}</span></div>
+     <div><span>× rate ${fx}${buf?" + "+buf+"% buffer":""}</span><span>${money(usd,"USD")}</span></div>
+     <div><span>+ ${costs}% shipping, insurance, duty</span><span>${money(ship,"USD")}</span></div>
+     <div class="t b"><span>All-in in New York</span><span>${money(A,"USD")}</span></div>
+     ${back?`<div class="m"><span>Bid step here is ${money(back.inc,c)}: bid up to</span><span>${money(back.round,c)}</span></div>`:""}
+    </div></section>`;
+  }
+  // next-bid ladder
+  let start=cur!=null?cur:(num(l.estLow)!=null?num(l.estLow):(H!=null?H:null));
+  if(start!=null){
+    const rows=[];let b=start,over=0;
+    for(let i=0;i<24&&over<2;i++){const a=landedFromHammer(b,c,bp);rows.push([b,b*(1+bp/100),a]);if(max!=null&&a>max)over++;else if(max==null&&i>=9)break;b+=increment(b)}
+    out+=`<section class="panel nc-lad"><div class="eyebrow">Next bids${cur!=null?" from current "+money(cur,c):" from low estimate"}</div>
+     <div class="tablewrap"><table><thead><tr><th>Bid</th><th>+ prem.</th><th>All-in</th><th>Max</th></tr></thead><tbody>
+     ${rows.map(([bb,wp,a])=>`<tr class="${myBid!=null&&Math.round(bb)===Math.round(myBid)?"mine":""}${H!=null&&Math.round(bb)===Math.round(H)?" sel":""}"><td><button type="button" class="link" data-act="ncrow" data-v="${bb}">${money(bb,c)}</button>${cur!=null&&bb===cur?' <small>current</small>':""}${myBid!=null&&Math.round(bb)===Math.round(myBid)?' <small>my max</small>':""}</td><td>${money(wp,c)}</td><td><b>${money(a,"USD")}</b></td><td>${max==null?"":a<=max?'<span class="ok">✓</span>':'<span class="ov">over</span>'}</td></tr>`).join("")}
+     </tbody></table></div><div class="small muted">Tap a bid to load it above. Steps follow the usual ladder; check the house's own increments.</div></section>`;
+  }
+  const saveBid=back?back.round:(H!=null?Math.floor(H/increment(H))*increment(H):null);
+  if(saveBid!=null)out+=`<button type="button" class="primary nc-save" data-act="ncsave" data-id="${l.id}" data-v="${saveBid}">Save ${money(saveBid,c)} as my max bid for Lot ${esc(l.lotNo||"")}</button>`;
+  return out+quick;
+}
+document.addEventListener("input",e=>{const t=e.target;if(t.dataset.act!=="nc")return;const n=S.nc;n[t.dataset.k]=t.value;if(t.dataset.k!=="max")n.last=t.dataset.k;clearTimeout(S.nct);S.nct=setTimeout(render,400)});
+document.addEventListener("change",e=>{const t=e.target;if(t.dataset.act!=="nclot")return;S.nc={lotId:t.value,ham:"",allin:"",max:"",last:"ham"};render()});
+document.addEventListener("click",e=>{const b=e.target.closest("button[data-act]");if(!b)return;
+  if(b.dataset.act==="ncrow"){S.nc.ham=String(Math.round(num(b.dataset.v)));S.nc.last="ham";render();window.scrollTo({top:0,behavior:"smooth"})}
+  else if(b.dataset.act==="ncsave"){const l=S.lots.find(x=>x.id===b.dataset.id);if(!l)return;l.bid=String(Math.round(num(b.dataset.v)));const m=S.nc.max!==""?num(S.nc.max):null;if(m!=null)l.maxUSD=String(m);if(S.draft)delete S.draft[l.id];store.saveLot(l,true);toast(note("Max bid saved for Lot "+(l.lotNo||"")));render()}
+});
+
 function vCalc(){
   const st=S.settings,c=S.calc||(S.calc={cur:"EUR",bp:"",maxUSD:"",hammer:"",houseId:""});
   const h=S.houses.find(x=>x.id===c.houseId),bp=c.bp!==""?num(c.bp):bpOf(h);
@@ -854,7 +958,7 @@ function vGuide(){
 }
 
 function render(){
-  const tabs={upload:vUpload,appointments:vAppointments,auctions:vAuctions,lots:vLots,archive:vArchive,cal:vCalendar,calc:vCalc,guide:vGuide};
+  const tabs={upload:vUpload,appointments:vAppointments,auctions:vAuctions,lots:vLots,archive:vArchive,cal:vCalendar,calc:vCalcNew,guide:vGuide};
   document.querySelectorAll("nav a").forEach(a=>a.setAttribute("aria-current",a.dataset.tab===S.tab?"page":"false"));
   if(!S.pin){$("#main").innerHTML=vPin();return}
   const pend=S.pending||0;
