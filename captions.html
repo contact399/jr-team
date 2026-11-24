@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script>window.JR_MOD="captions";</script><script src="jr.js"></script>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#24508f"><link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<meta charset="utf-8">
+<style>
+  :root { --ink:#1b1b1b; --muted:#6b6b6b; --line:#e4e0d8; --gold:#a8843c; --bg:#faf8f4; --warn:#fff4e0; --bad:#fde8e8; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--ink); }
+  header { padding:18px 20px 10px; text-align:center; }
+  header h1 { margin:0; font-family:Georgia,serif; font-weight:400; letter-spacing:.08em; font-size:20px; }
+  header p { margin:4px 0 0; color:var(--muted); font-size:13px; }
+  main { max-width:640px; margin:0 auto; padding:10px 16px 60px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:14px; padding:18px; margin-bottom:16px; }
+  label { display:block; font-size:13px; color:var(--muted); margin:14px 0 6px; }
+  input[type=text], input[type=password], textarea, select { width:100%; font-size:17px; padding:12px; border:1px solid var(--line); border-radius:10px; background:#fff; }
+  textarea { font-size:15px; min-height:60px; }
+  .drop { border:2px dashed var(--line); border-radius:12px; padding:22px; text-align:center; color:var(--muted); cursor:pointer; }
+  .drop.has { border-color:var(--gold); color:var(--ink); }
+  .thumbs { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
+  .thumbs img { width:60px; height:80px; object-fit:cover; border-radius:6px; border:1px solid var(--line); }
+  .chips { display:flex; gap:8px; flex-wrap:wrap; }
+  .chip { padding:9px 14px; border:1px solid var(--line); border-radius:20px; font-size:14px; cursor:pointer; background:#fff; user-select:none; }
+  .chip.on { background:var(--ink); color:#fff; border-color:var(--ink); }
+  button.main { width:100%; margin-top:18px; padding:15px; font-size:17px; border:0; border-radius:12px; background:var(--ink); color:#fff; cursor:pointer; }
+  button.main:disabled { opacity:.45; }
+  .status { text-align:center; color:var(--muted); font-size:14px; margin-top:12px; min-height:20px; }
+  .err { background:var(--bad); color:#8a1f1f; padding:12px; border-radius:10px; font-size:14px; margin-top:12px; }
+  h2 { font-family:Georgia,serif; font-weight:400; font-size:18px; margin:0 0 10px; letter-spacing:.04em; }
+  h3 { font-size:12px; letter-spacing:.12em; color:var(--gold); margin:16px 0 6px; text-transform:uppercase; }
+  .warn { background:var(--warn); border-radius:10px; padding:10px 14px; font-size:14px; }
+  .warn li { margin:4px 0; }
+  .job { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:12px 0; border-top:1px solid var(--line); cursor:pointer; }
+  .job:first-of-type { border-top:0; }
+  .job b { font-weight:600; }
+  .pill { font-size:12px; padding:4px 10px; border-radius:12px; white-space:nowrap; }
+  .pill.pending { background:#f1efe9; color:var(--muted); }
+  .pill.done { background:#e5f3e8; color:#1e6b34; }
+  .pill.error { background:var(--bad); color:#8a1f1f; }
+  .copybox { position:relative; background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:14px 14px 46px; white-space:pre-wrap; font-size:15px; line-height:1.45; }
+  .copybtn { position:absolute; right:10px; bottom:10px; padding:7px 14px; font-size:13px; border-radius:8px; border:1px solid var(--ink); background:#fff; cursor:pointer; }
+  .copybtn.done { background:var(--ink); color:#fff; }
+  .small { font-size:13px; color:var(--muted); }
+  .hidden { display:none; }
+  .row { display:flex; gap:10px; }
+  .row button { flex:1; }
+  button.ghost { padding:12px; font-size:15px; border-radius:10px; border:1px solid var(--line); background:#fff; cursor:pointer; }
+</style>
+</head>
+<body>
+<header>
+  <h1>JUPITER RAIN</h1>
+  <p>Instagram Caption Studio</p>
+</header>
+<main>
+
+  <!-- LOADING -->
+  <section id="loadView" class="card"><p class="status">Loading…</p></section>
+
+  <!-- ONE-TIME SETUP (Karan) -->
+  <section id="setupView" class="card hidden">
+    <h2>One-time setup</h2>
+    <p class="small">For Karan only. Choose Leo's PIN. This screen disappears once it's saved.</p>
+    <label for="newPin">Leo's PIN (4–8 digits)</label>
+    <input id="newPin" type="password" inputmode="numeric" autocomplete="off">
+    <label for="newPin2">Type the PIN again</label>
+    <input id="newPin2" type="password" inputmode="numeric" autocomplete="off">
+    <button class="main" id="setupBtn">Save and finish setup</button>
+    <div id="setupErr" class="err hidden"></div>
+  </section>
+
+  <!-- PIN -->
+  <section id="pinView" class="card hidden">
+    <label for="pin">Enter your PIN</label>
+    <input id="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="••••••">
+    <button class="main" id="pinBtn">Unlock</button>
+    <div id="pinErr" class="err hidden"></div>
+  </section>
+
+  <!-- FORM -->
+  <section id="formView" class="card hidden">
+    <label for="sku">SKU (optional)</label>
+    <input id="sku" type="text" inputmode="numeric" autocomplete="off" placeholder="e.g. 1697431">
+
+    <label>Video or photos</label>
+    <div id="drop" class="drop">Tap to choose a video or photos</div>
+    <input id="file" type="file" accept="video/*,image/*" multiple class="hidden">
+    <div id="thumbs" class="thumbs"></div>
+
+    <label>Format</label>
+    <div class="chips" id="formatChips">
+      <span class="chip on" data-v="All">All</span>
+      <span class="chip" data-v="WhatsApp">WhatsApp</span>
+      <span class="chip" data-v="Post">Post</span>
+      <span class="chip" data-v="Reel">Reel</span>
+      <span class="chip" data-v="Story">Story</span>
+    </div>
+
+    <label>Notes (optional)</label>
+    <div class="chips" id="noteChips">
+      <span class="chip" data-v="new arrival">New arrival</span>
+      <span class="chip" data-v="sold">Sold</span>
+      <span class="chip" data-v="show piece">Show piece</span>
+      <span class="chip" data-v="price on request">Price on request</span>
+    </div>
+    <textarea id="notes" placeholder="No SKU? Describe the piece here (metal, stones, era). Otherwise anything extra, e.g. 'pink stones are rubies'"></textarea>
+
+    <button class="main" id="goBtn" disabled>Send for captions</button>
+    <div id="status" class="status"></div>
+    <div id="formErr" class="err hidden"></div>
+  </section>
+
+  <!-- MY CAPTIONS -->
+  <section id="jobsView" class="card hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">My captions</h2><button class="ghost" id="refreshBtn">Refresh</button></div>
+    <p class="small">Captions are written within the hour. Tap a ready item to open it.</p>
+    <div id="jobsList"></div>
+  </section>
+
+  <!-- RESULT -->
+  <section id="resultView" class="hidden"></section>
+
+</main>
+
+<script>
+let TOKEN = (window.JR&&JR.token()) || null;
+let FRAMES = [];
+const $ = id => document.getElementById(id);
+
+/* ---------- Start: setup or PIN ---------- */
+function showForm() { $('pinView').classList.add('hidden'); $('formView').classList.remove('hidden'); $('jobsView').classList.remove('hidden'); loadJobs(); }
+function showPin() { $('loadView').classList.add('hidden'); $('setupView').classList.add('hidden'); $('pinView').classList.remove('hidden'); }
+google.script.run
+  .withSuccessHandler(s => {
+    if (s.needsSetup) { $('loadView').classList.add('hidden'); $('setupView').classList.remove('hidden'); return; }
+    $('loadView').classList.add('hidden');
+    if (TOKEN) showForm(); else showPin();
+  })
+  .withFailureHandler(err => { $('loadView').innerHTML = '<div class="err">' + err.message + '</div>'; })
+  .setupStatus();
+
+$('setupBtn').onclick = () => {
+  $('setupErr').classList.add('hidden');
+  if ($('newPin').value.trim() !== $('newPin2').value.trim()) return showErr('setupErr', 'The two PINs don\'t match.');
+  $('setupBtn').disabled = true; $('setupBtn').textContent = 'Saving…';
+  google.script.run
+    .withSuccessHandler(() => {
+      $('newPin').value = ''; $('newPin2').value = '';
+      $('setupView').innerHTML = '<h2>Setup complete</h2><p>Send Leo this link and his PIN. He can add it to his home screen from the Share menu.</p>';
+      setTimeout(showPin, 4000);
+    })
+    .withFailureHandler(err => { $('setupBtn').disabled = false; $('setupBtn').textContent = 'Save and finish setup'; showErr('setupErr', err.message); })
+    .saveSetup($('newPin').value);
+};
+
+/* ---------- PIN ---------- */
+
+$('pinBtn').onclick = doUnlock;
+$('pin').addEventListener('keydown', e => { if (e.key === 'Enter') doUnlock(); });
+function doUnlock() {
+  $('pinErr').classList.add('hidden');
+  $('pinBtn').disabled = true;
+  google.script.run
+    .withSuccessHandler(t => { TOKEN = t; sessionStorage.setItem('jr_token', t); $('pinBtn').disabled = false; showForm(); })
+    .withFailureHandler(err => { $('pinBtn').disabled = false; showErr('pinErr', err.message); })
+    .unlock($('pin').value);
+}
+function lockAgain(msg) {
+  TOKEN = null; sessionStorage.removeItem('jr_token');
+  $('formView').classList.add('hidden'); $('resultView').classList.add('hidden'); $('jobsView').classList.add('hidden');
+  $('pinView').classList.remove('hidden'); $('pin').value = '';
+  if (msg) showErr('pinErr', msg);
+}
+
+/* ---------- Chips ---------- */
+document.querySelectorAll('#formatChips .chip').forEach(c => c.onclick = () => {
+  document.querySelectorAll('#formatChips .chip').forEach(x => x.classList.remove('on')); c.classList.add('on');
+});
+document.querySelectorAll('#noteChips .chip').forEach(c => c.onclick = () => { c.classList.toggle('on'); updateGo(); });
+
+/* ---------- File → still frames (done on the phone, video never leaves it) ---------- */
+$('drop').onclick = () => $('file').click();
+$('file').onchange = async e => {
+  const files = [...e.target.files];
+  if (!files.length) return;
+  FRAMES = []; $('thumbs').innerHTML = ''; updateGo();
+  $('drop').textContent = 'Reading…'; $('drop').classList.remove('has');
+  try {
+    for (const f of files) {
+      if (f.type.startsWith('video/') || /\.(mov|mp4|m4v)$/i.test(f.name)) {
+        FRAMES.push(...await videoFrames(f, 6));
+      } else {
+        FRAMES.push(await imageFrame(f));
+      }
+      if (FRAMES.length >= 8) break;
+    }
+    FRAMES = FRAMES.slice(0, 8);
+    FRAMES.forEach(b64 => { const i = new Image(); i.src = 'data:image/jpeg;base64,' + b64; $('thumbs').appendChild(i); });
+    $('drop').textContent = files.length === 1 ? files[0].name : files.length + ' files'; $('drop').classList.add('has');
+  } catch (err) {
+    $('drop').textContent = 'Tap to choose a video or photos';
+    showErr('formErr', err.message);
+  }
+  updateGo();
+};
+
+const canvas = document.createElement('canvas');
+function grab(src, w, h) {
+  const s = Math.min(1, 1024 / Math.max(w, h));
+  canvas.width = Math.round(w * s); canvas.height = Math.round(h * s);
+  canvas.getContext('2d').drawImage(src, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL('image/jpeg', 0.82).split(',')[1];
+}
+function imageFrame(file) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file); const img = new Image();
+    img.onload = () => { res(grab(img, img.naturalWidth, img.naturalHeight)); URL.revokeObjectURL(url); };
+    img.onerror = () => rej(new Error('Could not read ' + file.name + '. Try a JPG or PNG.'));
+    img.src = url;
+  });
+}
+async function videoFrames(file, n) {
+  const url = URL.createObjectURL(file);
+  const v = document.createElement('video');
+  v.muted = true; v.playsInline = true; v.preload = 'auto'; v.src = url;
+  await new Promise((res, rej) => {
+    v.onloadeddata = res;
+    v.onerror = () => rej(new Error('This video can\'t be read in this browser. Try on the iPhone, or send a few photos instead.'));
+    v.load();
+  });
+  try { await v.play(); v.pause(); } catch (e) { /* some browsers block play; seeking still works */ }
+  const usable = v.duration * 0.88; // skip the last ~12% (editing-app end cards)
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const t = usable * (i + 0.5) / n;
+    await new Promise(r => { v.onseeked = r; v.currentTime = t; });
+    out.push(grab(v, v.videoWidth, v.videoHeight));
+  }
+  URL.revokeObjectURL(url);
+  return out;
+}
+
+/* ---------- Generate ---------- */
+$('sku').addEventListener('input', updateGo); $('notes').addEventListener('input', updateGo);
+function updateGo() { $('goBtn').disabled = !(FRAMES.length && ($('sku').value.trim() || $('notes').value.trim() || document.querySelector('#noteChips .chip.on'))); }
+
+$('goBtn').onclick = () => {
+  $('formErr').classList.add('hidden');
+  $('goBtn').disabled = true;
+  $('status').textContent = 'Checking the SKU and sending…';
+  const format = document.querySelector('#formatChips .chip.on').dataset.v;
+  const notes = [...document.querySelectorAll('#noteChips .chip.on')].map(c => c.dataset.v)
+    .concat($('notes').value.trim() ? [$('notes').value.trim()] : []).join('; ');
+  google.script.run
+    .withSuccessHandler(r => {
+      updateGo();
+      if (r.notFound) { $('status').textContent = ''; return showErr('formErr', 'SKU ' + r.sku + ' isn\'t in the catalog. Check the number, or ask Karan to refresh the catalog.'); }
+      $('status').textContent = 'Sent: ' + (r.title || r.jobId) + '. Captions will be ready within the hour.';
+      clearForm(); loadJobs();
+    })
+    .withFailureHandler(err => {
+      $('status').textContent = ''; updateGo();
+      if (/SESSION_EXPIRED/.test(err.message)) return lockAgain('Your session ended. Enter your PIN again.');
+      showErr('formErr', err.message);
+    })
+    .submit(TOKEN, $('sku').value.trim(), FRAMES, format, notes);
+};
+
+/* ---------- Render ---------- */
+function esc(s) { return String(s || '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c])); }
+function box(text) { return '<div class="copybox">' + esc(text) + '<button class="copybtn">Copy</button></div>'; }
+
+function render(r) {
+  const v = $('resultView');
+  let h = '';
+  if (r._msg) {
+    h = '<div class="card"><h2>' + esc(r.title) + '</h2><p>' + esc(r.msg) + '</p></div>';
+  } else if (r.notFound) {
+    h = '<div class="card"><h2>SKU ' + esc(r.sku) + ' not found</h2><p>It isn\'t in the catalog. Check the number, or ask Karan to refresh the catalog.</p></div>';
+  } else if (r.stop) {
+    h = '<div class="card"><h2>Stopped: video doesn\'t match</h2><div class="warn">' + esc(r.stop_reason) + '</div>' +
+        '<p class="small">' + esc(r.item_summary) + '</p><p>Check the SKU, or send this to Karan before posting.</p></div>';
+  } else {
+    h += '<div class="card"><h2>Item found</h2><p>' + esc(r.item_summary) + '</p>';
+    if (r.photo_highlights) h += '<p class="small"><b>Footage shows best:</b> ' + esc(r.photo_highlights) + '</p>';
+    if (r.catalogUpdated) h += '<p class="small">Catalog last updated ' + esc(r.catalogUpdated) + '</p>';
+    if (r.warnings && r.warnings.length) h += '<h3>Check before posting</h3><ul class="warn">' + r.warnings.map(w => '<li>' + esc(w) + '</li>').join('') + '</ul>';
+    h += '</div>';
+
+    if (r.whatsapp) h += '<div class="card"><h2>WhatsApp broadcast</h2>' + box(r.whatsapp.message) +
+      '<h3>Alternate opening</h3>' + box(r.whatsapp.alt_opening) + '</div>';
+
+    if (r.post) h += '<div class="card"><h2>Post</h2>' + box(r.post.caption) +
+      '<h3>Alternate hook</h3>' + box(r.post.alt_hook) + '</div>';
+
+    if (r.reel) h += '<div class="card"><h2>Reel</h2>' +
+      '<h3>On-screen hook</h3>' + box(r.reel.on_screen_hook) +
+      '<h3>Text overlays</h3>' + box((r.reel.overlay_beats || []).map((b, i) => (i + 1) + '. ' + b).join('\n')) +
+      '<h3>Caption</h3>' + box(r.reel.caption) +
+      '<p class="small"><b>Audio mood:</b> ' + esc(r.reel.audio_mood) + '</p>' +
+      '<h3>Alternate hook</h3>' + box(r.reel.alt_hook) + '</div>';
+
+    if (r.story) h += '<div class="card"><h2>Story</h2>' +
+      (r.story.slides || []).map((s, i) => '<h3>Slide ' + (i + 1) + '</h3>' + box(s)).join('') +
+      '<p class="small"><b>Stickers:</b> ' + esc((r.story.stickers || []).join(' · ')) + '</p>' +
+      '<h3>Alternate opener</h3>' + box(r.story.alt_hook) + '</div>';
+  }
+  h += '<div class="row"><button class="ghost" id="backBtn">Back to my captions</button></div>';
+  v.innerHTML = h; v.classList.remove('hidden');
+  $('formView').classList.add('hidden'); $('jobsView').classList.add('hidden');
+  v.querySelectorAll('.copybtn').forEach(b => b.onclick = () => copy(b));
+  $('backBtn').onclick = () => {
+    v.classList.add('hidden'); $('formView').classList.remove('hidden'); $('jobsView').classList.remove('hidden');
+    loadJobs(); window.scrollTo(0, 0);
+  };
+  window.scrollTo(0, 0);
+}
+
+function clearForm() {
+  $('sku').value = ''; $('notes').value = ''; FRAMES = []; $('thumbs').innerHTML = '';
+  $('file').value = ''; $('drop').textContent = 'Tap to choose a video or photos'; $('drop').classList.remove('has');
+  document.querySelectorAll('#noteChips .chip').forEach(c => c.classList.remove('on'));
+  updateGo();
+}
+
+let JOBS = [];
+function loadJobs() {
+  $('jobsList').innerHTML = '<p class="small">Loading…</p>';
+  google.script.run
+    .withSuccessHandler(list => {
+      JOBS = list || [];
+      if (!JOBS.length) { $('jobsList').innerHTML = '<p class="small">Nothing sent yet.</p>'; return; }
+      $('jobsList').innerHTML = JOBS.map((j, i) => {
+        const label = j.status === 'done' ? 'Ready' : j.status === 'error' ? 'Problem' : 'Waiting';
+        const cls = j.status === 'done' ? 'done' : j.status === 'error' ? 'error' : 'pending';
+        return '<div class="job" data-i="' + i + '"><div><b>' + esc(j.title || ('SKU ' + j.sku)) + '</b><br><span class="small">' + (j.sku ? 'SKU ' + esc(j.sku) : 'No SKU') + ' · ' + esc(j.submitted) + '</span></div><span class="pill ' + cls + '">' + label + '</span></div>';
+      }).join('');
+      $('jobsList').querySelectorAll('.job').forEach(el => el.onclick = () => openJob(JOBS[Number(el.dataset.i)]));
+    })
+    .withFailureHandler(err => {
+      if (/SESSION_EXPIRED/.test(err.message)) return lockAgain('Your session ended. Enter your PIN again.');
+      $('jobsList').innerHTML = '<div class="err">' + esc(err.message) + '</div>';
+    })
+    .listJobs(TOKEN);
+}
+$('refreshBtn').onclick = loadJobs;
+
+function openJob(j) {
+  if (j.status === 'done' && j.result) return render(j.result);
+  if (j.status === 'error') return alertBox('Problem with SKU ' + j.sku, j.error || 'Something went wrong. Ask Karan.');
+  alertBox('Still waiting', 'SKU ' + j.sku + ' is in the queue. Captions are written within the hour. Tap Refresh to check.');
+}
+function alertBox(title, msg) { render({ _msg: true, title: title, msg: msg }); }
+
+function copy(btn) {
+  const text = btn.parentElement.firstChild.textContent;
+  const done = () => { btn.textContent = 'Copied'; btn.classList.add('done'); setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('done'); }, 1500); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
+  } else fallbackCopy(text, done);
+}
+function fallbackCopy(text, done) {
+  const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t);
+  t.select(); try { document.execCommand('copy'); done(); } catch (e) {} document.body.removeChild(t);
+}
+function showErr(id, msg) { const e = $(id); e.textContent = msg; e.classList.remove('hidden'); }
+</script>
+</body>
+</html>

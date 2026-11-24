@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script>window.JR_MOD="bins";</script><script src="jr.js"></script>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#24508f"><link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<meta charset="utf-8">
+<script defer src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+  :root{--ink:#111827;--mute:#6b7280;--line:#e5e7eb;--bg:#f6f5f2;--card:#fff;--gold:#a16207;
+        --green:#15803d;--green-bg:#dcfce7;--red:#b91c1c;--red-bg:#fee2e2;--amber:#b45309;--amber-bg:#fef3c7;--blue:#1d4ed8;--blue-bg:#dbeafe}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;font:17px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg)}
+  header{position:sticky;top:0;z-index:5;background:var(--ink);color:#fff;padding:10px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .brand{font-weight:700;letter-spacing:.04em}
+  .toggle{display:flex;background:#374151;border-radius:999px;padding:3px;margin-left:auto}
+  .toggle a{color:#d1d5db;text-decoration:none;padding:7px 14px;border-radius:999px;font-size:15px;font-weight:600}
+  .toggle a.on{background:#fff;color:var(--ink)}
+  #who{width:100%;font-size:13px;color:#9ca3af}
+  main{padding:14px;max-width:640px;margin:0 auto;padding-bottom:80px}
+  h2{font-size:22px;margin:4px 0 12px}
+  h3{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin:18px 0 8px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:58px;border:0;border-radius:14px;
+       font:600 18px/1.2 inherit;font-family:inherit;padding:12px;background:var(--card);color:var(--ink);box-shadow:0 1px 0 var(--line),0 0 0 1px var(--line) inset;cursor:pointer}
+  .btn.big{min-height:84px;flex-direction:column;font-size:17px}
+  .btn.big .ic{font-size:28px}
+  .btn.primary{background:var(--ink);color:#fff;box-shadow:none}
+  .btn.green{background:var(--green);color:#fff;box-shadow:none}
+  .btn.red{background:var(--red);color:#fff;box-shadow:none}
+  .btn.ghost{background:transparent;box-shadow:none;color:var(--mute);min-height:44px}
+  .btn.small{min-height:44px;font-size:15px;width:auto;padding:8px 14px}
+  .btn:disabled{opacity:.5}
+  .row{display:flex;gap:8px;align-items:center}
+  .scan{display:flex;gap:8px;margin-bottom:12px}
+  .scan input{flex:1;min-width:0;font-size:22px;padding:14px;border-radius:14px;border:2px solid var(--ink);text-transform:uppercase;font-weight:600}
+  .scan .btn{width:72px;font-size:26px}
+  input,select,textarea{font:inherit;width:100%;padding:13px;border:1px solid #d1d5db;border-radius:12px;background:#fff}
+  label{display:block;font-weight:600;margin:14px 0 6px}
+  .choices{display:flex;flex-wrap:wrap;gap:8px}
+  .choice{flex:1 1 calc(50% - 8px);min-height:54px;border-radius:12px;border:2px solid var(--line);background:#fff;font:600 16px inherit;font-family:inherit;padding:8px;cursor:pointer}
+  .choice.sel{border-color:var(--ink);background:var(--ink);color:#fff}
+  .card{background:var(--card);border-radius:16px;padding:12px;box-shadow:0 0 0 1px var(--line) inset;margin-bottom:10px;display:flex;gap:12px}
+  .card .ph{width:84px;height:84px;border-radius:10px;background:#f3f4f6;object-fit:cover;flex:none}
+  .card.lg{flex-direction:column}
+  .card.lg .ph{width:100%;height:auto;max-height:340px;aspect-ratio:1/1}
+  .card .sku{font-weight:700;font-size:18px}
+  .card .meta{font-size:14px;color:var(--mute)}
+  .card .acts{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+  .pill{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:#f3f4f6;margin-right:4px}
+  .t1{background:#fde68a;color:#78350f}.t2{background:#e5e7eb}.t3{background:#f3f4f6;color:var(--mute)}
+  .st-In{background:var(--green-bg);color:var(--green)}.st-With{background:var(--blue-bg);color:var(--blue)}
+  .st-Checked{background:var(--amber-bg);color:var(--amber)}.st-On{background:#ede9fe;color:#5b21b6}
+  .st-Returned{background:var(--red-bg);color:var(--red)}.st-Sold{background:#e5e7eb;color:var(--mute)}
+  .alert{border-radius:16px;padding:12px;margin-bottom:12px}
+  .alert.red{background:var(--red-bg);box-shadow:0 0 0 2px var(--red) inset}
+  .alert.amber{background:var(--amber-bg)}
+  .alert.blue{background:var(--blue-bg)}
+  .alert .card{box-shadow:none}
+  .msg{padding:14px;border-radius:14px;margin:12px 0;font-weight:600}
+  .msg.ok{background:var(--green-bg);color:var(--green)}.msg.bad{background:var(--red-bg);color:var(--red)}.msg.info{background:var(--blue-bg);color:var(--blue)}
+  #flash{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .35s;z-index:50}
+  #flash.g{background:rgba(21,128,61,.35);opacity:1;transition:none}#flash.r{background:rgba(185,28,28,.4);opacity:1;transition:none}
+  #toast{position:fixed;left:12px;right:12px;bottom:16px;z-index:60;padding:16px;border-radius:14px;font-weight:600;color:#fff;display:none;text-align:center}
+  #toast.g{background:var(--green);display:block}#toast.r{background:var(--red);display:block}#toast.i{background:var(--ink);display:block}
+  #cam{position:fixed;inset:0;background:#000;z-index:40;display:flex;flex-direction:column;padding:12px;gap:10px}
+  #cam #reader{flex:1;width:100%}
+  #cam .note{color:#fff;text-align:center}
+  .hidden{display:none!important}
+  .hist{font-size:14px;border-left:3px solid var(--line);padding:2px 0 10px 12px;margin-left:4px}
+  .hist b{font-size:15px}
+  .count-item{display:flex;gap:10px;align-items:center;padding:10px;border-bottom:1px solid var(--line);background:#fff}
+  .count-item .mark{font-size:22px;width:28px;text-align:center}
+  .count-item.ok{background:var(--green-bg)}
+  .bar{height:12px;background:var(--line);border-radius:999px;overflow:hidden;margin:6px 0 12px}
+  .bar div{height:100%;background:var(--green);transition:width .3s}
+  .photo-prev{width:100%;max-height:300px;object-fit:contain;border-radius:12px;margin-top:8px;background:#f3f4f6}
+  .req{color:var(--red);font-weight:700}
+  .loading{padding:40px;text-align:center;color:var(--mute)}
+  .foot{font-size:13px;color:var(--mute);margin-top:22px}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">JUPITER RAIN</div>
+  <div class="toggle"><a id="tBins" href="#">Bins</a><a id="tImp" href="#">Important Items</a></div>
+  <div id="who"></div>
+</header>
+<main id="app"><div class="loading">Loading…</div></main>
+<div id="flash"></div>
+<div id="toast"></div>
+<div id="cam" class="hidden">
+  <div class="note" id="camNote">Point the camera at the barcode or QR code</div>
+  <div id="reader"></div>
+  <button class="btn" id="camPhotoBtn">📸 Take a photo of the barcode instead</button>
+  <button class="btn red" id="camClose">Close camera</button>
+</div>
+<div id="reader-file" class="hidden"></div>
+<input type="file" id="scanFile" accept="image/*" capture="environment" class="hidden">
+<input type="file" id="photoFile" accept="image/*" capture="environment" class="hidden">
+<input type="file" id="tagFile" accept="image/*" capture="environment" class="hidden">
+<div id="pick" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:45;display:flex;align-items:flex-end"><div id="pickBox" style="background:#fff;width:100%;max-height:80%;overflow:auto;border-radius:18px 18px 0 0;padding:16px"></div></div>
+
+<script>
+var APP_URL = "";
+var BT_INSTALLED = true;
+var MODE = "bins";
+var BOOT = null;
+var S = null;            // bootstrap data
+var cur = {};            // current action state
+var photoCache = {};
+var $ = function (id) { return document.getElementById(id); };
+
+// ───────── server calls ─────────
+function call(fn) {
+  var args = Array.prototype.slice.call(arguments, 1);
+  return new Promise(function (res, rej) {
+    var r = google.script.run.withSuccessHandler(res).withFailureHandler(function (e) { rej(e && e.message ? e : new Error(String(e))); });
+    r[fn].apply(r, args);
+  });
+}
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function norm(s) { return String(s || '').trim().toUpperCase(); }
+
+// ───────── feedback ─────────
+function flash(kind) {
+  var f = $('flash'); f.className = kind === 'good' ? 'g' : 'r';
+  try { navigator.vibrate && navigator.vibrate(kind === 'good' ? 60 : [120, 60, 120]); } catch (e) {}
+  setTimeout(function () { f.className = ''; }, 180);
+}
+var toastT;
+function toast(text, kind) {
+  var t = $('toast'); t.textContent = text; t.className = kind === 'good' ? 'g' : kind === 'bad' ? 'r' : 'i';
+  clearTimeout(toastT); toastT = setTimeout(function () { t.className = ''; }, kind === 'bad' ? 5000 : 3000);
+}
+function good(t) { flash('good'); if (t) toast(t, 'good'); }
+function bad(t) { flash('bad'); if (t) toast(t, 'bad'); }
+
+// ───────── start-up ─────────
+function load() {
+  return call('II_bootstrap').then(applyBoot);
+}
+function applyBoot(d) {
+    S = d;
+    $('who').textContent = 'Signed in as ' + d.me.name + (d.me.isAdmin ? ' · Admin' : '') + (d.importantEnabled ? ' · ' + d.total + ' important items' : '') + ' · ' + (d.catalogCount || 0) + ' Uploadify SKUs';
+}
+function setMode(m) {
+  if (S && !S.importantEnabled) { m = 'bins'; document.querySelector('.toggle').classList.add('hidden'); }
+  MODE = (m === 'bins' && S && S.bins) ? 'bins' : 'important';
+  $('tBins').className = MODE === 'bins' ? 'on' : '';
+  $('tImp').className = MODE === 'important' ? 'on' : '';
+}
+$('tBins').addEventListener('click', function (e) { e.preventDefault(); if (!S || !S.bins) return toast('Bins aren\'t set up yet.', 'info'); setMode('bins'); home(); });
+$('tImp').addEventListener('click', function (e) { e.preventDefault(); setMode('important'); home(); });
+(BOOT ? Promise.resolve(applyBoot(BOOT)) : load()).then(function () { setMode(MODE); home(); }).catch(function (e) { $('app').innerHTML = '<div class="msg bad">' + esc(e.message) + '</div>'; });
+
+// ───────── small renderers ─────────
+function tierPill(t) { var n = String(t || '').replace(/\D/g, ''); return t ? '<span class="pill t' + n + '">' + esc(t) + '</span>' : ''; }
+function statusPill(s) { return '<span class="pill st-' + esc(String(s || '').split(/[\s–]/)[0]) + '">' + esc(s) + '</span>'; }
+function card(it, actionsHtml, large) {
+  var sku = esc(it.SKU);
+  var extra = [];
+  if (it.Status === 'Checked Out') extra.push('Due back ' + esc(it['Expected Return']) + ' · ' + esc(it['Checkout Reason']));
+  if (it['Pending Handoff To']) extra.push('⏳ Hand-off ' + esc(it['Handoff From']) + ' → ' + esc(it['Pending Handoff To']) + ': ' + esc(it['Handoff Reason']));
+  if (it['Count Flag']) extra.push('⚠️ ' + esc(it['Count Flag']) + ' at last count');
+  if (it['Last Verified']) extra.push('Last verified ' + esc(it['Last Verified']));
+  return '<div class="card' + (large ? ' lg' : '') + '"><img class="ph" data-photo="' + sku + '" alt="">' +
+    '<div style="flex:1;min-width:0"><div class="sku">' + sku + '</div>' +
+    '<div>' + esc(it.Description) + '</div>' +
+    '<div style="margin:6px 0">' + tierPill(it['Value Tier']) + statusPill(it.Status) + '</div>' +
+    '<div class="meta">' + esc(it._where) + '</div>' +
+    (extra.length ? '<div class="meta">' + extra.join('<br>') + '</div>' : '') +
+    (actionsHtml ? '<div class="acts">' + actionsHtml + '</div>' : '') + '</div></div>';
+}
+function loadPhotos(root) {
+  (root || document).querySelectorAll('img[data-photo]').forEach(function (img) {
+    var sku = img.getAttribute('data-photo');
+    if (photoCache[sku]) { img.src = photoCache[sku]; return; }
+    call('II_getPhoto', sku).then(function (src) { if (src) { photoCache[sku] = src; img.src = src; } }).catch(function () {});
+  });
+}
+function choices(group, opts, selected) {
+  return '<div class="choices" data-group="' + group + '">' + opts.map(function (o) {
+    var v = typeof o === 'string' ? o : o.value, l = typeof o === 'string' ? o : o.label;
+    return '<button type="button" class="choice' + (v === selected ? ' sel' : '') + '" data-choice="' + esc(v) + '">' + esc(l) + '</button>';
+  }).join('') + '</div>';
+}
+function choiceVal(group) { var b = document.querySelector('[data-group="' + group + '"] .choice.sel'); return b ? b.getAttribute('data-choice') : ''; }
+function teamSelect(id, selected, exclude) {
+  return '<select id="' + id + '">' + S.team.filter(function (n) { return norm(n) !== norm(exclude); }).map(function (n) {
+    return '<option' + (n === selected ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('') + '</select>';
+}
+
+// ───────── HOME ─────────
+function home() {
+  closeCam();
+  cur = {};
+  if (MODE === 'bins') return binsHome();
+  var h = '';
+  if (S.needsLoc.length) {
+    h += '<div class="alert red"><h3 style="color:var(--red);margin-top:0">🔴 Returned — needs a location (' + S.needsLoc.length + ')</h3>' +
+      S.needsLoc.map(function (it) { return card(it, '<button class="btn red small" data-act="go" data-to="checkin" data-sku="' + esc(it.SKU) + '">Scan &amp; put away</button>'); }).join('') + '</div>';
+  }
+  if (S.myHandoffs.length) {
+    h += '<div class="alert blue"><h3 style="margin-top:0">🤝 Waiting for you to accept</h3>' +
+      S.myHandoffs.map(function (it) {
+        return card(it, '<button class="btn green small" data-act="accept" data-sku="' + esc(it.SKU) + '">✓ Accept</button>' +
+          '<button class="btn small" data-act="decline" data-sku="' + esc(it.SKU) + '">Decline</button>');
+      }).join('') + '</div>';
+  }
+  if (S.overdue.length) {
+    h += '<div class="alert amber"><h3 style="margin-top:0">⏰ Overdue (' + S.overdue.length + ')</h3>' +
+      S.overdue.map(function (it) { return card(it, '<button class="btn small" data-act="go" data-to="return" data-sku="' + esc(it.SKU) + '">Mark returned</button>'); }).join('') + '</div>';
+  }
+  if (S.unverified.length) {
+    h += '<div class="alert amber"><b>⚠️ ' + S.unverified.length + ' item(s) Unverified at the last count:</b> ' +
+      S.unverified.map(function (it) { return esc(it.SKU); }).join(', ') + '</div>';
+  }
+  h += '<div class="grid">' +
+    bigBtn('lookup', '🔍', 'Look Up') + bigBtn('checkin', '📥', 'Check In') +
+    bigBtn('checkout', '📤', 'Check Out') + bigBtn('handoff', '🤝', 'Hand Off') +
+    bigBtn('return', '↩️', 'Return') + bigBtn('count', '✅', 'Daily Count') +
+    (S.me.isAdmin ? bigBtn('mark', '⭐', 'Mark as Important') : '') + bigBtn('locations', '🗄️', 'Locations') + '</div>';
+  if (S.sentHandoffs.length) {
+    h += '<h3>Hand-offs you started</h3>' + S.sentHandoffs.map(function (it) {
+      return card(it, '<button class="btn small" data-act="cancelHandoff" data-sku="' + esc(it.SKU) + '">Cancel hand-off</button>');
+    }).join('');
+  }
+  var c = S.counts;
+  h += '<div class="foot">In location ' + (c['In Location'] || 0) + ' · With custodian ' + (c['With Custodian'] || 0) +
+    ' · Checked out ' + (c['Checked Out'] || 0) + ' · On memo ' + (c['On Memo'] || 0) + ' · Sold ' + (c['Sold'] || 0) +
+    (S.lastSync ? '<br>Last Uploadify sync: ' + esc(S.lastSync) : '') + '</div>';
+  $('app').innerHTML = h;
+  loadPhotos();
+  window.scrollTo(0, 0);
+}
+function bigBtn(act, ic, label) { return '<button class="btn big" data-act="go" data-to="' + act + '"><span class="ic">' + ic + '</span>' + label + '</button>'; }
+
+// ───────── ACTION SCREENS ─────────
+var TITLES = { putbin: 'Put in Bin', takeout: 'Take Out of Bin', bins: 'Bins', bin: 'Bin', lookup: 'Look Up', checkin: 'Check In to Location', checkout: 'Check Out', handoff: 'Hand Off', 'return': 'Return', mark: 'Mark as Important', count: 'Daily Count', locations: 'Locations' };
+function start(action, sku) {
+  closeCam();
+  cur = { action: action, item: null, source: 'manual', photo: null };
+  var h = '<div class="row"><button class="btn ghost small" data-act="home">← Home</button></div><h2>' + TITLES[action] + '</h2>';
+  if (action === 'count') { $('app').innerHTML = h + '<div id="body"></div>'; return countStart(); }
+  if (action === 'locations') { $('app').innerHTML = h + '<div id="body"></div>'; return locationsScreen(); }
+  if (action === 'bins') { $('app').innerHTML = h + '<div id="body"></div>'; return binsManage(); }
+  if (action === 'bin') { $('app').innerHTML = h.replace('<h2>Bin</h2>', '<h2>' + esc(sku) + '</h2>') + '<div id="body"></div>'; return binContents(sku); }
+  if (action === 'putbin') { $('app').innerHTML = h + '<div id="body"></div>'; return putBinScreen(sku); }
+  if (action === 'takeout') { $('app').innerHTML = h + scanBox() + '<div id="body"></div>'; wireScan(takeoutLoad); if (sku) takeoutLoad(sku); else $('sku').focus(); return; }
+  h += scanBox() + '<div id="body"></div>';
+  $('app').innerHTML = h;
+  wireScan(function (code, src) { loadSku(code, src); });
+  if (sku) loadSku(sku, 'manual'); else $('sku').focus();
+  window.scrollTo(0, 0);
+}
+function scanBox() {
+  return '<div class="scan"><input id="sku" placeholder="Scan or type SKU" autocomplete="off" autocorrect="off" autocapitalize="characters" enterkeyhint="go">' +
+    '<button class="btn" data-act="cam" aria-label="Scan barcode">📷</button>' +
+    '<button class="btn" data-act="tag" aria-label="Photo of tag">🏷️</button></div>' +
+    '<div class="meta" style="margin:-6px 0 10px">Type it, 📷 scan the barcode/QR, or 🏷️ take a photo of the tag.</div>';
+}
+// Hardware scanners "type" very fast — that's how we tell a scan from typing.
+function wireScan(onCode) {
+  var inp = $('sku'), first = 0;
+  cur.onCode = onCode;
+  inp.addEventListener('keydown', function (e) {
+    if (!inp.value) first = Date.now();
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      var v = cleanScan(inp.value); if (!v) return;
+      var fast = v.length >= 4 && (Date.now() - first) / v.length < 35;
+      onCode(v, fast ? 'scan' : 'manual');
+      first = 0;
+    }
+  });
+}
+function cleanScan(t) {
+  t = String(t || '').trim();
+  if (/^https?:\/\//i.test(t)) {     // a QR code holding a link: use ?sku= or the last part of the path
+    try {
+      var u = new URL(t);
+      var q = u.searchParams.get('sku') || u.searchParams.get('SKU') || u.searchParams.get('q');
+      if (q) return norm(q);
+      var parts = u.pathname.split('/').filter(Boolean);
+      if (parts.length) return norm(decodeURIComponent(parts[parts.length - 1]));
+    } catch (e) {}
+  }
+  return norm(t);
+}
+
+var ALLOWED = {
+  checkin: ['In Location', 'With Custodian', 'Checked Out', 'On Memo', 'Returned – Needs Location'],
+  checkout: ['In Location', 'With Custodian', 'Returned – Needs Location'],
+  handoff: ['In Location', 'With Custodian', 'Checked Out', 'Returned – Needs Location'],
+  'return': ['Checked Out', 'On Memo']
+};
+
+function loadSku(code, src) {
+  var sku = cleanScan(code);
+  if (!sku) return;
+  cur.source = src || 'manual';
+  $('sku').value = sku;
+  $('body').innerHTML = '<div class="loading">Looking up ' + esc(sku) + '…</div>';
+  call('II_item', sku).then(function (r) {
+    cur.item = r.item; cur.sku = r.sku; cur.fresh = r.freshPhotoTier; cur.photo = null;
+    var a = cur.action;
+    if (!r.found) {
+      if (a === 'mark') { r.cat ? good() : flash('good'); return markNewForm(r.sku, r.cat); }
+      if (a === 'lookup') {
+        (r.cat || r.bin) ? good() : bad(r.sku + ' not found');
+        $('body').innerHTML = catCard(r.sku, r.cat) + binLine(r.bin) +
+          (!r.cat && !r.bin ? '<div class="msg bad">' + esc(r.sku) + ' isn\'t in Uploadify, a bin, or Important Items. Check the SKU.</div>' : '') +
+          '<div id="hist"></div>';
+        return historyBlock(r.sku, false);
+      }
+      bad(r.sku + ' is not an Important item');
+      $('body').innerHTML = '<div class="msg bad">' + esc(r.sku) + ' is not an Important item.' +
+        (S.me.isAdmin ? ' Use “Mark as Important” to add it.' : ' Ask Karan to mark it Important.') + '</div>' + catCard(r.sku, r.cat) + binLine(r.bin);
+      return;
+    }
+    var it = r.item;
+    if (a === 'mark') { good(); return markExistingForm(it); }
+    if (a === 'lookup') { good(); $('body').innerHTML = card(it, '', true) + quickActs(it) + '<div id="hist"></div>'; loadPhotos($('body')); return historyBlock(r.sku, true); }
+    var okStatus = ALLOWED[a].indexOf(it.Status) >= 0;
+    var pending = it['Pending Handoff To'] && (a === 'checkout' || a === 'handoff');
+    if (!okStatus || pending) {
+      bad();
+      var why = pending ? 'A hand-off to ' + it['Pending Handoff To'] + ' is waiting.' : 'This item is ' + it.Status + ' — can\'t ' + TITLES[a].toLowerCase() + '.';
+      $('body').innerHTML = '<div class="msg bad">' + esc(why) + '</div>' + card(it, '') + quickActs(it);
+      loadPhotos($('body'));
+      return;
+    }
+    good();
+    ({ checkin: checkinForm, checkout: checkoutForm, handoff: handoffForm, 'return': returnForm })[a](it);
+    loadPhotos($('body'));
+  }).catch(function (e) { bad(e.message); $('body').innerHTML = '<div class="msg bad">' + esc(e.message) + '</div>'; });
+}
+function quickActs(it) {
+  var b = [];
+  var add = function (to, l) { if (ALLOWED[to].indexOf(it.Status) >= 0) b.push('<button class="btn small" data-act="go" data-to="' + to + '" data-sku="' + esc(it.SKU) + '">' + l + '</button>'); };
+  add('checkin', '📥 Check In'); add('checkout', '📤 Check Out'); add('handoff', '🤝 Hand Off'); add('return', '↩️ Return');
+  if (S.me.isAdmin) b.push('<button class="btn small" data-act="go" data-to="mark" data-sku="' + esc(it.SKU) + '">⭐ Edit tier</button>');
+  return b.length ? '<div class="acts" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">' + b.join('') + '</div>' : '';
+}
+function historyBlock(sku, isImportant) {
+  var el = $('hist') || (function () { var d = document.createElement('div'); d.id = 'hist'; $('body').appendChild(d); return d; })();
+  el.innerHTML = '<div class="loading">Loading history…</div>';
+  call('II_history', sku).then(function (r) {
+    var h = '';
+    if (r.cat && isImportant) h += '<h3>Uploadify</h3><div class="meta">' + esc(r.cat.title) + ' · ' + esc(r.cat.status) + (r.cat.metal ? ' · ' + esc(r.cat.metal) : '') + (r.cat.weight ? ' · ' + esc(r.cat.weight) : '') + '</div>';
+    if (r.history.length) {
+      h += '<h3>Chain of custody (' + r.history.length + ')</h3>' + r.history.map(function (x) {
+        return '<div class="hist"><b>' + esc(x.Action) + '</b> · ' + esc(x.Timestamp) + '<br>' +
+          (x.From || x.To ? esc(x.From) + ' → ' + esc(x.To) + '<br>' : '') +
+          (x.Reason ? 'Reason: ' + esc(x.Reason) + '<br>' : '') +
+          '<span class="meta">By ' + esc(x['Confirmed By']) + ' · ' + esc(x.Source) + (x.Details ? ' · ' + esc(x.Details) : '') + '</span></div>';
+      }).join('');
+    }
+    el.innerHTML = h;
+  }).catch(function (e) { el.innerHTML = '<div class="msg bad">' + esc(e.message) + '</div>'; });
+}
+
+// photo picker shared by forms
+function photoField(required, label) {
+  return '<label>' + esc(label || 'Photo') + (required ? ' <span class="req">required</span>' : ' (optional)') + '</label>' +
+    '<button type="button" class="btn" data-act="photo">📸 Take photo</button><img id="photoPrev" class="photo-prev hidden" alt="">';
+}
+$('photoFile').addEventListener('change', function () {
+  var f = this.files[0]; this.value = '';
+  if (!f) return;
+  shrink(f).then(function (d) { cur.photo = d; var p = $('photoPrev'); if (p) { p.src = d; p.classList.remove('hidden'); } good('Photo ready'); })
+    .catch(function () { bad('Couldn\'t read that photo — try again.'); });
+});
+function shrink(file) {
+  return new Promise(function (res, rej) {
+    var img = new Image(), url = URL.createObjectURL(file);
+    img.onload = function () {
+      var max = 1600, w = img.naturalWidth, h = img.naturalHeight, s = Math.min(1, max / Math.max(w, h));
+      var c = document.createElement('canvas'); c.width = Math.round(w * s); c.height = Math.round(h * s);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url); res(c.toDataURL('image/jpeg', 0.85));
+    };
+    img.onerror = rej; img.src = url;
+  });
+}
+
+// ── forms ──
+function locOpts() { return S.locations.map(function (l) { return { value: l.name, label: l.name }; }); }
+function checkinForm(it) {
+  var needPhoto = cur.fresh && ['Checked Out', 'On Memo', 'Returned – Needs Location'].indexOf(it.Status) >= 0;
+  cur.needPhoto = needPhoto;
+  $('body').innerHTML = card(it, '') +
+    (it.Status === 'Checked Out' || it.Status === 'On Memo' ? '<div class="msg info">This also records the item as returned.</div>' : '') +
+    '<label>Location</label>' + choices('loc', locOpts(), '') +
+    '<label>Custodian (responsible now)</label>' + teamSelect('custodian', S.me.name) +
+    photoField(needPhoto, needPhoto ? 'Fresh photo (Tier 1 coming back)' : 'Photo') +
+    '<label>Note</label><input id="note" placeholder="Optional">' +
+    '<div style="height:14px"></div><button class="btn green" data-act="submit">Confirm Check In</button><div id="res"></div>';
+}
+function checkoutForm(it) {
+  var d = new Date(Date.now() + 3 * 3600e3); d.setMinutes(0, 0, 0);
+  var local = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  $('body').innerHTML = card(it, '') +
+    '<label>Reason</label>' + choices('reason', S.reasons, '') +
+    '<label>Going to (client, lab, appraiser…)</label><input id="dest" placeholder="e.g. GIA New York">' +
+    '<label>Expected back</label><input id="due" type="datetime-local" value="' + local + '">' +
+    '<label>Who has it</label>' + teamSelect('holder', S.me.name) +
+    '<label>Note</label><input id="note" placeholder="Optional">' +
+    '<div style="height:14px"></div><button class="btn primary" data-act="submit">Confirm Check Out</button><div id="res"></div>';
+}
+function handoffForm(it) {
+  $('body').innerHTML = card(it, '') +
+    '<div class="meta">From: <b>' + esc(it.Custodian || S.me.name) + '</b></div>' +
+    '<label>Hand to</label>' + choices('to', S.team.filter(function (n) { return norm(n) !== norm(it.Custodian); }), '') +
+    '<label>Reason</label>' + choices('quick', ['Showing to client', 'Taking to lab', 'Photo shoot', 'Leaving for the day'], '') +
+    '<input id="reason" placeholder="Or type a reason" style="margin-top:8px">' +
+    '<div style="height:14px"></div><button class="btn primary" data-act="submit">Send hand-off</button>' +
+    '<div class="meta" style="margin-top:8px">The other person must tap <b>Accept</b> in their app. Until then you stay responsible.</div><div id="res"></div>';
+}
+function returnForm(it) {
+  $('body').innerHTML = card(it, '') +
+    '<label>Note</label><input id="note" placeholder="Optional — condition, who brought it back">' +
+    '<div style="height:14px"></div><button class="btn primary" data-act="submit">Confirm Return</button>' +
+    '<div class="meta" style="margin-top:8px">It goes to “Returned – Needs Location” until someone scans it into a location.</div><div id="res"></div>';
+}
+function markNewForm(sku, cat) {
+  $('body').innerHTML = '<div class="msg info">' + esc(sku) + ' — new Important item</div>' + catCard(sku, cat) +
+    '<label>Description</label><input id="desc" placeholder="e.g. Art Deco platinum sapphire ring" value="' + esc(cat ? cat.title : '') + '">' +
+    '<label>Value tier</label>' + choices('tier', S.tiers, '') +
+    photoField(true, 'Photo') +
+    '<label>Put it in</label>' + choices('loc', locOpts(), '') +
+    '<div style="height:14px"></div><button class="btn green" data-act="submit">⭐ Mark as Important</button><div id="res"></div>';
+}
+function markExistingForm(it) {
+  if (it.Status === 'Sold') {
+    markNewForm(it.SKU, null);
+    $('body').insertAdjacentHTML('afterbegin', '<div class="msg info">This item was sold. Marking it again brings it back into stock — its history is kept.</div>');
+    return;
+  }
+  cur.editing = true;
+  $('body').innerHTML = card(it, '') + '<div class="msg info">Already Important. You can change its tier or description.</div>' +
+    '<label>Value tier</label>' + choices('tier', S.tiers, it['Value Tier']) +
+    '<label>Description</label><input id="desc" value="' + esc(it.Description) + '">' +
+    '<label>Reason for change</label><input id="note" placeholder="Optional">' +
+    '<div style="height:14px"></div><button class="btn primary" data-act="submit">Save changes</button><div id="res"></div>';
+  loadPhotos($('body'));
+}
+
+// ── submit ──
+function submit(btn) {
+  var a = cur.action, sku = cur.sku, p, fn;
+  var v = function (id) { var e = $(id); return e ? e.value.trim() : ''; };
+  if (a === 'checkin') {
+    if (!choiceVal('loc')) return bad('Pick a location');
+    if (cur.needPhoto && !cur.photo) return bad('Take a fresh photo first');
+    fn = 'II_checkIn'; p = { sku: sku, location: choiceVal('loc'), custodian: v('custodian'), photo: cur.photo, note: v('note'), source: cur.source };
+  } else if (a === 'checkout') {
+    var due = $('due').value ? new Date($('due').value).getTime() : 0;
+    if (!choiceVal('reason')) return bad('Pick a reason');
+    if (!v('dest')) return bad('Where is it going?');
+    if (!due) return bad('Set the expected return');
+    if (due < Date.now()) return bad('Expected return is in the past');
+    fn = 'II_checkOut'; p = { sku: sku, reason: choiceVal('reason'), destination: v('dest'), dueMs: due, holder: v('holder'), note: v('note'), source: cur.source };
+  } else if (a === 'handoff') {
+    var reason = v('reason') || choiceVal('quick');
+    if (!choiceVal('to')) return bad('Who are you handing it to?');
+    if (!reason) return bad('Add a reason');
+    fn = 'II_handOff'; p = { sku: sku, to: choiceVal('to'), reason: reason, source: cur.source };
+  } else if (a === 'return') {
+    fn = 'II_return'; p = { sku: sku, note: v('note'), source: cur.source };
+  } else if (a === 'mark' && cur.editing) {
+    fn = 'II_editItem'; p = { sku: sku, tier: choiceVal('tier'), description: v('desc'), reason: v('note') };
+  } else if (a === 'mark') {
+    if (!choiceVal('tier')) return bad('Pick a value tier');
+    if (!cur.photo) return bad('A photo is required');
+    if (!choiceVal('loc')) return bad('Pick where it goes');
+    fn = 'II_markImportant'; p = { sku: sku, description: v('desc'), tier: choiceVal('tier'), photo: cur.photo, location: choiceVal('loc'), source: cur.source };
+  }
+  btn.disabled = true; btn.textContent = 'Saving…';
+  call(fn, p).then(function (r) {
+    delete photoCache[sku];
+    good(r.msg);
+    done(r.msg, a, sku);
+    load();   // refresh in the background
+  }).catch(function (e) {
+    bad(e.message); btn.disabled = false; btn.textContent = 'Try again';
+    $('res').innerHTML = '<div class="msg bad">' + esc(e.message) + '</div>';
+  });
+}
+function done(msg, a, sku) {
+  var h = '<div class="msg ok">✓ ' + esc(msg) + '</div>';
+  if (a === 'return') h += '<button class="btn red" data-act="go" data-to="checkin" data-sku="' + esc(sku) + '">Put it away now</button><div style="height:10px"></div>';
+  h += '<button class="btn primary" data-act="go" data-to="' + a + '">Next item</button><div style="height:10px"></div>' +
+    '<button class="btn" data-act="home">Home</button>';
+  $('body').innerHTML = h;
+}
+
+// ───────── DAILY COUNT ─────────
+var CNT = null;
+function todayKey(session) { var d = new Date(); return 'iicount-' + d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate() + '-' + session; }
+function countStart() {
+  var morning = new Date().getHours() < 14;
+  $('body').innerHTML = '<label>Which count?</label>' + choices('session', ['Morning', 'End of Day'], morning ? 'Morning' : 'End of Day') +
+    '<div style="height:14px"></div><button class="btn primary" data-act="countBegin">Start count</button>';
+}
+function countBegin() {
+  var session = choiceVal('session') || 'Morning';
+  $('body').innerHTML = '<div class="loading">Loading today\'s list…</div>';
+  call('II_countList').then(function (list) {
+    CNT = { session: session, list: list, ok: {}, extras: [] };
+    try { var saved = JSON.parse(localStorage.getItem(todayKey(session)) || 'null'); if (saved) { CNT.ok = saved.ok || {}; CNT.extras = saved.extras || []; } } catch (e) {}
+    $('body').innerHTML = '<div class="msg info">' + esc(session) + ' count — scan every item. Keep the camera open to scan one after another.</div>' +
+      scanBox() + '<div id="prog"></div><div id="clist"></div>' +
+      '<div style="height:14px"></div><button class="btn green" data-act="countFinish">Finish count</button><div id="res"></div>';
+    wireScan(countScan);
+    renderCount();
+    $('sku').focus();
+  }).catch(function (e) { $('body').innerHTML = '<div class="msg bad">' + esc(e.message) + '</div>'; });
+}
+function countScan(code) {
+  var sku = cleanScan(code); $('sku').value = '';
+  var hit = CNT.list.find(function (x) { return x.sku === sku; });
+  if (!hit) { bad(sku + ' is not on today\'s list'); if (CNT.extras.indexOf(sku) < 0) CNT.extras.push(sku); }
+  else if (CNT.ok[sku]) { toast(sku + ' already counted', 'info'); }
+  else { CNT.ok[sku] = 1; good('✓ ' + sku); }
+  try { localStorage.setItem(todayKey(CNT.session), JSON.stringify({ ok: CNT.ok, extras: CNT.extras })); } catch (e) {}
+  renderCount();
+  if (!qr) $('sku').focus();
+}
+function renderCount() {
+  var n = Object.keys(CNT.ok).filter(function (k) { return CNT.list.some(function (x) { return x.sku === k; }); }).length;
+  var tot = CNT.list.length;
+  $('prog').innerHTML = '<b>' + n + ' of ' + tot + ' verified</b><div class="bar"><div style="width:' + (tot ? n / tot * 100 : 100) + '%"></div></div>' +
+    (CNT.extras.length ? '<div class="msg bad">Scanned but not expected here: ' + esc(CNT.extras.join(', ')) + '</div>' : '');
+  var sorted = CNT.list.slice().sort(function (a, b) { return (CNT.ok[a.sku] ? 1 : 0) - (CNT.ok[b.sku] ? 1 : 0); });
+  $('clist').innerHTML = sorted.map(function (x) {
+    var ok = !!CNT.ok[x.sku];
+    return '<div class="count-item' + (ok ? ' ok' : '') + '"><div class="mark">' + (ok ? '✅' : '⬜') + '</div><div><b>' + esc(x.sku) + '</b> ' + tierPill(x.tier) +
+      '<div class="meta">' + esc(x.description) + ' · ' + esc(x.where) + '</div></div></div>';
+  }).join('') || '<div class="msg info">No items are expected in the office right now.</div>';
+}
+function countFinish(btn) {
+  var missing = CNT.list.filter(function (x) { return !CNT.ok[x.sku]; }).length;
+  if (missing && !confirm(missing + ' item(s) not scanned will be flagged Unverified and emailed to Karan. Finish anyway?')) return;
+  btn.disabled = true; btn.textContent = 'Saving…';
+  call('II_submitCount', { session: CNT.session, verified: Object.keys(CNT.ok).concat(CNT.extras) }).then(function (r) {
+    try { localStorage.removeItem(todayKey(CNT.session)); } catch (e) {}
+    closeCam();
+    r.missing.length ? bad() : good();
+    $('body').innerHTML = '<div class="msg ' + (r.missing.length ? 'bad' : 'ok') + '">' + r.verified + ' of ' + r.expected + ' verified.' +
+      (r.missing.length ? '<br>Unverified (emailed to Karan):<br>' + r.missing.map(esc).join('<br>') : ' Everything is accounted for.') + '</div>' +
+      '<button class="btn" data-act="home">Home</button>';
+    load();
+  }).catch(function (e) { bad(e.message); btn.disabled = false; btn.textContent = 'Finish count'; });
+}
+
+// ───────── LOCATIONS ─────────
+function locationsScreen() {
+  var h = S.locations.map(function (l) {
+    return '<div class="card"><div style="flex:1"><div class="sku">' + esc(l.name) + '</div><div class="meta">' + esc(l.type) +
+      (l.counted ? ' · counted daily' : ' · not in daily count') + (l.notes ? ' · ' + esc(l.notes) : '') + '</div></div>' +
+      (S.me.isAdmin ? '<button class="btn small" data-act="rmLoc" data-name="' + esc(l.name) + '">Remove</button>' : '') + '</div>';
+  }).join('');
+  h += '<h3>Add a location</h3><input id="lname" placeholder="Name, e.g. Safe – Back Room">' +
+    '<label>Type</label>' + choices('ltype', S.locTypes, 'safe') +
+    '<label><input type="checkbox" id="lcount" checked style="width:auto"> Include in the daily count</label>' +
+    '<input id="lnotes" placeholder="Notes (optional)">' +
+    '<div style="height:10px"></div><button class="btn primary" data-act="addLoc">Add location</button>';
+  if (S.me.isAdmin) {
+    h += '<h3>Admin</h3><div class="grid"><button class="btn" data-act="runSync">Run Uploadify sync now</button>' +
+      '<button class="btn" data-act="runAlerts">Check alerts now</button></div>';
+  }
+  $('body').innerHTML = h;
+}
+
+// ───────── CAMERA ─────────
+var qr = null, lastCode = '', lastAt = 0;
+function openCam() {
+  var continuous = cur.action === 'count' || cur.action === 'putbin';
+  $('cam').classList.remove('hidden');
+  $('camNote').textContent = continuous ? 'Scan items one after another — close when done' : 'Point the camera at the barcode or QR code';
+  if (typeof Html5Qrcode === 'undefined') { $('camNote').textContent = 'Live camera unavailable — take a photo of the barcode.'; return; }
+  qr = new Html5Qrcode('reader', { verbose: false });
+  qr.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 260, height: 170 } }, function (text) {
+    var now = Date.now();
+    if (text === lastCode && now - lastAt < 2500) return;
+    lastCode = text; lastAt = now;
+    if (!continuous) closeCam();
+    cur.onCode && cur.onCode(text, 'scan');
+  }, function () {}).catch(function () {
+    qr = null;
+    $('camNote').textContent = 'Live camera isn\'t allowed here — tap below to take a photo of the barcode.';
+  });
+}
+function closeCam() {
+  $('cam').classList.add('hidden');
+  if (qr) { var q = qr; qr = null; q.stop().then(function () { q.clear(); }).catch(function () {}); }
+}
+$('camClose').addEventListener('click', closeCam);
+$('camPhotoBtn').addEventListener('click', function () { $('scanFile').click(); });
+$('scanFile').addEventListener('change', function () {
+  var f = this.files[0]; this.value = '';
+  if (!f || typeof Html5Qrcode === 'undefined') return;
+  var t = new Html5Qrcode('reader-file', { verbose: false });
+  t.scanFile(f, false).then(function (text) {
+    if (cur.action !== 'count' && cur.action !== 'putbin') closeCam();
+    cur.onCode && cur.onCode(text, 'scan');
+  }).catch(function () { bad('No barcode found in that photo. Try 🏷️ for a tag photo, or type the SKU.'); });
+});
+
+// ───────── TAG PHOTO (barcode first, then read the text) ─────────
+$('tagFile').addEventListener('change', function () {
+  var f = this.files[0]; this.value = '';
+  if (!f) return;
+  toast('Reading the tag…', 'info');
+  var tryBarcode = (typeof Html5Qrcode !== 'undefined') ? new Html5Qrcode('reader-file', { verbose: false }).scanFile(f, false) : Promise.reject();
+  tryBarcode.then(function (text) { cur.onCode && cur.onCode(text, 'scan'); })
+    .catch(function () {
+      return shrink(f).then(function (d) { return call('II_readTag', d); }).then(function (r) {
+        if (r.matches.length === 1) { good(); return cur.onCode && cur.onCode(r.matches[0].sku, 'tag'); }
+        if (r.matches.length > 1) {
+          $('pickBox').innerHTML = '<h3 style="margin-top:0">Which SKU is on the tag?</h3>' + r.matches.map(function (m) {
+            return '<button class="btn" style="margin-bottom:8px;flex-direction:column;align-items:flex-start" data-act="pickSku" data-sku="' + esc(m.sku) + '"><b>' + esc(m.sku) + '</b><span class="meta">' + esc(m.title) + '</span></button>';
+          }).join('') + '<button class="btn ghost" data-act="pickClose">None of these — I\'ll type it</button>';
+          $('pick').classList.remove('hidden');
+          return;
+        }
+        bad('Couldn\'t match the tag to an Uploadify SKU. Type it instead.');
+        if ($('sku') && r.guess && r.guess.length) { $('sku').value = r.guess[0]; $('sku').focus(); }
+        if (r.text) toast('Tag reads: ' + r.text.slice(0, 80), 'info');
+      });
+    }).catch(function (e) { bad(e.message || 'Couldn\'t read the tag'); });
+});
+
+// ───────── shared bits ─────────
+function catCard(sku, cat) {
+  if (!cat) return '';
+  return '<div class="card">' + (cat.photo ? '<img class="ph" src="' + esc(cat.photo) + '" alt="">' : '') +
+    '<div style="flex:1;min-width:0"><div class="sku">' + esc(sku) + '</div><div>' + esc(cat.title) + '</div>' +
+    '<div class="meta">Uploadify: ' + esc(cat.status) + (cat.category ? ' · ' + esc(cat.category) : '') + (cat.metal ? ' · ' + esc(cat.metal) : '') +
+    (cat.weight ? ' · ' + esc(cat.weight) : '') + '</div></div></div>';
+}
+function binLine(bin) {
+  if (!bin) return '';
+  var cls = bin.Status === 'In Bin' ? 'ok' : bin.Status === 'Returned – Needs Bin' ? 'bad' : 'info';
+  return '<div class="msg ' + cls + '">🗃️ Bins: ' + esc(bin._where) + (bin['Updated At'] ? ' · ' + esc(bin['Updated At']) + (bin['Updated By'] ? ' by ' + esc(bin['Updated By']) : '') : '') + '</div>';
+}
+function binCard(it, acts) {
+  return '<div class="card">' + (it._photo ? '<img class="ph" src="' + esc(it._photo) + '" alt="">' : '<div class="ph"></div>') +
+    '<div style="flex:1;min-width:0"><div class="sku">' + esc(it.SKU) + '</div><div>' + esc(it.Description) + '</div>' +
+    '<div class="meta">' + esc(it._where) + (it['Updated At'] ? ' · ' + esc(it['Updated At']) : '') + '</div>' +
+    (acts ? '<div class="acts">' + acts + '</div>' : '') + '</div></div>';
+}
+
+// ───────── BINS ─────────
+function binsHome() {
+  var B = S.bins, h = '';
+  if (B.needsBin.length) {
+    h += '<div class="alert red"><h3 style="color:var(--red);margin-top:0">🔴 Returned — needs a bin (' + B.needsBin.length + ')</h3>' +
+      B.needsBin.map(function (it) { return binCard(it); }).join('') +
+      '<button class="btn red" data-act="go" data-to="putbin">Scan them into a bin</button></div>';
+  }
+  h += '<div class="grid">' + bigBtn('putbin', '📥', 'Put in Bin') + bigBtn('takeout', '📤', 'Take Out') +
+    bigBtn('lookup', '🔍', 'Look Up') + bigBtn('bins', '🗃️', 'Bins') + '</div>';
+  h += '<h3>Bins</h3><div class="grid">' + B.bins.map(function (b) {
+    return '<button class="btn" data-act="go" data-to="bin" data-sku="' + esc(b.name) + '"><b>' + esc(b.name) + '</b>&nbsp;<span class="meta">' + b.count + ' item' + (b.count === 1 ? '' : 's') + '</span></button>';
+  }).join('') + '</div>';
+  if (B.out.length) {
+    h += '<h3>Out of bin (' + B.out.length + ')</h3>' + B.out.map(function (it) { return binCard(it); }).join('');
+  }
+  var c = B.statusCounts;
+  h += '<div class="foot">In bins ' + (c['In Bin'] || 0) + ' · Out ' + (c['Out of Bin'] || 0) + ' · On memo ' + (c['On Memo'] || 0) +
+    ' · Sold ' + (c['Sold'] || 0) + ' · ' + (S.catalogCount || 0) + ' Uploadify SKUs loaded' + (S.lastSync ? '<br>Last sync: ' + esc(S.lastSync) : '') + '</div>';
+  $('app').innerHTML = h;
+  window.scrollTo(0, 0);
+}
+function putBinScreen(preset) {
+  var names = S.bins.bins.map(function (b) { return b.name; });
+  cur.scanned = [];
+  $('body').innerHTML = '<label>1. Pick the bin (or scan its label)</label>' + choices('pbin', names, preset || '') +
+    '<label>2. Scan items into it — one after another</label>' + scanBox() + '<div id="plist"></div>';
+  wireScan(putBinCode);
+  $('sku').focus();
+}
+function putBinCode(code, src) {
+  var c = cleanScan(code);
+  $('sku').value = '';
+  var binHit = S.bins.bins.find(function (b) { return norm(b.name) === c || norm(b.name).replace(/\s/g, '') === c.replace(/\s/g, ''); });
+  if (binHit) {
+    document.querySelectorAll('[data-group="pbin"] .choice').forEach(function (x) { x.classList.toggle('sel', x.getAttribute('data-choice') === binHit.name); });
+    good('Bin: ' + binHit.name); return;
+  }
+  var bin = choiceVal('pbin');
+  if (!bin) return bad('Pick a bin first');
+  toast('Saving ' + c + '…', 'info');
+  call('BT_scanIntoBin', bin, c, src).then(function (r) {
+    if (r.kind === 'bad') bad(r.msg);
+    else if (r.kind === 'same') toast(r.msg, 'info');
+    else if (r.kind === 'warn') { flash('good'); toast(r.msg, 'info'); }
+    else good(r.msg);
+    cur.scanned.unshift(r);
+    $('plist').innerHTML = '<h3>This session (' + cur.scanned.filter(function (x) { return x.ok; }).length + ' scanned)</h3>' + cur.scanned.map(function (x) {
+      return '<div class="count-item' + (x.ok ? ' ok' : '') + '"><div class="mark">' + (x.ok ? (x.kind === 'warn' ? '⚠️' : '✅') : '⛔') + '</div><div><b>' + esc(x.sku) + '</b><div class="meta">' + esc(x.title || x.msg) + '</div></div></div>';
+    }).join('');
+  }).catch(function (e) { bad(e.message); });
+  if (!qr) $('sku').focus();
+}
+function takeoutLoad(code) {
+  var c = cleanScan(code); $('sku').value = c;
+  $('body').innerHTML = '<div class="loading">Looking up ' + esc(c) + '…</div>';
+  call('II_item', c).then(function (r) {
+    cur.sku = r.sku;
+    if (!r.bin || r.bin.Status !== 'In Bin') {
+      bad(); $('body').innerHTML = '<div class="msg bad">' + esc(r.sku) + (r.bin ? ' is ' + esc(r.bin.Status) : ' is not in any bin') + '.</div>' + catCard(r.sku, r.cat);
+      return;
+    }
+    good();
+    $('body').innerHTML = binCard(r.bin) + '<label>Reason</label>' + choices('oreason', S.bins.reasons, '') +
+      '<label>Note</label><input id="note" placeholder="Optional">' +
+      '<div style="height:14px"></div><button class="btn primary" data-act="takeoutGo">Take out of ' + esc(r.bin.Bin) + '</button><div id="res"></div>';
+  }).catch(function (e) { bad(e.message); });
+}
+function takeoutSubmit(btn) {
+  if (!choiceVal('oreason')) return bad('Pick a reason');
+  btn.disabled = true;
+  call('BT_takeOut', { sku: cur.sku, reason: choiceVal('oreason'), note: $('note').value, source: cur.source || 'manual' }).then(function (r) {
+    good(r.msg); $('body').innerHTML = '<div class="msg ok">✓ ' + esc(r.msg) + '</div><button class="btn primary" data-act="go" data-to="takeout">Next item</button><div style="height:10px"></div><button class="btn" data-act="home">Home</button>'; load();
+  }).catch(function (e) { bad(e.message); btn.disabled = false; });
+}
+function binContents(name) {
+  $('body').innerHTML = '<div class="loading">Loading…</div>';
+  call('BT_binContents', name).then(function (r) {
+    $('body').innerHTML = '<button class="btn primary" data-act="go" data-to="putbin" data-sku="' + esc(r.bin) + '">📥 Put items in ' + esc(r.bin) + '</button><div style="height:12px"></div>' +
+      (r.items.length ? r.items.map(function (it) { return binCard(it); }).join('') : '<div class="msg info">This bin is empty.</div>');
+  }).catch(function (e) { $('body').innerHTML = '<div class="msg bad">' + esc(e.message) + '</div>'; });
+}
+function binsManage() {
+  var h = S.bins.bins.map(function (b) {
+    return '<div class="card"><div style="flex:1"><div class="sku">' + esc(b.name) + '</div><div class="meta">' + b.count + ' item(s)' + (b.notes ? ' · ' + esc(b.notes) : '') + '</div></div>' +
+      (S.me.isAdmin ? '<button class="btn small" data-act="rmBin" data-name="' + esc(b.name) + '">Remove</button>' : '') + '</div>';
+  }).join('');
+  var next = 'Bin ' + (S.bins.bins.length + 1);
+  h += '<h3>Add a bin</h3><input id="bname" value="' + esc(next) + '"><div style="height:8px"></div><input id="bnotes" placeholder="Notes, e.g. top drawer (optional)">' +
+    '<div style="height:10px"></div><button class="btn primary" data-act="addBin">Add bin</button>' +
+    '<div class="meta" style="margin-top:10px">Tip: print a label with the bin name as a barcode/QR (e.g. “Bin 4”) and stick it on the bin — scanning it selects the bin.</div>';
+  $('body').innerHTML = h;
+}
+
+// ───────── one click handler for everything ─────────
+document.addEventListener('click', function (e) {
+  var ch = e.target.closest('.choice');
+  if (ch) { ch.parentNode.querySelectorAll('.choice').forEach(function (b) { b.classList.remove('sel'); }); ch.classList.add('sel'); return; }
+  var b = e.target.closest('[data-act]');
+  if (!b) return;
+  var act = b.getAttribute('data-act'), sku = b.getAttribute('data-sku');
+  if (act === 'home') { home(); return load().then(function () { if (!cur.action) home(); }); }
+  if (act === 'go') return start(b.getAttribute('data-to'), sku);
+  if (act === 'cam') return openCam();
+  if (act === 'tag') return $('tagFile').click();
+  if (act === 'pickSku') { $('pick').classList.add('hidden'); return cur.onCode && cur.onCode(b.getAttribute('data-sku'), 'tag'); }
+  if (act === 'pickClose') return $('pick').classList.add('hidden');
+  if (act === 'takeoutGo') return takeoutSubmit(b);
+  if (act === 'addBin') {
+    return call('BT_addBin', { name: $('bname').value, notes: $('bnotes').value })
+      .then(function (r) { good(r.msg); return load().then(binsManage); }).catch(function (err) { bad(err.message); });
+  }
+  if (act === 'rmBin') {
+    var bn = b.getAttribute('data-name');
+    if (!confirm('Remove "' + bn + '" from the list? (It stays in the sheet history.)')) return;
+    return call('BT_removeBin', bn).then(function (r) { good(r.msg); return load().then(binsManage); }).catch(function (err) { bad(err.message); });
+  }
+  if (act === 'photo') return $('photoFile').click();
+  if (act === 'submit') return submit(b);
+  if (act === 'countBegin') return countBegin();
+  if (act === 'countFinish') return countFinish(b);
+  if (act === 'accept' || act === 'decline' || act === 'cancelHandoff') {
+    b.disabled = true;
+    return call('II_respondHandoff', sku, act === 'accept').then(function (r) { good(r.msg); b.closest('.card') && b.closest('.card').remove(); load().then(function () { if (!cur.action) home(); }); })
+      .catch(function (err) { bad(err.message); b.disabled = false; });
+  }
+  if (act === 'addLoc') {
+    return call('II_addLocation', { name: $('lname').value, type: choiceVal('ltype'), counted: $('lcount').checked, notes: $('lnotes').value })
+      .then(function (r) { good(r.msg); return load().then(locationsScreen); }).catch(function (err) { bad(err.message); });
+  }
+  if (act === 'rmLoc') {
+    var name = b.getAttribute('data-name');
+    if (!confirm('Remove "' + name + '" from the list? (It stays in the sheet history.)')) return;
+    return call('II_removeLocation', name).then(function (r) { good(r.msg); return load().then(locationsScreen); }).catch(function (err) { bad(err.message); });
+  }
+  if (act === 'runSync' || act === 'runAlerts') {
+    b.disabled = true; var old = b.textContent; b.textContent = 'Running…';
+    return call(act === 'runSync' ? 'II_adminRunSync' : 'II_adminRunAlerts').then(function (r) { good(r.msg); return load(); })
+      .catch(function (err) { bad(err.message); }).then(function () { b.disabled = false; b.textContent = old; });
+  }
+});
+</script>
+</body>
+</html>
