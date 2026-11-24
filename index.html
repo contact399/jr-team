@@ -513,17 +513,18 @@ async function viewFile(t,f){openViewer(f.name,null,"Loading "+kind(f.mime).toLo
 /* ---------- Ask Claude ---------- */
 function linkify(node,text){String(text).split(/(https?:\/\/\S+)/).forEach((part,i)=>{if(i%2){const a=document.createElement("a");a.href=part;a.target="_blank";a.rel="noopener";a.textContent=/mail\.google/.test(part)?"Open draft":"Open link";node.append(a)}else if(part)node.append(document.createTextNode(part))})}
 function reqEl(q){const d=el("div","req"+(q.status==="Failed"?" failed":""));
-  d.append(el("strong",null,q.status==="Queued"?"Claude · queued: ":q.status==="Failed"?"Claude · couldn't finish: ":"Claude · done: "));
-  d.append(document.createTextNode(q.request));if(q.result){const r=el("div","sub");linkify(r,q.result);d.append(r)}return d}
+  d.append(el("strong",null,q.status==="Queued"?"Claude · queued: ":q.status==="Sent to Claude"?"Claude · working on it: ":q.status==="Failed"?"Claude · couldn't finish: ":"Claude · done: "));
+  d.append(document.createTextNode(q.request));if(q.result){const r=el("div","sub");linkify(r,q.result);d.append(r)}if(q.chat){const a=document.createElement("a");a.href=q.chat;a.target="_blank";a.rel="noopener";a.textContent="Open chat with Claude ↗";a.style.cssText="display:inline-block;margin-top:4px;font-weight:600";d.append(a)}return d}
 function askPanel(t){const p=el("div","panel");p.append(el("div","l","What should Claude do?"));
   const inp=document.createElement("input");inp.id="ask-"+t.id;inp.placeholder="e.g. Write a follow-up email to Max Farber about the weight breakdown";
   const c=el("div","chips");["Write a follow-up email","Draft a WhatsApp message","Find the latest email about this"].forEach(s=>{const b=el("button",null,s);b.type="button";b.addEventListener("click",()=>{inp.value=s+" ";inp.focus()});c.append(b)});
   const go=el("button","btn primary","Send to Claude");go.type="button";go.style.justifySelf="start";
   go.addEventListener("click",async()=>{const v=inp.value.trim();if(!v){inp.focus();return}askOpen.delete(t.id);say("Sending to Claude…");
-    try{handle(await call("askClaude",token,t.id,v),"Sent. Claude picks requests up every hour and puts drafts in Gmail Drafts.")}catch(e){say("Couldn't send. Try again.")}});
+    try{const r=await call("askClaude",token,t.id,v);handle(r,r&&r.chatUrl?"Claude is on it now. Tap Open chat to follow along.":r&&r.fireError?r.fireError:"Saved. Claude will pick it up within the hour.");if(r&&r.chatUrl){try{window.open(r.chatUrl,"_blank","noopener")}catch(e){}}if(r&&r.needsLink)claudeLinkSetup()}catch(e){say("Couldn't send. Try again.")}});
   inp.addEventListener("keydown",e=>{if(e.key==="Enter")go.click()});
   p.append(c,inp,go);return p}
 
+function claudeLinkSetup(){if($("cl-setup"))return;const box=el("div","panel");box.id="cl-setup";box.style.cssText="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:60;max-width:440px;width:calc(100% - 32px);background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.25);display:grid;gap:10px";box.append(el("strong",null,"Connect instant Claude (one time)"),el("div","sub","In Claude, open claude.ai/code/routines → \u201cTeam Tasks · Ask Claude (instant)\u201d → Add another trigger → API → copy the URL, then Generate token and copy it. Paste both here."));const u=document.createElement("input");u.placeholder="URL ending in /fire";const k=document.createElement("input");k.placeholder="Token (sk-ant-oat01-…)";k.type="password";k.autocomplete="off";const row=el("div");row.style.cssText="display:flex;gap:8px;justify-content:flex-end";const c=el("button","btn","Not now");c.type="button";c.onclick=()=>box.remove();const sv=el("button","btn primary","Save");sv.type="button";sv.onclick=async()=>{sv.disabled=true;try{const r=await call("setClaudeLink",token,u.value,k.value);if(r&&r.ok){box.remove();say("Connected. New requests now start Claude straight away.")}else{sv.disabled=false;say((r&&r.error)||"Couldn't save.")}}catch(e){sv.disabled=false;say("Couldn't save. Try again.")}};row.append(c,sv);box.append(u,k,row);document.body.append(box);u.focus()}
 /* ---------- packages ---------- */
 const CARRIERS=["FedEx","UPS","USPS","DHL","Malca-Amit","Loomis","Brink's","Other"];
 const PST=["Label made","In transit","Out for delivery","Delivered","Issue"];
