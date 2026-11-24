@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html><head>
+<script>try{localStorage.setItem("jr_auc_look","new")}catch(e){}</script>
+<title>JR Team · Auction</title><script>window.JR_MOD="auction";</script><script src="jr.js"></script>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://script.google.com"><link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
+<meta name="theme-color" content="#24508f"><link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,500;6..96,700&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+*{box-sizing:border-box}html,body{margin:0}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}
+/* Layout: phone-first viewing book — sticky header with four tabs, one column of house cards / lot slips, a velvet-tray accent for actions */
+:root{
+  --bg:#F2F4F1; --surface:#FFFFFF; --sunk:#E7EBE6; --line:#D3D9D2;
+  --ink:#16201B; --muted:#5B6A62; --accent:#1E5A47; --accent-ink:#FFFFFF; --accent-soft:#DCEBE4;
+  --brass:#9A7424; --brass-soft:#F3E9D2; --warn:#A8461F; --warn-soft:#F8E3D8; --ok:#2C7A4B;
+  --f-display:"Bodoni Moda", "Didot", "Bodoni 72", Georgia, serif;
+  --f-body:"Public Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-data:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1512; --surface:#172019; --sunk:#1F2A23; --line:#2E3B33;
+  --ink:#E7EEE9; --muted:#9AAAA1; --accent:#62B898; --accent-ink:#0B1410; --accent-soft:#1E3A2F;
+  --brass:#D6B262; --brass-soft:#3A3120; --warn:#F09A72; --warn-soft:#3D2419; --ok:#6FCB93; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1512; --surface:#172019; --sunk:#1F2A23; --line:#2E3B33;
+  --ink:#E7EEE9; --muted:#9AAAA1; --accent:#62B898; --accent-ink:#0B1410; --accent-soft:#1E3A2F;
+  --brass:#D6B262; --brass-soft:#3A3120; --warn:#F09A72; --warn-soft:#3D2419; --ok:#6FCB93; color-scheme:dark}
+html,body{background:var(--bg);color:var(--ink)}
+body{font-family:var(--f-body);font-size:15px;line-height:1.45;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:760px;margin:0 auto}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:14px 8px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--f-display);font-weight:700;font-size:26px;letter-spacing:-.01em;margin:0;text-wrap:balance}
+.route{font-family:var(--f-data);font-size:11.5px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+nav{position:fixed;z-index:6;left:0;top:0;bottom:0;width:64px;display:flex;flex-direction:column;gap:2px;padding:calc(env(safe-area-inset-top,0px) + 10px) 6px 10px;padding-left:max(6px,env(safe-area-inset-left,0px));background:var(--sunk);border-right:1px solid var(--line);overflow-y:auto}
+nav a{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 2px;border-radius:8px;color:var(--muted);text-decoration:none;font-weight:600;font-size:10.5px;text-align:center}
+nav a svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+nav a[aria-current="page"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+body{padding-left:calc(64px + 10px + env(safe-area-inset-left,0px))}
+@media (min-width:820px){nav{width:184px;padding:18px 12px}nav a{flex-direction:row;gap:10px;padding:10px 12px;font-size:14px;text-align:left}nav a svg{width:19px;height:19px}body{padding-left:calc(184px + 28px)}}
+.cal-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cal-head h2{margin:0}
+.cal-nav{display:flex;gap:6px}.cal-nav button{padding:7px 11px}
+.cal-key{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted);align-items:center}
+.cal-key i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+.cal-dh{font-family:var(--f-data);font-size:10.5px;color:var(--muted);text-align:center;text-transform:uppercase;letter-spacing:.04em}
+.cal-d{min-height:64px;padding:4px;border:1px solid var(--line);border-radius:7px;background:var(--surface);display:flex;flex-direction:column;gap:2px;text-align:left;font-weight:400;cursor:pointer;color:var(--ink);overflow:hidden}
+.cal-d.out{opacity:.4}
+.cal-d.today .cal-n{background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:0 6px}
+.cal-d[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:-1px}
+.cal-n{font-family:var(--f-data);font-size:11.5px;align-self:flex-start}
+.cev{display:block;font-size:10.5px;line-height:1.3;padding:1px 4px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cev.sale,.cal-key .sale{background:var(--accent);color:var(--accent-ink)}
+.cev.view,.cal-key .view{background:var(--brass-soft);color:var(--brass)}
+.cev.appt,.cal-key .appt{background:var(--accent-soft);color:var(--accent)}
+.cev.pend,.cal-key .pend{background:transparent;border:1px dashed var(--accent);color:var(--accent)}
+.cev.more{color:var(--muted);padding:0 4px}
+@media (max-width:600px){.cal-d{min-height:46px;padding:3px}.cev{font-size:0;height:5px;padding:0}.cev.more{font-size:9.5px;height:auto}}
+.agenda{display:flex;flex-direction:column}
+.ag{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}
+.ag:first-child{border-top:0}
+.ag .cev{flex:none;font-size:11px;height:auto;padding:2px 7px;margin-top:2px}
+.ag-b{flex:1;min-width:0}.ag-b small{display:block;color:var(--muted);font-size:12.5px}
+.ag button{padding:6px 10px;font-size:13px;flex:none}
+.arow{display:flex;gap:10px;align-items:center;width:100%;text-align:left;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);margin-top:6px;font-weight:400;color:var(--ink);cursor:pointer}
+.arow[aria-expanded="true"]{border-color:var(--accent)}
+.arow img,.arow .anoimg{width:48px;height:48px;object-fit:cover;border-radius:6px;flex:none;background:var(--sunk)}
+.arow .ab{flex:1;min-width:0}.arow .ab b{display:block;font-size:14px}
+.arow .ab small{display:block;color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.arow .ap{text-align:right;flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-size:14px}
+.arow .ap small{color:var(--muted);font-size:11.5px}
+.catd{background:var(--sunk);border-radius:8px;padding:8px 10px;font-size:13.5px}
+.catd summary{cursor:pointer;font-weight:600}
+.catd p{margin:6px 0 0;white-space:pre-wrap}
+.bc-cur{border-top:1px solid var(--line);padding-top:10px;margin-top:4px}
+.bc-currow{display:flex;gap:8px;align-items:center}.bc-currow input{flex:1;min-width:0}.bc-currow button{flex:none}
+.bc-cur .small{margin-top:6px;color:var(--muted)}.bc-cur .over{color:var(--warn)}
+nav a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+main{display:flex;flex-direction:column;gap:18px;padding-top:16px}
+.banner{background:var(--brass-soft);color:var(--ink);border-radius:var(--r);padding:10px 12px;font-size:13.5px}
+.banner b{color:var(--brass)}
+h2{font-family:var(--f-display);font-size:21px;font-weight:500;margin:6px 0 0}
+.eyebrow{font-family:var(--f-data);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.city{display:flex;flex-direction:column;gap:8px}
+.cityhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;border-bottom:1px solid var(--line);padding-bottom:4px}
+.cityhead .eyebrow{white-space:nowrap}
+details.house{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+details.house>summary{list-style:none;cursor:pointer;padding:12px 14px;display:flex;gap:10px;align-items:center}
+details.house>summary::-webkit-details-marker{display:none}
+.hname{font-weight:700;flex:1;min-width:0}
+.hname small{display:block;font-weight:400;color:var(--muted);font-size:12.5px}
+.prog{font-family:var(--f-data);font-size:12px;color:var(--muted);white-space:nowrap}
+.pill{font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:999px;white-space:nowrap;letter-spacing:.02em}
+.p-todo{background:var(--sunk);color:var(--muted)}
+.p-sent{background:var(--brass-soft);color:var(--brass)}
+.p-conf{background:var(--accent-soft);color:var(--accent)}
+.p-walk{background:var(--sunk);color:var(--ink)}
+.p-sugg{border:1px dashed var(--line);color:var(--muted)}
+.hbody{padding:0 14px 14px;display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line)}
+.checks{display:flex;flex-direction:column;gap:2px;padding-top:10px}
+.checks label{display:flex;gap:10px;align-items:center;padding:7px 2px;cursor:pointer}
+.checks input{width:20px;height:20px;accent-color:var(--accent);flex:none}
+.checks label.done span{color:var(--muted);text-decoration:line-through}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.grid .full{grid-column:1/-1}
+@media (max-width:420px){.grid{grid-template-columns:minmax(0,1fr)}}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field>span{font-size:12px;font-weight:600;color:var(--muted)}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%;box-sizing:border-box;min-width:0}
+textarea{min-height:64px;resize:vertical}
+input.num{font-family:var(--f-data);font-variant-numeric:tabular-nums}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button{font:inherit;font-weight:600;border-radius:8px;padding:9px 14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+button.ghost{background:transparent}
+button.danger{color:var(--warn);border-color:var(--warn)}
+button:disabled{opacity:.5;cursor:default}
+.msgbox{background:var(--sunk);border-radius:8px;padding:10px;font-size:13px;white-space:pre-wrap;max-height:220px;overflow:auto}
+.tabs2{display:flex;gap:6px;flex-wrap:wrap}
+.tabs2 button{padding:6px 10px;font-size:13px}
+.tabs2 button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.toolbar select{width:auto;flex:1;min-width:150px}
+.slip{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.slip.r3{border-left:3px solid var(--brass)}
+.sliphead{display:flex;gap:10px;align-items:baseline}
+.lotno{font-family:var(--f-display);font-weight:700;font-size:20px;min-width:2.4em}
+.sliphead .desc{flex:1;min-width:0;font-weight:600}
+.sliphead .desc small{display:block;font-weight:400;color:var(--muted);font-size:12.5px}
+.stars{color:var(--brass);letter-spacing:1px;white-space:nowrap}
+.figs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+@media (max-width:480px){.figs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.fig{background:var(--sunk);border-radius:7px;padding:6px 8px;min-width:0}
+.fig .k{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-family:var(--f-data)}
+.fig .v{font-family:var(--f-data);font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;overflow-wrap:anywhere}
+.fig.key{background:var(--accent-soft)}
+.fig.key .v{color:var(--accent)}
+.flag{font-size:12.5px;color:var(--warn);background:var(--warn-soft);border-radius:6px;padding:4px 8px}
+.muted{color:var(--muted)}
+.small{font-size:12.5px}
+.empty{border:1px dashed var(--line);border-radius:var(--r);padding:22px 16px;text-align:center;color:var(--muted)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:12px}
+.chain{font-family:var(--f-data);font-size:13px;display:flex;flex-direction:column;gap:2px;font-variant-numeric:tabular-nums}
+.chain div{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px dotted var(--line)}
+.chain div:last-child{border:0;font-weight:700;color:var(--accent);font-size:15px}
+.hchips{display:flex;flex-wrap:wrap;gap:6px}
+.hchips button{padding:10px 12px;font-size:14px}
+.hchips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.dropzone{border:2px dashed var(--line);border-radius:var(--r);padding:26px 16px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center}
+.dropzone.armed{border-color:var(--accent);background:var(--accent-soft)}
+.dropzone button{font-size:16px;padding:12px 20px}
+.guide h3{font-family:var(--f-display);font-size:17px;font-weight:500;margin:4px 0 0}
+.guide ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.code{font-family:var(--f-data);background:var(--sunk);padding:1px 5px;border-radius:4px;font-size:13px}
+.tablewrap{overflow-x:auto}
+th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:5px 8px;border-bottom:1px solid var(--line);font-weight:600}
+.atable td{font-family:var(--f-body)}
+.atable td:first-child{font-family:var(--f-data);white-space:nowrap}
+.atable tr.next td{background:var(--accent-soft)}
+.slist{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;counter-reset:sl}
+.slist li{counter-increment:sl;display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.slist li::before{content:counter(sl) ".";font-family:var(--f-data);font-weight:700;color:var(--muted);min-width:1.8em}
+.media{display:flex;flex-wrap:wrap;gap:6px}
+.mchip{font-size:12.5px;padding:4px 10px;border-radius:999px;background:var(--sunk);color:var(--ink);text-decoration:none;border:1px solid var(--line)}
+.mchip.wait{color:var(--muted);border-style:dashed;background:transparent}
+.slist li.seen{opacity:.55}
+.slist li.seen .sl-t{text-decoration:line-through}
+.slist input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent);flex:none;margin-top:1px}
+.sl-t{flex:1;min-width:0}
+table{border-collapse:collapse;font-size:13.5px;width:100%}
+td{padding:5px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+td:first-child{font-family:var(--f-data);font-weight:600;white-space:nowrap}
+.sample{font-family:var(--f-data);background:var(--sunk);border-radius:8px;padding:10px;font-size:13px;white-space:pre;overflow-x:auto}
+.review{display:flex;flex-direction:column;gap:8px}
+.review .slip label{display:flex;gap:8px;align-items:center;font-weight:600}
+.unsure{color:var(--warn);font-weight:700}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:999px;font-size:13.5px;z-index:20}
+@media (prefers-reduced-motion:no-preference){details.house[open]>.hbody{animation:drop .18s ease-out}@keyframes drop{from{opacity:.4;transform:translateY(-3px)}to{opacity:1;transform:none}}}
+.salegrp{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);margin:10px 0}
+.salegrp>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px}
+.salegrp>summary::-webkit-details-marker{display:none}
+.salegrp>summary::before{content:"▸";color:var(--muted);transition:transform .15s}
+.salegrp[open]>summary::before{transform:rotate(90deg)}
+.sg-t{flex:1;display:flex;flex-direction:column}.sg-t small{color:var(--muted)}
+.sg-n{font-size:.85em;color:var(--muted);white-space:nowrap}
+.sg-body{display:flex;flex-direction:column;gap:10px;padding:0 10px 10px}
+.okc{color:var(--ok);font-weight:600}
+.approve{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.apv{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:4px 12px;font:inherit;cursor:pointer}
+.apv.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.slip.apd{border-left:4px solid var(--ok)}
+.bc{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:10px;margin:10px 0}
+.bc.won{border-left:4px solid var(--ok)}
+.bc.dirty{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass)}
+.bc-f{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end}
+.wonbox{display:flex;align-items:center;gap:6px;padding:9px 2px;font-weight:600;white-space:nowrap}
+.wonbox input{width:auto;margin:0}
+.st{font-size:12px;padding:2px 9px;border-radius:999px;background:var(--sunk);white-space:nowrap;font-weight:600}
+.st.ok{background:var(--ok);color:#fff}
+.st.b{background:var(--accent-soft);color:var(--accent)}
+.stats{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.stats b{color:var(--ink)}
+.fchips{display:flex;gap:6px;flex-wrap:wrap}
+.fchips button{padding:6px 10px;font-size:13px}
+.fchips button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.focus-h{display:flex;flex-direction:column;gap:10px}
+.thumbs{display:flex;gap:6px;flex-wrap:wrap}
+.tb{font-size:12.5px;padding:4px 10px;border:1px solid var(--line);border-radius:999px;text-decoration:none}
+.bc-d .slip{border:none;padding:0;background:transparent}
+.bnote{min-height:58px;resize:vertical}
+.bc .sliphead{align-items:flex-start}
+.bthumb{width:72px;height:72px;object-fit:cover;border-radius:8px;display:block;background:var(--sunk)}
+.bthumbl{flex:none}
+.bc-f{grid-template-columns:1fr}
+.bcalc{border:1px dashed var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.bcalc-g{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:end}
+.bcalc-g .field:last-child{grid-column:1/-1}
+.bcalc-g .op{padding-bottom:10px;color:var(--muted);font-weight:700}
+.bcalc-g .op:nth-of-type(2){display:none}
+.btab{width:100%;border-collapse:collapse;font-family:var(--f-data);font-size:14px}
+.btab th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:right;font-weight:600}
+.btab td{padding:4px 0;text-align:right;border-top:1px solid var(--line)}
+.btab td:first-child,.btab th:first-child{text-align:left}
+.btab tr.over td{color:var(--muted)}
+.bcalc-t{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-family:var(--f-data);font-size:14px}
+.bc-res{background:var(--sunk);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px}
+.bc-f2{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}
+.howto{margin:0;padding-left:20px;font-size:13.5px;color:var(--muted);display:flex;flex-direction:column;gap:2px}
+.howto b{color:var(--ink)}
+.stats{font-size:14px;color:var(--ink)}
+button.link{background:none;border:none;color:var(--accent);text-decoration:underline;padding:6px 4px;cursor:pointer;font:inherit}
+/* ===== New look: easier to read ===== */
+:root{--f-data:"Public Sans",-apple-system,"Segoe UI",Roboto,sans-serif;--muted:#4A5A52}
+body{font-size:16px;line-height:1.45;font-variant-numeric:tabular-nums}
+.small,small{font-size:14px!important}
+.eyebrow{font-size:13px!important;font-weight:700!important;letter-spacing:.04em}
+input,select,textarea{font-size:17px!important;min-height:48px}
+button{font-size:16px!important;min-height:44px}
+.field>span{font-size:15px!important;font-weight:600}
+.lotno{font-size:16px!important}
+.desc{font-size:17px!important}
+nav a span{font-size:12px!important}
+.nc-sub{font-size:15px;color:#4A5A52;margin-top:6px}
+.nc-pair{display:flex;gap:10px;align-items:flex-end}
+.nc-pair .field{flex:1;min-width:0}
+.nc-sw{font-size:24px;color:#4A5A52;padding-bottom:12px}
+.nc-big{font-size:24px!important;font-weight:700;min-height:58px}
+.nc-big.on{border:2px solid var(--accent)!important}
+.nc-vs{display:flex;justify-content:space-between;gap:10px;border-radius:10px;padding:10px 12px;font-weight:600;font-size:15px;margin-top:10px}
+.nc-vs.ok{background:#DFF0E5;color:#1D6B3F}.nc-vs.over{background:#F8E3D8;color:#8A3A16}
+.nc-why{display:flex;flex-direction:column;gap:8px;font-size:16px}
+.nc-why>div{display:flex;justify-content:space-between;gap:12px}
+.nc-why>div>span:first-child{color:#4A5A52}
+.nc-why>div>span:last-child{font-weight:600}
+.nc-why .t{border-top:1px solid var(--line);padding-top:8px}
+.nc-why .t>span:first-child{color:var(--ink)}
+.nc-why .b>span{font-weight:700!important;color:var(--accent)!important}
+.nc-why .m{background:var(--accent-soft);border-radius:8px;padding:8px 10px}
+.nc-lad table{width:100%;border-collapse:collapse;font-size:15px}
+.nc-lad th{text-align:left;font-size:13px;color:#4A5A52;padding:8px 6px;background:var(--sunk)}
+.nc-lad td{padding:6px;border-top:1px solid var(--line)}
+.nc-lad td:nth-child(n+2),.nc-lad th:nth-child(n+2){text-align:right}
+.nc-lad tr.mine{background:var(--accent-soft)}
+.nc-lad tr.sel td:first-child button{font-weight:800}
+.nc-lad .ok{color:#1D6B3F;font-weight:700}.nc-lad .ov{color:#8A3A16;font-weight:700}
+.nc-lad button.link{font-size:16px!important;min-height:36px;padding:0}
+.nc-save{width:100%;min-height:54px;font-size:17px!important;margin:4px 0 14px}
+.nc-quick summary{cursor:pointer;padding:4px 0;font-size:16px}
+.jr-look{display:block;text-align:center;font-size:14px;padding:10px;color:var(--accent)}
+
+</style>
+</head><body>
+<div class="wrap">
+<header>
+  <div class="brand"><h1>Europe Viewing Book</h1><span class="route">Geneva · Milan 10–11 · Paris 12 Nov</span></div>
+  <nav aria-label="Sections">
+    <a href="#upload" data-tab="upload"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg><span>Upload</span></a>
+    <a href="#appointments" data-tab="appointments"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg><span>Appts</span></a>
+    <a href="#auctions" data-tab="auctions"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h18M5 10v8M9 10v8M15 10v8M19 10v8M3 20h18M12 3l9 5H3z"/></svg><span>Auctions</span></a>
+    <a href="#lots" data-tab="lots"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5l5 5M11 8l5 5M6 13l6-6 5 5-6 6zM4 20l5-5"/></svg><span>Bids</span></a>
+    <a href="#archive" data-tab="archive"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 001 1h12a1 1 0 001-1V9M10 13h4"/></svg><span>Archive</span></a>
+    <a href="#cal" data-tab="cal"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg><span>Calendar</span></a>
+    <a href="#calc" data-tab="calc"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 12h1M12 12h1M16 12h0M8 16h1M12 16h1M16 16v0"/></svg><span>Calculator</span></a>
+    <a href="#guide" data-tab="guide"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 015 .5c0 1.5-2.5 2-2.5 3.5M12 17h0"/></svg><span>Guide</span></a>
+  </nav>
+</header>
+<main id="main"></main>
+<a class="jr-look" href="auction.html" onclick="try{localStorage.setItem('jr_auc_look','old')}catch(e){}">Switch back to the old look</a>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>window.addEventListener("error",function(e){var m=document.getElementById("main");if(m)m.textContent="ERR: "+e.message+" @ line "+e.lineno+":"+e.colno});</script>
+<script>
+(function(){
+const DEFAULT_SETTINGS={traveler:"",fx:{EUR:null,CHF:null,GBP:null},fxDate:"",buffer:2,costs:3};
+const S={houses:[],lots:[],settings:structuredClone(DEFAULT_SETTINGS),offline:false,canRead:true,auctions:[],pending:0,photoPending:0,pin:null,state:"loading",tab:"appointments",lotHouse:"all",editing:null,msgLang:{},review:null,sample:null,canImages:false,confirmDel:null};
+const $=s=>document.querySelector(s);
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const num=v=>{if(v===""||v==null)return null;const n=Number(String(v).replace(/,/g,""));return isFinite(n)?n:null};
+const CUR={EUR:"€",CHF:"CHF ",GBP:"£",USD:"$"};
+const money=(v,c)=>v==null||!isFinite(v)?"—":(CUR[c]||"")+Math.round(v).toLocaleString("en-US");
+const toast=t=>{const el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2200)};
+
+const STEPS={appt:[["found","Contact found"],["sent","Message sent"],["replied","Reply received"],["confirmed","Slot confirmed"],["registered","Registered to bid"],["docs","Condition reports & certs requested"]],
+             walk:[["hours","Viewing dates & hours noted"],["order","Visit order planned"],["registered","Registered to bid"],["docs","Condition reports & certs requested"]]};
+function stepsFor(h){return h.mode==="walk"?STEPS.walk:STEPS.appt}
+function statusOf(h){
+  const c=h.checks||{};
+  if(h.mode==="walk") return c.hours?["Walk-in · hours set","p-walk"]:["Walk-in","p-walk"];
+  if(c.confirmed) return ["Confirmed","p-conf"];
+  if(c.replied) return ["Replied","p-sent"];
+  if(c.sent) return ["Sent","p-sent"];
+  if(h.suggested) return ["Suggested","p-sugg"];
+  return ["Not sent","p-todo"];
+}
+
+function fxOf(c){return c==="USD"?1:num(S.settings.fx?.[c])}
+function bpOf(h){return h?num(h.bp):null}
+function increment(v){const t=[[1000,50],[2000,100],[5000,200],[10000,500],[20000,1000],[50000,2000],[100000,5000],[200000,10000],[Infinity,20000]];for(const[l,i]of t)if(v<l)return i}
+function hammerFromUSD(maxUSD,cur,bp){
+  const fx=fxOf(cur);if(maxUSD==null||!fx||bp==null)return null;
+  const costs=num(S.settings.costs)||0,buf=num(S.settings.buffer)||0;
+  const net=maxUSD/(1+costs/100), local=net/(fx*(1+buf/100)), ham=local/(1+bp/100);
+  const inc=increment(ham);
+  return {net,local,ham,inc,round:Math.floor(ham/inc)*inc,fx,costs,buf};
+}
+function landedFromHammer(h,cur,bp){
+  const fx=fxOf(cur);if(h==null||!fx||bp==null)return null;
+  const costs=num(S.settings.costs)||0,buf=num(S.settings.buffer)||0;
+  return h*(1+bp/100)*fx*(1+buf/100)*(1+costs/100);
+}
+
+function call(fn,...args){return new Promise((res,rej)=>{google.script.run.withSuccessHandler(res).withFailureHandler(rej)[fn](S.pin,...args)})}
+function errText(e){const m=String(e?.message||e||"");if(m.includes("PIN:"))return"That PIN is not right.";const x=m.match(/(?:SETUP|READ):\s*([\s\S]*)/);return x?x[1]:"Couldn't save. Check your connection and try again."}
+async function write(p,label){try{const v=await p;if(label)toast(label);return v}catch(e){if(String(e?.message||e).includes("PIN:")){lockOut();return}toast(errText(e))}}
+function outbox(){try{return JSON.parse(localStorage.getItem("jr_outbox")||"[]")}catch(e){return S._mem||[]}}
+function setOutbox(q){S._mem=q;try{localStorage.setItem("jr_outbox",JSON.stringify(q))}catch(e){}S.pending=q.length+(S.photoPending||0)+(S.mediaPending||0)}
+function saveCache(){try{localStorage.setItem("jr_cache",JSON.stringify({houses:S.houses,lots:S.lots,auctions:S.auctions,settings:S.settings,t:Date.now()}))}catch(e){}}
+function note(t){return navigator.onLine?t:t+" — will sync when you have signal"}
+function enqueue(fn,args){const q=outbox();q.push({fn:fn,args:args,t:Date.now()});setOutbox(q);saveCache();flush()}
+function isNet(e){const m=String(e?.message||e||"");return !navigator.onLine||/network|http 0|failed to fetch|connection|timed? ?out/i.test(m)}
+function idb(){return new Promise((res,rej)=>{const r=indexedDB.open("jrvb",2);r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains("photos"))d.createObjectStore("photos",{keyPath:"id"});if(!d.objectStoreNames.contains("media"))d.createObjectStore("media",{keyPath:"id"})};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+async function idbAll(st){st=st||"photos";const db=await idb();return new Promise((res,rej)=>{const t=db.transaction(st).objectStore(st).getAll();t.onsuccess=()=>res(t.result||[]);t.onerror=()=>rej(t.error)})}
+async function idbPut(v,st){st=st||"photos";const db=await idb();return new Promise((res,rej)=>{const t=db.transaction(st,"readwrite");t.objectStore(st).put(v);t.oncomplete=()=>res();t.onerror=()=>rej(t.error)})}
+async function idbDel(id,st){st=st||"photos";const db=await idb();return new Promise((res,rej)=>{const t=db.transaction(st,"readwrite");t.objectStore(st).delete(id);t.oncomplete=()=>res();t.onerror=()=>rej(t.error)})}
+async function countPhotos(){try{S.photoPending=(await idbAll()).length}catch(e){S.photoPending=0}try{const ms=await idbAll("media");S.mediaQ=ms.map(m=>({id:m.id,lotId:m.lotId,name:m.name,mime:m.mime}));S.mediaPending=ms.length}catch(e){S.mediaQ=[];S.mediaPending=0}S.pending=outbox().length+S.photoPending+S.mediaPending}
+function softRender(){const busy=document.activeElement&&/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);if(!busy)render()}
+function mediaArr(l){let m=l&&l.media;if(typeof m==="string"){try{m=JSON.parse(m)}catch(e){m=[]}}return Array.isArray(m)?m:[]}
+function b64(blob){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(String(fr.result).split(",")[1]||"");fr.onerror=()=>rej(fr.error);fr.readAsDataURL(blob)})}
+async function shrinkBlob(file,max){const bmp=await createImageBitmap(file);const sc=Math.min(1,max/Math.max(bmp.width,bmp.height));const c=document.createElement("canvas");c.width=Math.round(bmp.width*sc);c.height=Math.round(bmp.height*sc);c.getContext("2d").drawImage(bmp,0,0,c.width,c.height);return await new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error("blob")),"image/jpeg",0.9))}
+const CHUNK=2*1024*1024;
+async function uploadMedia(m){
+  if(!m.session){const s=await call("startUpload",{houseId:m.houseId,lotNo:m.lotNo,desc:m.desc,name:m.name,mime:m.mime,size:m.blob.size});m.session=s.session;m.offset=0;await idbPut(m,"media")}
+  else{const st=await call("uploadStatus",m.session,m.blob.size);if(st.done||st.expired)return st;m.offset=st.offset||0}
+  while(m.offset<m.blob.size){const end=Math.min(m.offset+CHUNK,m.blob.size);const data=await b64(m.blob.slice(m.offset,end));
+    const r=await call("uploadChunk",m.session,data,m.offset,m.blob.size,m.mime);
+    if(r.done||r.expired)return r;
+    m.offset=r.offset!=null?r.offset:end;await idbPut(m,"media");
+    S.mediaProgress={name:m.name,pct:Math.round(m.offset/m.blob.size*100)};softRender()}
+  return await call("uploadStatus",m.session,m.blob.size)}
+function pickMedia(lotId){const inp=document.createElement("input");inp.type="file";inp.accept="image"+"/"+"*,video"+"/"+"*";inp.multiple=true;inp.onchange=()=>{if(inp.files&&inp.files.length)queueMedia(lotId,[...inp.files])};inp.click()}
+async function queueMedia(lotId,files){const l=S.lots.find(x=>x.id===lotId);if(!l)return;let n=0;
+  toast("Saving "+files.length+" file"+(files.length===1?"":"s")+"…");
+  for(const f of files){let blob=f,mime=f.type||"application/octet-stream",name=f.name||("media-"+Date.now());
+    if(/^image\//.test(mime)){try{blob=await shrinkBlob(f,2400);mime="image/jpeg";name=name.replace(/\.[^.]+$/,"")+".jpg"}catch(e){}}
+    if(blob.size>500*1024*1024){toast(name+" is over 500 MB — skipped");continue}
+    const rec={id:"m"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),lotId:lotId,houseId:l.houseId,lotNo:l.lotNo,desc:l.desc,name:"Lot "+(l.lotNo||"")+" · "+name,mime:mime,blob:blob,t:Date.now()};
+    try{await idbPut(rec,"media");n++}catch(e){toast("Couldn't store "+name+" on this phone")}}
+  await countPhotos();if(n)toast(note("Added "+n+" photo/video"+(n===1?"":"s")+" to lot "+(l.lotNo||"")));render();flush()}
+function mediaBlock(l){const M=mediaArr(l),P=(S.mediaQ||[]).filter(x=>x.lotId===l.id);if(!M.length&&!P.length)return "";
+  return '<div class="media">'+M.map(m=>'<a class="mchip" href="'+esc(m.url)+'" target="_blank" rel="noopener">'+(/^video/.test(m.mime||"")?"Video":"Photo")+" "+esc(String(m.name||"").replace(/^Lot [^·]*· /,"").slice(0,24))+"</a>").join("")+P.map(p=>'<span class="mchip wait">'+(/^video/.test(p.mime||"")?"Video":"Photo")+(navigator.onLine?" · uploading":" · waiting for signal")+"</span>").join("")+"</div>"}
+function mediaLine(l){const n=mediaArr(l).length,p=(S.mediaQ||[]).filter(x=>x.lotId===l.id).length;return n||p?'<div class="small">'+(n?n+" photo/video"+(n===1?"":"s"):"")+(p?(n?" · ":"")+p+" waiting to upload":"")+"</div>":""}
+function applyResult(fn,r){if(!r||typeof r!=="object")return;
+  if(fn==="saveLot"){const i=S.lots.findIndex(x=>x.id===r.id);if(i>=0)S.lots[i]=r;else S.lots.push(r)}
+  else if(fn==="saveAuction"){const i=S.auctions.findIndex(x=>x.id===r.id);if(i>=0)S.auctions[i]=r;else S.auctions.push(r)}
+  else if(fn==="addHouse"){const i=S.houses.findIndex(x=>x.id===r.id);if(i>=0)S.houses[i]=r;else S.houses.push(r)}
+  else if(fn==="saveSettings"&&r.fx){S.settings=deepMerge(structuredClone(DEFAULT_SETTINGS),r)}
+  saveCache()}
+let flushing=false;
+async function drain(){let q=outbox();while(q.length){const it=q[0];
+  try{const r=await call(it.fn,...it.args);applyResult(it.fn,r)}
+  catch(e){const m=String(e?.message||e);if(m.includes("PIN:")){lockOut();return false}if(isNet(e)){S.offline=true;return false}toast(errText(e))}
+  q=outbox();q.shift();setOutbox(q)}return true}
+async function flush(){
+  if(flushing||!S.pin)return;flushing=true;let ok=true;
+  try{
+    ok=await drain();
+    if(ok){let ph=[];try{ph=await idbAll()}catch(e){}
+      for(const p of ph){
+        try{const r=await call("readNotes",p.houseId,p.imgs);await idbDel(p.id);
+          const hn=(S.houses.find(x=>x.id===p.houseId)||{}).name||"";const n=p.imgs.length;
+          toast("Uploaded "+n+" page"+(n===1?"":"s")+" to Drive · "+hn);
+          if(r&&r.items&&r.items.length){S.review={status:"ready",houseId:p.houseId,photos:r.photos||[],items:r.items.map(x=>({...x,unsure:Array.isArray(x.unsure)?x.unsure.map(String):[],_keep:true}))}}
+          else if(S.review&&S.review.qid===p.id){S.review={status:"saved",msg:"Uploaded "+n+" page"+(n===1?"":"s")+" to Drive under "+hn+". Karan will read them and add the lots."}}}
+        catch(e){const m=String(e?.message||e);if(m.includes("PIN:")){ok=false;lockOut();break}if(isNet(e)){ok=false;S.offline=true;break}try{await idbDel(p.id)}catch(_){}S.review={status:"error",msg:errText(e)}}}
+    }
+    if(ok){let ms=[];try{ms=await idbAll("media")}catch(e){}
+      for(const m of ms){
+        try{let r=await uploadMedia(m);if(r&&r.expired){m.session=null;m.offset=0;r=await uploadMedia(m)}
+          if(r&&r.done){await idbDel(m.id,"media");S.mediaProgress=null;const l=S.lots.find(x=>x.id===m.lotId);
+            if(l){l.media=mediaArr(l).concat([{id:r.id,url:r.url,name:m.name,mime:m.mime}]);const q=outbox();q.push({fn:"saveLot",args:[l],t:Date.now()});setOutbox(q);saveCache()}
+            toast("Uploaded "+m.name)}}
+        catch(e){const msg=String(e?.message||e);if(msg.includes("PIN:")){ok=false;lockOut();break}if(isNet(e)){ok=false;S.offline=true;break}
+          m.fail=(m.fail||0)+1;if(m.fail>=5){try{await idbDel(m.id,"media")}catch(_){}toast("Couldn't upload "+m.name+": "+errText(e))}else{try{await idbPut(m,"media")}catch(_){}}}
+        await countPhotos();softRender()}
+      if(ok)ok=await drain();
+    }
+    await countPhotos();
+    if(ok&&!S.pending){S.offline=false;flushing=false;await load(false);return}
+  }finally{flushing=false;S.mediaProgress=null;const busy=document.activeElement&&/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);if(!busy)render()}
+}
+const store={
+  updateHouse(id,patch){const h=S.houses.find(x=>x.id===id);if(!h)return;deepMerge(h,patch);const flat={};for(const k in patch){if(k==="checks")Object.assign(flat,patch.checks);else flat[k]=patch[k]}enqueue("updateHouse",[id,flat])},
+  addHouse(fd){const name=String(fd.name||"").trim();if(!name){toast("Enter the auction house name");return null}
+    const base=name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"house";let id=base,n=2;while(S.houses.some(x=>x.id===id))id=base+"-"+n++;
+    const h={id:id,name:name,city:String(fd.city||"").trim()||"Other",date:String(fd.date||"").trim(),mode:fd.mode==="walk"?"walk":"appt",suggested:false,checks:{}};
+    S.houses.push(h);enqueue("addHouse",[{...fd,id:id}]);toast(note("House added"));return h},
+  saveLot(lot,quiet){if(!lot.id)lot.id="l"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);lot.updatedAt=Date.now();if(!lot.createdAt)lot.createdAt=Date.now();
+    const i=S.lots.findIndex(x=>x.id===lot.id);i>=0?S.lots[i]=lot:S.lots.push(lot);enqueue("saveLot",[lot]);if(!quiet)toast(note("Lot saved"));return lot},
+  deleteLot(id){S.lots=S.lots.filter(x=>x.id!==id);enqueue("deleteLot",[id]);toast(note("Lot deleted"));render()},
+  saveSettings(patch){deepMerge(S.settings,patch);const flat={};for(const k in patch){if(k==="fx")for(const c in patch.fx)flat["fx"+c]=patch.fx[c];else flat[k]=patch[k]}enqueue("saveSettings",[flat]);render()},
+  saveAuction(a){if(!a.id)a.id="a"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);const h=S.houses.find(x=>x.id===a.houseId);a.house=h?h.name:(a.house||"");
+    const i=S.auctions.findIndex(x=>x.id===a.id);i>=0?S.auctions[i]=a:S.auctions.push(a);enqueue("saveAuction",[a]);toast(note("Auction saved"));return a},
+  deleteAuction(id){S.auctions=S.auctions.filter(x=>x.id!==id);enqueue("deleteAuction",[id]);toast(note("Auction deleted"))}
+};
+function deepMerge(t,p){for(const k in p){if(p[k]&&typeof p[k]==="object"&&!Array.isArray(p[k])){t[k]=t[k]&&typeof t[k]==="object"?t[k]:{};deepMerge(t[k],p[k])}else t[k]=p[k]}return t}
+
+const DATE_IT={"10":"10 novembre","11":"11 novembre"},DATE_FR={"12":"12 novembre"};
+function dayOf(h){const m=String(h.date||"").match(/(\d{1,2})/);return m?m[1]:""}
+function sig(t){return `${t||"[Name]"}\nJupiter Rain, Inc.\n580 5th Avenue, Floor 21, New York, NY 10036\n+1 212-754-4966 · karan@jupiterrain.com`}
+function messages(h){
+  const t=S.settings.traveler||"[Name]",d=dayOf(h),who=h.contact?h.contact:"";
+  if(h.city==="Milan"){const dIt=DATE_IT[d]||"10–11 novembre";return{
+    it_email:`Oggetto: Richiesta appuntamento visione lotti – ${dIt}\n\nGentile ${who||"Dipartimento Gioielli"},\n\nmi chiamo ${t} e sarò a Milano il ${dIt} per conto di Jupiter Rain, Inc. (New York), commercianti di gioielli antichi e pietre preziose.\n\nVorrei fissare un appuntamento privato per visionare i lotti della vostra prossima asta di gioielli, se possibile il ${dIt}. Potreste inviarmi in anticipo i condition report e i certificati gemmologici dei lotti principali?\n\nVorrei inoltre sapere come registrarmi per le offerte (documenti, eventuale deposito) e quali sono le opzioni di spedizione verso gli Stati Uniti.\n\nCordiali saluti,\n${sig(t)}`,
+    it_wa:`Buongiorno, sono ${t} di Jupiter Rain (New York). Sarò a Milano il ${dIt} e vorrei un appuntamento per visionare i gioielli della vostra prossima asta. Potreste indicarmi un orario disponibile? Grazie mille.`,
+    en:`Dear ${who||"Jewellery Department"},\n\nMy name is ${t} and I will be in Milan on ${d?d+" November":"10–11 November"} on behalf of Jupiter Rain, Inc. (New York), dealers in antique jewelry and gemstones.\n\nI would like to book a private viewing of the lots in your upcoming jewelry sale. Could you send condition reports and lab certificates for the main lots in advance, and let me know how to register to bid and your shipping options to the US?\n\nKind regards,\n${sig(t)}`}}
+  if(h.city==="Paris"){const dFr=DATE_FR[d]||"12 novembre";return{
+    fr_email:`Objet : Demande de rendez-vous – exposition bijoux – ${dFr}\n\nMadame, Monsieur${who?" ("+who+")":""},\n\nJe m'appelle ${t} et je serai à Paris le ${dFr} pour le compte de Jupiter Rain, Inc. (New York), négociant en bijoux anciens et pierres précieuses.\n\nJe souhaiterais prendre rendez-vous pour examiner les lots de votre prochaine vente de bijoux, si possible le ${dFr}. Pourriez-vous m'envoyer à l'avance les rapports d'état et les certificats gemmologiques des lots principaux ?\n\nJ'aimerais également connaître la procédure d'enregistrement pour enchérir (pièces demandées, éventuelle caution) et les options d'expédition vers les États-Unis.\n\nBien cordialement,\n${sig(t)}`,
+    fr_wa:`Bonjour, je suis ${t} de Jupiter Rain (New York). Je serai à Paris le ${dFr} et souhaiterais un rendez-vous pour voir les bijoux de votre prochaine vente. Quel créneau vous conviendrait ? Merci beaucoup.`,
+    en:`Dear ${who||"Jewellery Department"},\n\nMy name is ${t} and I will be in Paris on 12 November on behalf of Jupiter Rain, Inc. (New York), dealers in antique jewelry and gemstones.\n\nI would like to book a viewing of the lots in your upcoming jewelry sale. Could you send condition reports and lab certificates for the main lots in advance, and let me know how to register to bid and your shipping options to the US?\n\nKind regards,\n${sig(t)}`}}
+  return null;
+}
+const MSG_LABEL={it_email:"Email (IT)",it_wa:"WhatsApp (IT)",fr_email:"Email (FR)",fr_wa:"WhatsApp (FR)",en:"English"};
+
+function vAppointments(){
+  if(S.state==="loading")return `<div class="empty">Loading the checklist…</div>`;
+  if(S.state==="slow"&&!S.houses.length)return `<div class="empty">Can't reach the saved checklist yet. Check your connection; it will appear as soon as it loads.</div>`;
+  if(!S.houses.length)return `<div class="empty">No auction houses yet. Add them in the Houses tab of the Google Sheet.</div>`;
+  const order=["Geneva","Milan","Paris"];const cities=[...new Set(S.houses.map(h=>h.city))].sort((a,b)=>(order.indexOf(a)+1||9)-(order.indexOf(b)+1||9));
+  const open=S.houses.filter(h=>h.mode!=="walk"&&!(h.checks||{}).confirmed&&!h.suggested).length;
+  let out=`<div class="banner"><b>${open} appointment${open===1?"":"s"} still to confirm.</b> Tap a house to tick steps, add the contact, and copy a ready message in Italian or French.</div>`;
+  const sched=S.houses.filter(h=>String(h.slot||"").trim()).sort((a,b)=>(order.indexOf(a.city)+1||9)-(order.indexOf(b.city)+1||9)||String(a.slot).localeCompare(String(b.slot),undefined,{numeric:true}));
+  out+=`<section class="panel"><div class="eyebrow">Schedule</div>${sched.length?sched.map(h=>`<div class="row" style="justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:8px"><div style="min-width:0"><b>${esc(h.slot)}</b> · ${esc(h.name)} <span class="muted small">${esc(h.city)}</span></div><span class="pill ${(h.checks||{}).confirmed?"p-conf":"p-sent"}">${(h.checks||{}).confirmed?"Confirmed":"Pending"}</span></div>`).join(""):`<div class="small muted">No appointments yet. As houses reply, their day and time appear here. You can also type a slot in any house below.</div>`}</section>`;
+  for(const c of cities){
+    const hs=S.houses.filter(h=>h.city===c).sort((a,b)=>(a.suggested?1:0)-(b.suggested?1:0)||String(a.date).localeCompare(String(b.date))||a.name.localeCompare(b.name));
+    out+=`<section class="city"><div class="cityhead"><h2>${esc(c)}</h2><span class="eyebrow">${esc(hs[0]?.date||"")}</span></div>`;
+    for(const h of hs)out+=vHouse(h);
+    out+=`</section>`;
+  }
+  out+=`<form class="panel" id="houseform"><div class="eyebrow">Add an auction house</div><div class="grid">
+   <label class="field full"><span>Name</span><input id="nh-name" name="name" required placeholder="e.g. Bolaffi"></label>
+   <label class="field"><span>City</span><input id="nh-city" name="city" list="nh-cities" placeholder="e.g. Milan"></label>
+   <label class="field"><span>Viewing date</span><input id="nh-date" name="date" placeholder="e.g. 11 Nov"></label>
+   <label class="field full"><span>Type</span><select id="nh-mode" name="mode"><option value="appt">Needs an appointment</option><option value="walk">Walk-in viewing</option></select></label>
+  </div><datalist id="nh-cities"><option value="Geneva"></option><option value="Milan"></option><option value="Paris"></option></datalist>
+  <div class="row"><button type="submit" class="primary">Add house</button></div></form>`;
+  return out;
+}
+function vHouse(h){
+  const st=statusOf(h),steps=stepsFor(h),c=h.checks||{},done=steps.filter(([k])=>c[k]).length;
+  const msgs=messages(h);let msgHtml="";
+  if(msgs&&h.mode!=="walk"){const keys=Object.keys(msgs),cur=S.msgLang[h.id]||keys[0];
+    msgHtml=`<div class="field"><span>Outreach message</span><div class="tabs2">${keys.map(k=>`<button type="button" data-act="msgtab" data-id="${h.id}" data-k="${k}" aria-pressed="${k===cur}">${MSG_LABEL[k]}</button>`).join("")}</div>
+    <div class="msgbox" id="msg-${h.id}">${esc(msgs[cur])}</div><div class="row"><button type="button" class="primary" data-act="copy" data-id="${h.id}">Copy message</button>${S.settings.traveler?"":`<span class="small muted">Add the traveler's name under Hammer → Settings.</span>`}</div></div>`}
+  return `<details class="house" data-id="${h.id}"${S.openHouse===h.id?" open":""}><summary><div class="hname">${esc(h.name)}<small>${esc(h.sale||(h.suggested?"Suggested — check for a jewelry sale on view":"Sale to confirm"))}</small></div><span class="prog">${done}/${steps.length}</span><span class="pill ${st[1]}">${st[0]}</span></summary>
+  <div class="hbody">
+   <div class="checks">${steps.map(([k,l])=>`<label class="${c[k]?"done":""}"><input type="checkbox" id="ck-${h.id}-${k}" data-act="check" data-id="${h.id}" data-k="${k}"${c[k]?" checked":""}><span>${l}</span></label>`).join("")}</div>
+   <div class="grid">
+    ${fld(h,"sale","Sale & date")}${fld(h,"contact","Contact (specialist)")}
+    ${fld(h,"email","Email")}${fld(h,"phone","WhatsApp / phone")}
+    ${fld(h,"slot","Appointment slot")}${fld(h,"bp","Buyer's premium % (incl. VAT on premium)","num")}
+    <label class="field full"><span>Notes</span><textarea id="hn-${h.id}" data-act="hf" data-id="${h.id}" data-k="notes">${esc(h.notes)}</textarea></label>
+   </div>
+   ${msgHtml}
+  </div></details>`;
+}
+function fld(h,k,label,cls){return `<label class="field"><span>${label}</span><input id="h-${h.id}-${k}" class="${cls||""}" ${cls==="num"?'inputmode="decimal"':""} data-act="hf" data-id="${h.id}" data-k="${k}" value="${esc(h[k])}"></label>`}
+
+function lotFigures(l){
+  const h=S.houses.find(x=>x.id===l.houseId),bp=bpOf(h),cur=l.currency||"EUR",fx=fxOf(cur),wt=num(l.weight),unit=l.unit||"ct";
+  const per=unit==="ch"?"chow":unit==="gr"?"gr":"ct";
+  const eL=num(l.estLow),eH=num(l.estHigh);
+  const usdL=eL!=null&&fx?eL*fx:null,usdH=eH!=null&&fx?eH*fx:null;
+  const allL=eL!=null&&fx&&bp!=null?eL*(1+bp/100)*fx:null;
+  const perUnit=allL!=null&&wt?allL/wt:null;
+  let my=num(l.myPrice),myUnit=null;
+  if(my!=null&&fx){myUnit=l.myBasis==="lump"?(wt?my*fx/wt:null):my*fx}
+  const target=num(l.maxUSD)!=null?num(l.maxUSD):(num(l.targetPerUnit)!=null&&wt?num(l.targetPerUnit)*wt:null);
+  const back=hammerFromUSD(target,cur,bp);
+  const flags=[];
+  if(!fx)flags.push(`Set today's ${cur}→USD rate under Hammer → Settings`);
+  if(bp==null)flags.push(`Add ${h?h.name:"the house"}'s buyer's premium on the Appointments tab`);
+  if((l.unsure||[]).length)flags.push("Check: "+l.unsure.join(", "));
+  return {h,cur,per,usdL,usdH,perUnit,myUnit,target,back,flags,wt,unit};
+}
+function vLots(){return S.lotsAll?vLotsAll():vFocus()}
+function vLotsAll(){
+  const hs=S.houses.slice().sort((a,b)=>a.city.localeCompare(b.city)||a.name.localeCompare(b.name));
+  let lots=S.lots.slice();if(S.lotHouse!=="all")lots=lots.filter(l=>l.houseId===S.lotHouse);
+  lots.sort((a,b)=>(num(b.rating)||0)-(num(a.rating)||0)||String(a.lotNo).localeCompare(String(b.lotNo),undefined,{numeric:true}));
+  let out=`<div class="toolbar"><select id="lotfilter" data-act="lotfilter" aria-label="Filter by house"><option value="all">All houses (${S.lots.length})</option>${hs.map(h=>`<option value="${h.id}"${S.lotHouse===h.id?" selected":""}>${esc(h.city+" · "+h.name)} (${S.lots.filter(l=>l.houseId===h.id).length})</option>`).join("")}</select>
+  <button type="button" class="primary" data-act="newlot">Add lot</button><a href="#upload" class="small">Upload notes</a><button type="button" class="ghost" data-act="lotsfocus">← One auction at a time</button></div>`;
+  if(S.editing)out+=vLotForm(S.editing);
+  if(S.state==="loading")return out+`<div class="empty">Loading lots…</div>`;
+  if(!lots.length)out+=`<div class="empty">No lots yet${S.lotHouse!=="all"?" for this house":""}. Use the <b>Upload</b> tab to turn photos of handwritten notes into lots, or tap <b>Add lot</b>.</div>`;
+  if(lots.length){
+    const A=(S.auctions||[]).slice().sort((a,b)=>String(a.saleDate||"9").localeCompare(String(b.saleDate||"9"))||String(a.saleTime).localeCompare(String(b.saleTime)));
+    const groups=[];
+    for(const a of A){const L=lots.filter(l=>l.auctionId===a.id);if(L.length)groups.push({key:a.id,title:a.title,house:a.house,when:(a.saleDate?fmtD(a.saleDate):"")+(a.saleTime?" "+a.saleTime:""),L})}
+    const loose=lots.filter(l=>!A.some(a=>a.id===l.auctionId));
+    const byH={};loose.forEach(l=>{(byH[l.houseId]=byH[l.houseId]||[]).push(l)});
+    for(const hid in byH){const h=S.houses.find(x=>x.id===hid);groups.push({key:"none-"+hid,title:"No sale linked yet",house:h?h.name:"",when:"",L:byH[hid]})}
+    if(!S.openSales)S.openSales={};
+    const single=groups.length===1;
+    for(const g of groups){const ap=g.L.filter(isApproved).length;const op=single||S.openSales[g.key];
+      out+=`<details class="salegrp" data-sale="${esc(g.key)}"${op?" open":""}><summary><span class="sg-t"><b>${esc(g.title)}</b><small>${esc([g.house,g.when].filter(Boolean).join(" · "))}</small></span><span class="sg-n">${g.L.length} lot${g.L.length===1?"":"s"}${ap?` · <span class="okc">${ap} approved</span>`:""}</span></summary><div class="sg-body">${g.L.slice().sort(lotSort).map(vSlip).join("")}</div></details>`}
+  }
+  return out;
+}
+function saleGroups(lots){
+  const A=(S.auctions||[]).slice().sort((a,b)=>String(a.saleDate||"9").localeCompare(String(b.saleDate||"9"))||String(a.saleTime).localeCompare(String(b.saleTime)));
+  const groups=[];
+  for(const a of A){const L=lots.filter(l=>l.auctionId===a.id);if(L.length)groups.push({key:a.id,auction:a,title:a.title,house:a.house,saleDate:a.saleDate||"",when:(a.saleDate?fmtD(a.saleDate):"")+(a.saleTime?" "+a.saleTime:""),L})}
+  const loose=lots.filter(l=>!A.some(a=>a.id===l.auctionId));const byH={};loose.forEach(l=>{(byH[l.houseId]=byH[l.houseId]||[]).push(l)});
+  for(const hid in byH){const h=S.houses.find(x=>x.id===hid);groups.push({key:"none-"+hid,title:"No sale linked yet",house:h?h.name:"",saleDate:"",when:"",L:byH[hid]})}
+  return groups}
+function draftOf(l){return (S.draft||{})[l.id]||null}
+function dval(l,k){const d=draftOf(l);return d&&d[k]!=null?d[k]:l[k]}
+function isWon(l){const v=dval(l,"won");return v===true||String(v).toUpperCase()==="TRUE"}
+function isArchived(a){if(!a)return false;const v=String(a.archived??"").trim().toLowerCase();if(v==="yes"||v==="true")return true;if(v==="no"||v==="false")return false;return !!a.saleDate&&String(a.saleDate).slice(0,10)<ymd(new Date())}
+function vFocus(){
+  if(S.state==="loading")return `<div class="empty">Loading lots…</div>`;
+  const G=saleGroups(S.lots).filter(g=>!isArchived(g.auction));
+  let out=S.editing?vLotForm(S.editing):"";
+  if(!G.length)return out+`<div class="empty">No upcoming sales with lots. Past sales are in <a href="#archive">Archive</a>; use the <b>Upload</b> tab to add new lots.</div>`;
+  let key=S.focus;if(!key){try{key=localStorage.getItem("jr_focus")}catch(e){}}
+  if(!G.some(g=>g.key===key)){const today=new Date().toISOString().slice(0,10);key=(G.find(g=>g.saleDate&&g.saleDate>=today)||G[0]).key}
+  S.focus=key;const g=G.find(x=>x.key===key);
+  const L=g.L.slice().sort(lotSort),hasBid=l=>num(dval(l,"bid"))!=null,hasHam=l=>num(dval(l,"hammer"))!=null;
+  const nb=L.filter(hasBid).length,nh=L.filter(hasHam).length,won=L.filter(l=>isWon(l)&&hasHam(l));
+  let spend=0,spendOk=won.length>0;for(const l of won){const f=lotFigures(l),v=landedFromHammer(num(dval(l,"hammer")),f.cur,bpOf(f.h));if(v==null)spendOk=false;else spend+=v}
+  const F=S.fFilter||"all",FL={all:["All lots",L.length],nobid:["Need a bid",L.length-nb],bid:["Bid entered",nb],res:["Sold",nh]};
+  const shown=L.filter(l=>F==="nobid"?!hasBid(l):F==="bid"?hasBid(l):F==="res"?hasHam(l):true);
+  out+=`<section class="panel focus-h">
+   <label class="field"><span>Auction</span><select id="focus-pick" data-act="focus">${G.map(x=>`<option value="${esc(x.key)}"${x.key===key?" selected":""}>${esc([x.house,x.title].filter(Boolean).join(" · ")+(x.when?" — "+x.when:"")+" ("+x.L.length+")")}</option>`).join("")}</select></label>
+   <div class="stats">${nb} of ${L.length} lots have a bid${nh?` · ${nh} sold`:""}${won.length?` · <b>${won.length} won</b>${spendOk?` (about <b>${money(spend,"USD")}</b> all-in)`:""}`:""}</div>
+   <ol class="howto"><li>Pick the auction above.</li><li>For each lot: type your <b>max bid</b> and any <b>notes</b>, add videos, then tap <b>Save</b>.</li><li>After the sale: tap <b>Enter result</b> and type the hammer price.</li></ol>
+   <div class="fchips">${Object.entries(FL).map(([k,[t,n]])=>`<button type="button" data-act="ffilter" data-k="${k}" aria-pressed="${k===F}">${t} · ${n}</button>`).join("")}</div>
+  </section>`;
+  out+=shown.length?shown.map(vBidCard).join(""):`<div class="empty">Nothing here.</div>`;
+  out+=`<div class="row" style="margin:14px 0">${g.auction?`<button type="button" class="ghost" data-act="aulot" data-id="${esc(g.key)}">+ Add a lot to this sale</button>`:""}<button type="button" class="ghost" data-act="lotsall">Show every lot (full list)</button>${g.auction?`<button type="button" class="ghost" data-act="arcmove" data-id="${esc(g.key)}">Move this sale to Archive</button>`:""}</div>${g.auction?`<section class="panel"><div class="eyebrow">Condition reports</div><div class="small">Send this sale's ${g.L.length} lot${g.L.length===1?"":"s"} to Claude, which drafts an email to the auction house asking for condition reports, more photos and videos.</div><div class="row"><button type="button" class="primary" data-act="askclaude" data-id="${esc(g.key)}">Send summary to Claude ↗</button><button type="button" class="ghost" data-act="copyclaude" data-id="${esc(g.key)}">Copy summary</button></div></section>`:""}`;
+  return out}
+function claudePrompt(g){
+  const a=g.auction||{},h=S.houses.find(x=>x.id===a.houseId)||{},L=g.L.slice().sort(lotSort);
+  const lines=L.map(l=>{const c=lotFigures(l).cur,e=l.estLow||l.estHigh?` (est. ${c} ${[l.estLow,l.estHigh].filter(Boolean).join("–")})`:"";return `- Lot ${l.lotNo||"?"} [row id ${l.id}]: ${String(l.desc||"").replace(/\s+/g," ").slice(0,140)}${e}${l.catUrl?" — "+l.catUrl:""}${l.condition?" (condition report already saved)":""}`});
+  return `Please draft an email to ${a.house||h.name||"the auction house"}${h.contact?" (contact: "+h.contact+")":""}${h.email?" at "+h.email:""} about their sale "${a.title||g.title}"${g.when?" on "+g.when:""}${a.location?", "+a.location:""}.
+
+We are Jupiter Rain, Inc. and are interested in the lots below. For each lot, politely ask for:
+1. A detailed condition report
+2. More photos (front, back/reverse, side profile, close-ups of stones and hallmarks/signatures)
+3. A short video in daylight
+4. Copies of any gemmological certificates or reports
+
+Keep it short, warm and professional, list the lots clearly, and ask whether they can send everything before the sale. Sign it: Karan Jain, GG, Jupiter Rain, Inc., +1 212-754-4966, karan@jupiterrain.com.
+Save it as a Gmail draft from karan@jupiterrain.com — do not send it.
+
+Then, for each lot, open the auction house's online catalogue and fill in the "Europe Viewing Book 2026" Google Sheet (ID 1gALghSq__99mdJ48Q4pbulChuoHTgtnU2XZmb_8v3jk), Lots tab, finding each lot by the row id in column A:
+- column "catDesc": the full catalogue description
+- column "condition": the condition report, if the house publishes one online (leave blank if not)
+- columns "thumb" and "catUrl": the catalogue photo and lot page, if missing
+Don't change any other columns.
+
+Lots (${L.length}):
+${lines.join("\n")}`}
+function curNote(l,c){const cb=num(dval(l,"curBid"));if(cb==null)return "Tap the button to read the current bid from the auction website, or type it in.";const mb=num(dval(l,"bid")),f=lotFigures(l),land=landedFromHammer(cb,c,bpOf(f.h));let t=[];if(l.curBidAt){const d=new Date(Number(l.curBidAt));if(!isNaN(d))t.push("Updated "+d.toLocaleString("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}))}if(l.curBidInfo)t.push(esc(l.curBidInfo));if(land!=null)t.push("about "+money(land,"USD")+" all-in at this price");if(mb!=null)t.push(cb<=mb?`<b>${money(mb-cb,c)} under your max</b>`:`<b class="over">${money(cb-mb,c)} over your max</b>`);return t.join(" · ")}
+function vArchive(){
+  if(S.state==="loading")return `<div class="empty">Loading…</div>`;
+  const G=saleGroups(S.lots).filter(g=>isArchived(g.auction)).sort((a,b)=>String(b.saleDate).localeCompare(String(a.saleDate)));
+  if(!G.length)return `<div class="empty">No past sales yet. Sales move here automatically the day after they finish, or tap <b>Move this sale to Archive</b> in Bids.</div>`;
+  let key=S.arcFocus;if(!G.some(g=>g.key===key))key=G[0].key;S.arcFocus=key;const g=G.find(x=>x.key===key);
+  const L=g.L.slice().sort(lotSort),hasHam=l=>num(dval(l,"hammer"))!=null,won=L.filter(l=>isWon(l)&&hasHam(l));
+  let spend=0,spendOk=won.length>0;for(const l of won){const f=lotFigures(l),v=landedFromHammer(num(dval(l,"hammer")),f.cur,bpOf(f.h));if(v==null)spendOk=false;else spend+=v}
+  const F=S.aFilter||"all",FL={all:["All lots",L.length],won:["Won",L.filter(isWon).length],sold:["Sold",L.filter(hasHam).length],none:["Unsold / no result",L.filter(l=>!hasHam(l)).length]};
+  const shown=L.filter(l=>F==="won"?isWon(l):F==="sold"?hasHam(l):F==="none"?!hasHam(l):true);
+  let out=`<section class="panel focus-h">
+   <label class="field"><span>Past sale</span><select id="arc-pick" data-act="arcpick">${G.map(x=>`<option value="${esc(x.key)}"${x.key===key?" selected":""}>${esc([x.house,x.title].filter(Boolean).join(" · ")+(x.when?" — "+x.when:"")+" ("+x.L.length+")")}</option>`).join("")}</select></label>
+   <div class="stats">${L.length} lots · ${FL.sold[1]} with a hammer price${won.length?` · <b>${won.length} won</b>${spendOk?` (about <b>${money(spend,"USD")}</b> all-in)`:""}`:""}</div>
+   <div class="fchips">${Object.entries(FL).map(([k,[t,n]])=>`<button type="button" data-act="afilter" data-k="${k}" aria-pressed="${k===F}">${t} · ${n}</button>`).join("")}</div>
+  </section>`;
+  const sfTxt=(l,c)=>{const s=dval(l,"soldFor");if(s==null||s==="")return "";const n=num(s);return n!=null?money(n,c):String(s)};
+  out+=shown.length?shown.map(l=>{const f=lotFigures(l),c=f.cur,hn=num(dval(l,"hammer")),sf=sfTxt(l,c),w=isWon(l),uns=/unsold|passed|bought/i.test(String(dval(l,"soldFor")||""));
+    const badge=w?`<span class="st ok">Won</span>`:uns?`<span class="st">Unsold</span>`:"";
+    return `<button type="button" class="arow" data-act="arcopen" data-id="${esc(l.id)}" aria-expanded="${S.arcOpen===l.id}">${l.thumb?`<img src="${esc(l.thumb)}" alt="" loading="lazy">`:`<span class="anoimg"></span>`}<span class="ab"><b>Lot ${esc(l.lotNo||"")}</b><small>${esc(l.desc||"")}</small></span><span class="ap">${hn!=null?`<b>${money(hn,c)}</b><small>hammer</small>`:uns?"":`<small>no result</small>`}${sf&&!uns?`<small>sold for ${esc(sf)}</small>`:""}${badge}</span></button>${S.arcOpen===l.id?vBidCard(l):""}`}).join(""):`<div class="empty">Nothing here.</div>`;
+  if(g.auction)out+=`<div class="row" style="margin:14px 0"><button type="button" class="ghost" data-act="arcback" data-id="${esc(g.key)}">Move this sale back to Bids</button></div>`;
+  return out}
+function calcVals(l){return {ppc:dval(l,"targetPerUnit")??"",wt:dval(l,"weight")??"",mt:dval(l,"mount")??""}}
+function calcTotal(cv){const p=num(cv.ppc),w=num(cv.wt),m=num(cv.mt)||0;if(p==null||w==null)return m?m:null;return p*w+m}
+function calcLine(cv,c){const p=num(cv.ppc),w=num(cv.wt),m=num(cv.mt)||0,t=calcTotal(cv);if(t==null)return "Enter price per ct and carats";
+  const st=p!=null&&w!=null?p*w:0;return (st?`Stone ${money(st,c)}`:"")+(m?` + mount ${money(m,c)}`:"")+` = <b>${money(t,c)}</b>`}
+function backCalc(l,mx){const f=lotFigures(l),c=f.cur,bp=bpOf(f.h),u=num(mx);if(u==null)return {msg:"Type the most you'd pay all-in, in USD."};
+  const r=hammerFromUSD(u,c,bp);if(!r)return {msg:!fxOf(c)?`Set today's ${c}→USD rate on the Calculator tab first.`:`Add ${f.h?f.h.name:"this house"}'s buyer's premium on the Appts tab first.`};
+  const b0=r.round,b1=b0+increment(b0),b2=b1+increment(b1),L=h=>landedFromHammer(h,c,bp);return {c,bp,rows:[["Max hammer",b0,L(b0)],["+1 bid",b1,L(b1)],["+2 bids",b2,L(b2)]],max:b0}}
+function backLine(l,mx){const r=backCalc(l,mx);if(!r.rows)return `<span class="muted">${esc(r.msg)}</span>`;
+  return `<table class="btab"><tr><th></th><th>Hammer</th><th>Landed</th></tr>${r.rows.map(([k,h,u],i)=>`<tr${i?' class="over"':""}><td>${k}</td><td>${money(h,r.c)}</td><td><b>${money(u,"USD")}</b></td></tr>`).join("")}</table><div class="small muted">Landed = hammer + ${r.bp}% premium, FX, ${num(S.settings.buffer)||0}% FX buffer, ${num(S.settings.costs)||0}% shipping/import.</div>`}
+function vBidCard(l){
+  const f=lotFigures(l),c=f.cur,id=l.id,d=draftOf(l),M=mediaArr(l),q=(S.mediaQ||[]).filter(x=>x.lotId===id).length;
+  const bid=dval(l,"bid"),ham=dval(l,"hammer"),w=isWon(l),hn=num(ham);
+  const est=l.estLow||l.estHigh?money(num(l.estLow),c)+"–"+money(num(l.estHigh),c).replace(/^\D+/,""):"";
+  const sub=[est&&"Est. "+est,l.weight?l.weight+" "+f.unit:"",l.lab,M.length?M.length+" photo/video"+(M.length===1?"":"s"):"",q?q+" uploading":""].filter(Boolean).join(" · ");
+  const hint=num(l.maxLocal)!=null?"Chetan wrote "+Math.round(num(l.maxLocal)).toLocaleString("en-US"):(f.back?"suggested "+f.back.round.toLocaleString("en-US"):"");
+  const st=hn!=null?(w?`<span class="st ok">Won</span>`:`<span class="st">Sold to other</span>`):(num(bid)!=null?`<span class="st b">Bid ready</span>`:`<span class="st">Needs bid</span>`);
+  const all=hn!=null?landedFromHammer(hn,c,bpOf(f.h)):null;
+  const cv=calcVals(l);
+  const open=S.bidOpen===id,sd=(((S.auctions||[]).find(a=>a.id===l.auctionId)||{}).saleDate)||"",showRes=hn!=null||(S.resOpen||{})[id]||(sd&&sd<=new Date().toISOString().slice(0,10));
+  return `<article class="bc${w&&hn!=null?" won":""}${d?" dirty":""}" id="bc-${id}">
+  <div class="sliphead">${l.thumb?`<a class="bthumbl" href="${esc(l.catUrl||l.thumb)}" target="_blank" rel="noopener" title="Open catalogue page"><img class="bthumb" src="${esc(l.thumb)}" alt="Lot ${esc(l.lotNo)}" loading="lazy" referrerpolicy="no-referrer"></a>`:""}<span class="lotno">${esc(l.lotNo||"—")}</span><div class="desc">${esc(l.desc||"Untitled lot")}<small>${esc(sub)}</small>${l.catUrl?`<a class="small" href="${esc(l.catUrl)}" target="_blank" rel="noopener">Catalogue page ↗</a>`:""}</div>${st}</div>
+  <div class="bcalc"><div class="eyebrow">Price calculator (USD)</div>
+   <div class="bcalc-g">
+    <label class="field"><span>Price per ${f.unit==="ch"?"chow":"ct"} (USD)</span><input id="targetPerUnit-${id}" class="num" inputmode="decimal" data-act="bidin" data-id="${id}" data-k="targetPerUnit" value="${esc(cv.ppc)}"></label>
+    <span class="op">×</span>
+    <label class="field"><span>${f.unit==="ch"?"Chow":"Carats"}</span><input id="weight-${id}" class="num" inputmode="decimal" data-act="bidin" data-id="${id}" data-k="weight" value="${esc(cv.wt)}"></label>
+    <span class="op">+</span>
+    <label class="field"><span>Mount / extra (USD)</span><input id="mount-${id}" class="num" inputmode="decimal" data-act="bidin" data-id="${id}" data-k="mount" value="${esc(cv.mt)}" placeholder="0"></label>
+   </div>
+   <div class="bcalc-t"><span id="ctot-${id}">${calcLine(cv,"USD")}</span><button type="button" class="ghost" data-act="usecalc" data-id="${id}">Use as max landed cost ↓</button></div>
+  </div>
+  <div class="bcalc"><div class="eyebrow">Work back from what I'll pay</div>
+   <label class="field"><span>Max landed cost (USD, all-in)</span><input id="maxUSD-${id}" class="num" inputmode="decimal" data-act="bidin" data-id="${id}" data-k="maxUSD" value="${esc(dval(l,"maxUSD")??"")}"></label>
+   <div class="bback" id="bback-${id}">${backLine(l,dval(l,"maxUSD"))}</div>
+   <div><button type="button" class="ghost" data-act="useback" data-id="${id}">Use max hammer as my max bid</button></div>
+  </div>
+  <div class="bc-f">
+   <label class="field full"><span>My max bid (${c})</span><input id="bid-${id}" class="num" inputmode="decimal" data-act="bidin" data-id="${id}" data-k="bid" value="${esc(bid)}" placeholder="${esc(hint)}"></label>
+  </div>
+  <div class="bc-cur"><div class="eyebrow">Current bid</div><div class="bc-currow"><input id="curBid-${id}" class="num" inputmode="decimal" data-act="bidin" data-id="${id}" data-k="curBid" value="${esc(dval(l,"curBid")??"")}" placeholder="${c}"><button type="button" class="ghost" data-act="curbid" data-id="${id}">Get current bid</button></div><div class="small" id="curnote-${id}">${curNote(l,c)}</div></div>
+  ${showRes?`<div class="bc-res"><div class="eyebrow">Sale result</div><div class="bc-f2">
+   <label class="field"><span>Hammer price (${c})</span><input id="hammer-${id}" class="num" inputmode="decimal" data-act="bidin" data-id="${id}" data-k="hammer" value="${esc(ham)}" placeholder="what it sold for"></label>
+   <label class="wonbox"><input type="checkbox" id="won-${id}" data-act="bidwon" data-id="${id}"${w?" checked":""}> We won it</label>
+  </div>
+   <label class="field"><span>Sold for, with premium (${c})</span><input id="soldFor-${id}" class="num" data-act="bidin" data-id="${id}" data-k="soldFor" value="${esc(dval(l,"soldFor")??"")}" placeholder="price incl. buyer's premium, or Unsold"></label>
+  </div>`:""}
+  ${l.catDesc||l.condition?`<details class="catd"><summary>Catalogue description${l.condition?" and condition report":""}</summary>${l.catDesc?`<p>${esc(l.catDesc)}</p>`:""}${l.condition?`<p><b>Condition:</b> ${esc(l.condition)}</p>`:""}</details>`:""}
+  <label class="field"><span>Notes</span><textarea id="remarks-${id}" class="bnote" rows="2" data-act="bidin" data-id="${id}" data-k="remarks" placeholder="Condition, colour, what to check, corrections…">${esc(dval(l,"remarks"))}</textarea></label>
+  ${all!=null?`<div class="small">Hammer ${money(hn,c)} → all-in about <b>${money(all,"USD")}</b>${num(bid)!=null?` · my bid ${money(num(bid),c)}`:""}</div>`:""}
+  ${M.length?`<div class="thumbs">${M.map(m=>`<a href="${esc(m.url)}" target="_blank" rel="noopener" class="tb">${/video/.test(m.mime||"")?"▶ Video":"Photo"}</a>`).join("")}</div>`:""}
+  <div class="row"><button type="button" class="primary" data-act="bidsave" data-id="${id}">${d?"Save changes":"Save"}</button><button type="button" class="ghost" data-act="addmedia" data-id="${id}">+ Add video / photo</button>${showRes?"":`<button type="button" class="ghost" data-act="resopen" data-id="${id}">Enter result</button>`}<button type="button" class="link" data-act="biddet" data-id="${id}" aria-expanded="${open}">${open?"Hide full details":"Full details"}</button></div>
+  ${open?`<div class="bc-d">${vSlip(l)}</div>`:""}
+  </article>`}
+function approvers(l){return String(l.approvedBy||"").split(",").map(s=>s.trim()).filter(Boolean)}
+function isApproved(l){return approvers(l).length>0}
+function approveRow(l){const who=approvers(l);
+  return `<div class="approve"><span class="small muted">Approve:</span>${["Karan","Chetan"].map(n=>{const on=who.includes(n);return `<button type="button" class="apv${on?" on":""}" data-act="approve" data-id="${l.id}" data-who="${n}" aria-pressed="${on}">${on?"✓ ":""}${n}</button>`}).join("")}${who.length?`<span class="small okc">Approved by ${esc(who.join(" & "))}</span>`:""}</div>`}
+function vSlip(l){
+  const f=lotFigures(l),r=num(l.rating)||0,stars=r?"★".repeat(r)+"☆".repeat(3-r):"";
+  const sub=[l.weight?`${l.weight} ${f.unit}`:"",l.pcs?`${l.pcs} pcs`:"",l.lab?`${l.lab}${l.certNo?" "+l.certNo:""}`:"no cert noted",l.treatment,l.origin].filter(Boolean).join(" · ");
+  return `<article class="slip${r===3?" r3":""}${isApproved(l)?" apd":""}"><div class="sliphead"><span class="lotno">${esc(l.lotNo||"—")}</span><div class="desc">${esc(l.desc||"Untitled lot")}<small>${esc((f.h?f.h.name+" · ":"")+sub)}</small></div><span class="stars" aria-label="${r} of 3">${stars}</span></div>
+  <div class="figs">
+   <div class="fig"><div class="k">Estimate</div><div class="v">${l.estLow||l.estHigh?esc(money(num(l.estLow),f.cur)+"–"+money(num(l.estHigh),f.cur).replace(/^\D+/,"")):"—"}</div></div>
+   <div class="fig"><div class="k">Est. USD</div><div class="v">${f.usdL!=null?money(f.usdL,"USD")+"–"+money(f.usdH,"").replace(/^\D+/,""):"—"}</div></div>
+   <div class="fig"><div class="k">All-in $/${f.per}</div><div class="v">${f.perUnit!=null?money(f.perUnit,"USD"):"—"}</div></div>
+   <div class="fig key"><div class="k">Max hammer</div><div class="v">${f.back?money(f.back.round,f.cur):(l.maxLocal?esc(money(num(l.maxLocal),f.cur))+"*":"—")}</div></div>
+  </div>
+  ${f.myUnit!=null?`<div class="small">His price: <b>${money(f.myUnit,"USD")}/${f.per}</b>${l.myBasis==="lump"?" (from lump sum)":""}${f.target!=null?` · Max landed ${money(f.target,"USD")}`:""}</div>`:(f.target!=null?`<div class="small">Max landed ${money(f.target,"USD")}</div>`:"")}
+  ${l.maxLocal&&f.back?`<div class="small muted">His written max: ${esc(money(num(l.maxLocal),f.cur))}</div>`:""}
+  ${(()=>{const a=(S.auctions||[]).find(x=>x.id===l.auctionId);return a?`<div class="small">Sale: <b>${esc(a.title)}</b>${a.saleDate?" · "+esc(fmtD(a.saleDate)):""}${a.saleTime?" "+esc(a.saleTime):""}</div>`:""})()}
+  ${l.remarks?`<div class="small muted">${esc(l.remarks)}</div>`:""}
+  ${l.photo?`<a class="small" href="${esc(l.photo)}" target="_blank" rel="noopener">Note photo</a>`:""}
+  ${f.flags.map(x=>`<div class="flag">${esc(x)}</div>`).join("")}
+  ${mediaBlock(l)}
+  ${approveRow(l)}
+  <div class="row"><button type="button" class="ghost" data-act="addmedia" data-id="${l.id}">+ Photos / video</button><button type="button" class="ghost" data-act="editlot" data-id="${l.id}">Edit</button>${S.confirmDel===l.id?`<span class="small">Delete this lot?</span><button type="button" class="danger" data-act="dellot-yes" data-id="${l.id}">Delete</button><button type="button" class="ghost" data-act="dellot-no">Keep</button>`:`<button type="button" class="ghost" data-act="dellot" data-id="${l.id}">Delete</button>`}</div>
+  </article>`;
+}
+function opt(v,cur,label){return `<option value="${v}"${String(cur??"")===v?" selected":""}>${label||v}</option>`}
+function vLotForm(l){
+  const hs=S.houses.slice().sort((a,b)=>a.city.localeCompare(b.city)||a.name.localeCompare(b.name));
+  const i=(k,label,cls,extra)=>`<label class="field ${extra||""}"><span>${label}</span><input id="lf-${k}" name="${k}" class="${cls||""}" ${cls==="num"?'inputmode="decimal"':""} value="${esc(l[k])}"></label>`;
+  return `<form class="panel" id="lotform"><div class="eyebrow">${l.id?"Edit lot":"New lot"}</div>
+  <div class="grid">
+   <label class="field full"><span>Auction</span><select id="lf-auctionId" name="auctionId">${opt("",l.auctionId,"— not linked —")}${(S.auctions||[]).slice().sort((a,b)=>String(a.saleDate).localeCompare(String(b.saleDate))).map(a=>opt(a.id,l.auctionId,a.house+" · "+a.title+(a.saleDate?" ("+fmtD(a.saleDate)+")":""))).join("")}</select></label>
+   <label class="field full"><span>House</span><select id="lf-houseId" name="houseId">${hs.map(h=>opt(h.id,l.houseId,h.city+" · "+h.name)).join("")}</select></label>
+   ${i("lotNo","Lot #")}
+   <label class="field"><span>Rating</span><select id="lf-rating" name="rating">${opt("",l.rating,"—")}${opt("3",l.rating,"★★★ must bid")}${opt("2",l.rating,"★★ maybe")}${opt("1",l.rating,"★ pass")}</select></label>
+   ${i("desc","Item","", "full")}
+   ${i("weight","Weight","num")}
+   <label class="field"><span>Unit</span><select id="lf-unit" name="unit">${opt("ct",l.unit,"ct (carats)")}${opt("gr",l.unit,"gr (grains)")}${opt("ch",l.unit,"ch (chow)")}</select></label>
+   ${i("pcs","Pieces","num")}
+   ${i("lab","Lab (GIA, SSEF, GUB…)")}
+   ${i("certNo","Cert #")}
+   ${i("treatment","Treatment (NH, H, O1…)")}
+   ${i("origin","Origin (BUR, KASH…)")}
+   <label class="field"><span>Currency</span><select id="lf-currency" name="currency">${opt("EUR",l.currency||"EUR","€ EUR")}${opt("CHF",l.currency,"CHF")}${opt("GBP",l.currency,"£ GBP")}${opt("USD",l.currency,"$ USD")}${opt("HKD",l.currency,"HK$ HKD")}</select></label>
+   ${i("estLow","Estimate low","num")}${i("estHigh","Estimate high","num")}
+   ${i("myPrice","His price (local)","num")}
+   <label class="field"><span>Price basis</span><select id="lf-myBasis" name="myBasis">${opt("ct",l.myBasis,"Per carat")}${opt("ch",l.myBasis,"Per chow")}${opt("lump",l.myBasis,"Lump sum")}</select></label>
+   ${i("maxLocal","His written max (local)","num")}
+   ${i("maxUSD","Max landed USD","num")}
+   ${i("targetPerUnit","or target USD per ct/chow","num")}
+   <label class="field full"><span>Remarks</span><textarea id="lf-remarks" name="remarks">${esc(l.remarks)}</textarea></label>
+  </div>
+  <div class="row"><button type="submit" class="primary">Save lot</button><button type="button" class="ghost" data-act="cancellot">Cancel</button></div></form>`;
+}
+function vReview(){
+  const R=S.review;
+  if(R.status==="working")return `<div class="panel"><div class="eyebrow">Reading notes</div><div>${esc(R.msg||"Reading the page…")}</div><div class="row"><button type="button" class="ghost" data-act="stopread">Stop</button></div></div>`;
+  if(R.status==="saved")return `<div class="banner"><b>${esc(R.msg)}</b></div><div class="row"><button type="button" class="ghost" data-act="closereview">Upload more</button></div>`;
+  if(R.status==="error")return `<div class="panel"><div class="flag">${esc(R.msg)}</div><div class="row"><button type="button" class="ghost" data-act="closereview">Close</button></div></div>`;
+  const hs=S.houses;
+  return `<div class="panel review"><div class="eyebrow">Check before adding · ${R.items.length} lot${R.items.length===1?"":"s"} read</div>
+  <label class="field"><span>Add to house</span><select id="rv-house">${hs.map(h=>opt(h.id,R.houseId,h.city+" · "+h.name)).join("")}</select></label>
+  ${R.items.map((it,ix)=>`<div class="slip"><label><input type="checkbox" id="rv-${ix}" data-act="rvtoggle" data-ix="${ix}"${it._keep?" checked":""}> Lot ${esc(it.lotNo||"?")} — ${esc(it.desc||"")}</label>
+   <div class="small">${esc([it.weight!=null?it.weight+" "+(it.unit||""):"",it.lab,it.certNo,it.treatment,it.origin,(it.estLow||it.estHigh)?`E ${it.estLow??"?"}–${it.estHigh??"?"} ${it.currency||""}`:"",it.myPrice!=null?`price ${it.myPrice}${it.myBasis?"/"+it.myBasis:""}`:"",it.maxLocal!=null?`M ${it.maxLocal}`:"",it.rating?"★".repeat(it.rating):""].filter(Boolean).join(" · "))}</div>
+   ${(it.unsure||[]).length?`<div class="small unsure">Unclear: ${esc(it.unsure.join(", "))}</div>`:""}${it.note?`<div class="small muted">${esc(it.note)}</div>`:""}</div>`).join("")}
+  <div class="row"><button type="button" class="primary" data-act="addreview">Add checked lots</button><button type="button" class="ghost" data-act="closereview">Discard</button></div></div>`;
+}
+
+function vUpload(){
+  const order=["Geneva","Milan","Paris"],cities=[...new Set(S.houses.map(h=>h.city))].sort((a,b)=>(order.indexOf(a)+1||9)-(order.indexOf(b)+1||9));
+  const h=S.houses.find(x=>x.id===S.upHouse);
+  if(S.state==="loading")return `<div class="empty">Loading houses…</div>`;
+  let out=`<section class="panel"><div class="eyebrow">Step 1 · Which house?</div>
+  ${cities.map(c=>`<div class="field"><span>${esc(c)}</span><div class="hchips">${S.houses.filter(x=>x.city===c).sort((a,b)=>(a.suggested?1:0)-(b.suggested?1:0)||a.name.localeCompare(b.name)).map(x=>`<button type="button" data-act="uphouse" data-id="${x.id}" aria-pressed="${x.id===S.upHouse}">${esc(x.name)}</button>`).join("")}</div></div>`).join("")}
+  </section>
+  <section class="panel"><div class="eyebrow">Step 2 · Upload notes</div>
+  <div class="dropzone${h?" armed":""}" id="dropzone">
+   ${h?`<div><b>${esc(h.name)}</b> <span class="muted">· ${esc(h.city)}</span></div>`:`<div class="muted">Pick a house above first.</div>`}
+   <button type="button" class="primary" data-act="photo"${h&&S.canRead&&S.review?.status!=="working"?"":" disabled"}>Upload note photos</button>
+   <div class="small muted">One or more pages. Photograph flat, good light, whole page in frame. You can also drag photos here.</div>
+  </div>
+  ${S.canRead?"":`<div class="flag">Photo reading isn't switched on yet. Ask Karan to add the API key.</div>`}
+  </section>`;
+  if(S.review)out+=vReview();
+  else if(S.lastAdded)out+=`<div class="banner"><b>${S.lastAdded.n} lot${S.lastAdded.n===1?"":"s"} added to ${esc(S.lastAdded.name)}.</b> <a href="#lots">See them in Lots</a> or upload the next page.</div>`;
+  return out;
+}
+function fmtD(d){if(!d)return"";const x=new Date(String(d)+"T12:00:00");return isNaN(x)?String(d):x.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})}
+function vAuctions(){
+  const A=(S.auctions||[]).slice().sort((a,b)=>String(a.saleDate||"9").localeCompare(String(b.saleDate||"9"))||String(a.saleTime).localeCompare(String(b.saleTime)));
+  const hs=S.houses.slice().sort((a,b)=>a.city.localeCompare(b.city)||a.name.localeCompare(b.name));
+  const E=S.editAuction||{houseId:hs[0]?.id||""};const today=new Date().toISOString().slice(0,10);
+  const nextId=(A.find(a=>String(a.saleDate)>=today)||{}).id;
+  let out="";const LA=S.listAuction&&A.find(a=>a.id===S.listAuction);if(LA)out+=vShortlist(LA);
+  out+=`<section class="panel"><div class="eyebrow">Auction dates & viewing</div>`;
+  out+=A.length?`<div class="tablewrap"><table class="atable"><thead><tr><th>Sale</th><th>House · Auction</th><th>Viewing</th><th></th></tr></thead><tbody>${A.map(a=>{const n=S.lots.filter(l=>l.auctionId===a.id).length;return `<tr class="${a.id===nextId?"next":""}"><td>${esc(fmtD(a.saleDate)||"TBC")}${a.saleTime?`<br><span class="muted">${esc(a.saleTime)}</span>`:""}</td><td><b>${esc(a.house)}</b><br>${esc(a.title)}${a.location?`<br><span class="muted small">${esc(a.location)}</span>`:""}${a.link?`<br><a class="small" href="${esc(a.link)}" target="_blank" rel="noopener">Catalogue</a>`:""}${n?`<br><span class="small">${n} lot${n===1?"":"s"} noted</span>`:""}</td><td>${a.viewFrom?esc(fmtD(a.viewFrom))+(a.viewTo&&a.viewTo!==a.viewFrom?" – "+esc(fmtD(a.viewTo)):""):""}${a.viewHours?`<br><span class="muted small">${esc(a.viewHours)}</span>`:(a.viewFrom?"":`<span class="muted">TBC</span>`)}</td><td><div class="row" style="flex-wrap:nowrap"><button type="button" class="primary" data-act="aulist" data-id="${a.id}">List${n?" ("+n+")":""}</button><button type="button" class="ghost" data-act="aulot" data-id="${a.id}">+ Lot</button><button type="button" class="ghost" data-act="auedit" data-id="${a.id}">Edit</button></div></td></tr>`}).join("")}</tbody></table></div>`:`<div class="small muted">No auctions yet. Add the first one below.</div>`;
+  out+=`</section>`;
+  out+=`<form class="panel" id="auctionform"><div class="eyebrow">${E.id?"Edit auction":"Add an auction"}</div><div class="grid">
+   <label class="field full"><span>House</span><select id="af-houseId" name="houseId">${hs.map(x=>opt(x.id,E.houseId,x.city+" · "+x.name)).join("")}</select></label>
+   <label class="field full"><span>Sale name</span><input id="af-title" name="title" required placeholder="e.g. Fine Jewels" value="${esc(E.title)}"></label>
+   <label class="field"><span>Sale date</span><input id="af-saleDate" name="saleDate" type="date" value="${esc(E.saleDate)}"></label>
+   <label class="field"><span>Start time</span><input id="af-saleTime" name="saleTime" type="time" value="${esc(E.saleTime)}"></label>
+   <label class="field"><span>Viewing from</span><input id="af-viewFrom" name="viewFrom" type="date" value="${esc(E.viewFrom)}"></label>
+   <label class="field"><span>Viewing to</span><input id="af-viewTo" name="viewTo" type="date" value="${esc(E.viewTo)}"></label>
+   <label class="field full"><span>Viewing hours</span><input id="af-viewHours" name="viewHours" placeholder="e.g. 10:00–18:00, trade by appointment" value="${esc(E.viewHours)}"></label>
+   <label class="field full"><span>Where</span><input id="af-location" name="location" value="${esc(E.location)}"></label>
+   <label class="field full"><span>Catalogue link</span><input id="af-link" name="link" type="url" value="${esc(E.link)}"></label>
+   <label class="field full"><span>Notes</span><textarea id="af-notes" name="notes">${esc(E.notes)}</textarea></label>
+  </div><div class="row"><button type="submit" class="primary">${E.id?"Save auction":"Add auction"}</button>${E.id?`<button type="button" class="ghost" data-act="aucancel">Cancel</button><button type="button" class="danger" data-act="audel" data-id="${E.id}">${S.auDel===E.id?"Tap again to delete":"Delete"}</button>`:""}</div></form>`;
+  return out;
+}
+function lotSort(a,b){return String(a.lotNo).localeCompare(String(b.lotNo),undefined,{numeric:true})}
+function shortlistText(a){const L=S.lots.filter(l=>l.auctionId===a.id).sort(lotSort);
+  return a.house+" — "+a.title+(a.saleDate?" ("+fmtD(a.saleDate)+")":"")+"\nLots we'd like to view:\n"+L.map((l,i)=>(i+1)+". Lot "+(l.lotNo||"?")+(l.desc?" — "+l.desc:"")).join("\n")}
+function vShortlist(a){
+  const L=S.lots.filter(l=>l.auctionId===a.id).sort(lotSort);const seen=L.filter(l=>String(l.seen)==="true"||l.seen===true).length;
+  return `<section class="panel" id="shortlist"><div class="row" style="justify-content:space-between"><div><div class="eyebrow">Shortlist · ${L.length} lot${L.length===1?"":"s"}${L.length?" · "+seen+" seen":""}</div><h2 style="margin:2px 0 0">${esc(a.house)}</h2><div class="small muted">${esc(a.title)}${a.saleDate?" · sale "+esc(fmtD(a.saleDate)):""}${a.link?` · <a href="${esc(a.link)}" target="_blank" rel="noopener">Catalogue</a>`:""}</div></div><button type="button" class="ghost" data-act="slclose">Close</button></div>
+  ${L.length?`<ol class="slist">${L.map(l=>{const s=String(l.seen)==="true"||l.seen===true;const r=num(l.rating)||0;return `<li class="${s?"seen":""}"><input type="checkbox" id="sl-${l.id}" data-act="slseen" data-id="${l.id}"${s?" checked":""} aria-label="Seen"><div class="sl-t"><b>Lot ${esc(l.lotNo||"?")}</b>${isApproved(l)?` <span class="okc">✓ ${esc(approvers(l).join(" & "))}</span>`:""}${l.desc?" — "+esc(l.desc):""} ${r?`<span class="stars">${"★".repeat(r)}</span>`:""}${l.remarks?`<div class="small muted">${esc(l.remarks)}</div>`:""}${mediaLine(l)}</div><button type="button" class="ghost" style="padding:4px 8px" data-act="addmedia" data-id="${l.id}">+ Media</button><button type="button" class="ghost" style="padding:4px 8px" data-act="editlot" data-id="${l.id}">Edit</button></li>`}).join("")}</ol>`:`<div class="small muted">Go through the catalogue and add the lots to see, one at a time. Tick each one off at the viewing.</div>`}
+  <form id="slform" class="grid" style="grid-template-columns:90px minmax(0,1fr) 92px auto;align-items:end">
+   <label class="field"><span>Lot #</span><input id="sl-lot" name="lotNo" class="num" inputmode="numeric" required></label>
+   <label class="field"><span>What it is</span><input id="sl-desc" name="desc" placeholder="e.g. Burma ruby ring, 5ct"></label>
+   <label class="field"><span>Priority</span><select id="sl-rate" name="rating"><option value="">—</option><option value="3">★★★</option><option value="2">★★</option><option value="1">★</option></select></label>
+   <button type="submit" class="primary">Add</button>
+  </form>
+  ${L.length?`<div class="row"><button type="button" data-act="slcopy" data-id="${a.id}">Copy list to send to the house</button></div><div class="msgbox" id="sltext" hidden>${esc(shortlistText(a))}</div>`:""}
+  </section>`;
+}
+/* ===== New look: lot calculator (hammer <-> all-in, why, next bids) ===== */
+function ncLots(){
+  let G=[];try{G=saleGroups(S.lots).filter(g=>!isArchived(g.auction))}catch(e){}
+  if(!G.length)G=[{title:"All lots",house:"",L:S.lots.slice()}];
+  return G;
+}
+function ncLot(){
+  const all=S.lots;if(!all.length)return null;
+  const n=S.nc||(S.nc={lotId:"",ham:"",allin:"",max:"",last:"ham"});
+  let l=all.find(x=>x.id===n.lotId);
+  if(!l){const G=ncLots();l=(G[0]&&G[0].L[0])||all[0];n.lotId=l.id;n.ham="";n.allin="";n.max="";n.last="ham"}
+  return l;
+}
+function ncFmt(v){return v==null||!isFinite(v)?"":Math.round(v).toLocaleString("en-US")}
+function vCalcNew(){
+  if(S.state==="loading")return `<div class="empty">Loading lots…</div>`;
+  const l=ncLot();
+  const quick=`<details class="panel nc-quick"><summary><b>Quick calculator (no lot) &amp; today's rates</b></summary>${vCalc()}</details>`;
+  if(!l)return `<div class="empty">No lots yet. Add a lot first, or use the quick calculator below.</div>`+quick;
+  const n=S.nc,f=lotFigures(l),c=f.cur,bp=bpOf(f.h),fx=fxOf(c);
+  const costs=num(S.settings.costs)||0,buf=num(S.settings.buffer)||0;
+  const maxSaved=num(dval(l,"maxUSD"))!=null?num(dval(l,"maxUSD")):calcTotal(calcVals(l));
+  const max=n.max!==""?num(n.max):maxSaved;
+  let H=null,A=null,back=null;
+  if(n.last==="allin"){A=num(n.allin);back=hammerFromUSD(A,c,bp);H=back?back.ham:null}
+  else{H=num(n.ham);if(H==null){const b=num(dval(l,"bid"));if(b!=null)H=b;else if(max!=null){const r=hammerFromUSD(max,c,bp);if(r)H=r.round}}A=landedFromHammer(H,c,bp)}
+  const hamBox=n.last==="ham"&&n.ham!==""?n.ham:ncFmt(H),allBox=n.last==="allin"&&n.allin!==""?n.allin:ncFmt(A);
+  const missing=!fx?`Set today's ${c}→USD rate in the quick calculator below.`:(bp==null?`Add ${f.h?esc(f.h.name):"the house"}'s buyer's premium on the Appts tab.`:"");
+  const est=l.estLow||l.estHigh?money(num(l.estLow),c)+"–"+money(num(l.estHigh),c).replace(/^\D+/,""):"";
+  const cur=num(dval(l,"curBid")),myBid=num(dval(l,"bid"));
+  const G=ncLots();
+  let out=`<section class="panel nc-lot"><label class="field full"><span>Lot</span><select id="nc-lot" data-act="nclot">${G.map(g=>`<optgroup label="${esc((g.house?g.house+" · ":"")+(g.title||""))}">${g.L.map(x=>`<option value="${x.id}"${x.id===l.id?" selected":""}>${esc("Lot "+(x.lotNo||"—")+" · "+(x.desc||"Untitled").slice(0,48))}</option>`).join("")}</optgroup>`).join("")}</select></label>
+   <div class="nc-sub">${esc([f.h?f.h.name:"",est&&"Est. "+est,l.weight?l.weight+" "+f.unit:"",cur!=null?"Current "+money(cur,c):""].filter(Boolean).join(" · "))}</div></section>`;
+  if(missing)return out+`<div class="flag">${missing}</div>`+quick;
+  out+=`<section class="panel"><div class="eyebrow">Type either one · the other updates</div>
+   <div class="nc-pair">
+    <label class="field"><span>Hammer (${c})</span><input id="nc-ham" class="num nc-big${n.last==="ham"?" on":""}" inputmode="decimal" data-act="nc" data-k="ham" value="${esc(hamBox)}" placeholder="e.g. 18000"></label>
+    <span class="nc-sw" aria-hidden="true">⇄</span>
+    <label class="field"><span>All-in (USD)</span><input id="nc-allin" class="num nc-big${n.last==="allin"?" on":""}" inputmode="decimal" data-act="nc" data-k="allin" value="${esc(allBox)}" placeholder="e.g. 25000"></label>
+   </div>
+   <label class="field"><span>My max all-in (USD)${maxSaved!=null&&n.max===""?" · from lot":""}</span><input id="nc-max" class="num" inputmode="decimal" data-act="nc" data-k="max" value="${esc(n.max!==""?n.max:ncFmt(maxSaved))}" placeholder="what it's worth to you, all-in"></label>
+   ${A!=null&&max!=null?`<div class="nc-vs ${A<=max?"ok":"over"}"><span>My max ${money(max,"USD")}</span><span>${A<=max?money(max-A,"USD")+" to spare":money(A-max,"USD")+" over"}</span></div>`:""}
+  </section>`;
+  if(H!=null&&A!=null){
+    const prem=H*bp/100,inv=H+prem,usd=inv*fx*(1+buf/100),ship=usd*costs/100;
+    out+=`<section class="panel"><div class="eyebrow">Why ${money(A,"USD")}</div><div class="nc-why">
+     <div><span>Hammer</span><span>${money(H,c)}</span></div>
+     <div><span>+ ${bp}% ${f.h?esc(f.h.name)+" ":""}premium</span><span>${money(prem,c)}</span></div>
+     <div class="t"><span>Invoice from the house</span><span>${money(inv,c)}</span></div>
+     <div><span>× rate ${fx}${buf?" + "+buf+"% buffer":""}</span><span>${money(usd,"USD")}</span></div>
+     <div><span>+ ${costs}% shipping, insurance, duty</span><span>${money(ship,"USD")}</span></div>
+     <div class="t b"><span>All-in in New York</span><span>${money(A,"USD")}</span></div>
+     ${back?`<div class="m"><span>Bid step here is ${money(back.inc,c)}: bid up to</span><span>${money(back.round,c)}</span></div>`:""}
+    </div></section>`;
+  }
+  // next-bid ladder
+  let start=cur!=null?cur:(num(l.estLow)!=null?num(l.estLow):(H!=null?H:null));
+  if(start!=null){
+    const rows=[];let b=start,over=0;
+    for(let i=0;i<24&&over<2;i++){const a=landedFromHammer(b,c,bp);rows.push([b,b*(1+bp/100),a]);if(max!=null&&a>max)over++;else if(max==null&&i>=9)break;b+=increment(b)}
+    out+=`<section class="panel nc-lad"><div class="eyebrow">Next bids${cur!=null?" from current "+money(cur,c):" from low estimate"}</div>
+     <div class="tablewrap"><table><thead><tr><th>Bid</th><th>+ prem.</th><th>All-in</th><th>Max</th></tr></thead><tbody>
+     ${rows.map(([bb,wp,a])=>`<tr class="${myBid!=null&&Math.round(bb)===Math.round(myBid)?"mine":""}${H!=null&&Math.round(bb)===Math.round(H)?" sel":""}"><td><button type="button" class="link" data-act="ncrow" data-v="${bb}">${money(bb,c)}</button>${cur!=null&&bb===cur?' <small>current</small>':""}${myBid!=null&&Math.round(bb)===Math.round(myBid)?' <small>my max</small>':""}</td><td>${money(wp,c)}</td><td><b>${money(a,"USD")}</b></td><td>${max==null?"":a<=max?'<span class="ok">✓</span>':'<span class="ov">over</span>'}</td></tr>`).join("")}
+     </tbody></table></div><div class="small muted">Tap a bid to load it above. Steps follow the usual ladder; check the house's own increments.</div></section>`;
+  }
+  const saveBid=back?back.round:(H!=null?Math.floor(H/increment(H))*increment(H):null);
+  if(saveBid!=null)out+=`<button type="button" class="primary nc-save" data-act="ncsave" data-id="${l.id}" data-v="${saveBid}">Save ${money(saveBid,c)} as my max bid for Lot ${esc(l.lotNo||"")}</button>`;
+  return out+quick;
+}
+document.addEventListener("input",e=>{const t=e.target;if(t.dataset.act!=="nc")return;const n=S.nc;n[t.dataset.k]=t.value;if(t.dataset.k!=="max")n.last=t.dataset.k;clearTimeout(S.nct);S.nct=setTimeout(render,400)});
+document.addEventListener("change",e=>{const t=e.target;if(t.dataset.act!=="nclot")return;S.nc={lotId:t.value,ham:"",allin:"",max:"",last:"ham"};render()});
+document.addEventListener("click",e=>{const b=e.target.closest("button[data-act]");if(!b)return;
+  if(b.dataset.act==="ncrow"){S.nc.ham=String(Math.round(num(b.dataset.v)));S.nc.last="ham";render();window.scrollTo({top:0,behavior:"smooth"})}
+  else if(b.dataset.act==="ncsave"){const l=S.lots.find(x=>x.id===b.dataset.id);if(!l)return;l.bid=String(Math.round(num(b.dataset.v)));const m=S.nc.max!==""?num(S.nc.max):null;if(m!=null)l.maxUSD=String(m);if(S.draft)delete S.draft[l.id];store.saveLot(l,true);toast(note("Max bid saved for Lot "+(l.lotNo||"")));render()}
+});
+
+function vCalc(){
+  const st=S.settings,c=S.calc||(S.calc={cur:"EUR",bp:"",maxUSD:"",hammer:"",houseId:""});
+  const h=S.houses.find(x=>x.id===c.houseId),bp=c.bp!==""?num(c.bp):bpOf(h);
+  const back=hammerFromUSD(num(c.maxUSD),c.cur,bp),fwd=landedFromHammer(num(c.hammer),c.cur,bp);
+  const missing=!fxOf(c.cur)?`Enter today's ${c.cur}→USD rate in Settings below.`:(bp==null?"Pick a house with its premium filled in, or type the premium.":"");
+  return `<section class="panel"><div class="eyebrow">Work back from USD to hammer</div>
+  <div class="grid">
+   <label class="field full"><span>House</span><select id="c-house" data-act="calc" data-k="houseId"><option value="">— none —</option>${S.houses.map(x=>opt(x.id,c.houseId,x.city+" · "+x.name+(x.bp?` (${x.bp}%)`:""))).join("")}</select></label>
+   <label class="field"><span>Currency</span><select id="c-cur" data-act="calc" data-k="cur">${opt("EUR",c.cur,"€ EUR")}${opt("CHF",c.cur,"CHF")}${opt("GBP",c.cur,"£ GBP")}${opt("HKD",c.cur,"HK$ HKD")}</select></label>
+   <label class="field"><span>Premium % ${h&&c.bp===""&&h.bp?"(from house)":""}</span><input id="c-bp" class="num" inputmode="decimal" data-act="calc" data-k="bp" placeholder="${h?.bp||"e.g. 30"}" value="${esc(c.bp)}"></label>
+   <label class="field full"><span>Max landed cost in USD</span><input id="c-max" class="num" inputmode="decimal" data-act="calc" data-k="maxUSD" placeholder="e.g. 25000" value="${esc(c.maxUSD)}"></label>
+  </div>
+  ${missing?`<div class="flag">${missing}</div>`:""}
+  ${back?`<div class="chain">
+   <div><span>Max landed</span><span>${money(num(c.maxUSD),"USD")}</span></div>
+   <div><span>÷ ${back.costs}% shipping/insurance/duty</span><span>${money(back.net,"USD")}</span></div>
+   <div><span>÷ rate ${back.fx} × ${back.buf}% FX buffer</span><span>${money(back.local,c.cur)}</span></div>
+   <div><span>÷ ${bp}% buyer's premium</span><span>${money(back.ham,c.cur)}</span></div>
+   <div><span>Max hammer (down to ${money(back.inc,c.cur)} step)</span><span>${money(back.round,c.cur)}</span></div></div>`:""}
+  </section>
+  <section class="panel"><div class="eyebrow">Check a hammer price</div>
+   <label class="field"><span>Hammer (${c.cur})</span><input id="c-ham" class="num" inputmode="decimal" data-act="calc" data-k="hammer" placeholder="e.g. 18000" value="${esc(c.hammer)}"></label>
+   ${fwd!=null?`<div class="chain"><div><span>Landed cost in USD</span><span>${money(fwd,"USD")}</span></div></div>`:""}
+  </section>
+  <section class="panel"><div class="eyebrow">Settings · saved in the Google Sheet</div>
+   <div class="grid">
+    <label class="field full"><span>Traveler's name (used in messages)</span><input id="s-trav" data-act="set" data-k="traveler" value="${esc(st.traveler)}"></label>
+   </div>
+   <div class="grid3">
+    <label class="field"><span>USD per €1</span><input id="s-eur" class="num" inputmode="decimal" data-act="setfx" data-k="EUR" value="${esc(st.fx?.EUR)}"></label>
+    <label class="field"><span>USD per CHF 1</span><input id="s-chf" class="num" inputmode="decimal" data-act="setfx" data-k="CHF" value="${esc(st.fx?.CHF)}"></label>
+    <label class="field"><span>USD per £1</span><input id="s-gbp" class="num" inputmode="decimal" data-act="setfx" data-k="GBP" value="${esc(st.fx?.GBP)}"></label>
+   </div>
+   <div class="grid3">
+    <label class="field"><span>Rates as of</span><input id="s-fxd" data-act="set" data-k="fxDate" placeholder="e.g. 10 Nov" value="${esc(st.fxDate)}"></label>
+    <label class="field"><span>FX buffer %</span><input id="s-buf" class="num" inputmode="decimal" data-act="set" data-k="buffer" value="${esc(st.buffer)}"></label>
+    <label class="field"><span>Ship/ins/duty %</span><input id="s-cost" class="num" inputmode="decimal" data-act="set" data-k="costs" value="${esc(st.costs)}"></label>
+   </div>
+   <div class="small muted">Rates fill in live from Google Finance. Type a rate to fix it for the day; clear the box to go back to the live rate. Premium terms differ by house, so enter each house's own rate (including VAT on the premium) from its conditions of sale on the Appointments tab. Bid steps here are a common ladder; check the house's own increments before bidding.</div>
+  </section>`;
+}
+
+
+const MON={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+function ymd(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function slotDate(s){const m=String(s||"").match(/(\d{1,2})\s+([A-Za-z]{3})[a-z]{0,9}/);if(!m)return null;const mo=MON[m[2].toLowerCase()];if(mo==null)return null;const now=new Date();let y=now.getFullYear();const d=new Date(y,mo,+m[1]);if(now-d>200*864e5)d.setFullYear(y+1);const t=String(s).match(/(\d{1,2})[:.](\d{2})/);return{date:ymd(d),time:t?t[1].padStart(2,"0")+":"+t[2]:""}}
+function calEvents(){
+  const E={},add=(d,e)=>{(E[d]=E[d]||[]).push(e)};
+  for(const a of S.auctions||[]){
+    const n=S.lots.filter(l=>l.auctionId===a.id).length;
+    if(a.saleDate)add(String(a.saleDate).slice(0,10),{k:"sale",t:a.saleTime||"",title:a.house+" · "+a.title,sub:[a.location,n?n+" lot"+(n===1?"":"s"):""].filter(Boolean).join(" · "),aid:a.id,short:a.house});
+    if(a.viewFrom){const s=new Date(String(a.viewFrom).slice(0,10)+"T12:00:00"),e=a.viewTo?new Date(String(a.viewTo).slice(0,10)+"T12:00:00"):s;for(let d=new Date(s),i=0;d<=e&&i<40;d.setDate(d.getDate()+1),i++)add(ymd(d),{k:"view",t:"",title:"Viewing · "+a.house,sub:[a.title,a.viewHours].filter(Boolean).join(" · "),aid:a.id,short:"View "+a.house})}
+  }
+  for(const h of S.houses||[]){const p=slotDate(h.slot);if(!p)continue;const ok=h.confirmed===true||String(h.confirmed).toUpperCase()==="TRUE";add(p.date,{k:ok?"appt":"pend",t:p.time,title:h.name+(ok?"":" (not confirmed)"),sub:[h.contact,h.phone&&!/ERROR/.test(h.phone)?h.phone:""].filter(Boolean).join(" · "),hid:h.id,short:(p.time?p.time+" ":"")+h.name.split(" (")[0]})}
+  const ord={sale:0,appt:1,pend:1,view:2};for(const d in E)E[d].sort((x,y)=>(x.t||"99").localeCompare(y.t||"99")||ord[x.k]-ord[y.k]);
+  return E}
+function vCalendar(){
+  const E=calEvents(),today=ymd(new Date());
+  if(!S.calMonth)S.calMonth=today.slice(0,7);
+  const [Y,M]=S.calMonth.split("-").map(Number),first=new Date(Y,M-1,1),start=new Date(first);start.setDate(1-((first.getDay()+6)%7));
+  const inMonth=d=>d.slice(0,7)===S.calMonth;
+  if(!S.calDay||!inMonth(S.calDay))S.calDay=inMonth(today)?today:(Object.keys(E).filter(inMonth).sort()[0]||S.calMonth+"-01");
+  let g=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(d=>`<div class="cal-dh">${d}</div>`).join("");
+  const cells=Math.ceil(((first.getDay()+6)%7+new Date(Y,M,0).getDate())/7)*7;
+  for(let i=0,d=new Date(start);i<cells;i++,d.setDate(d.getDate()+1)){const k=ymd(d),ev=E[k]||[];
+    g+=`<button type="button" class="cal-d${inMonth(k)?"":" out"}${k===today?" today":""}" data-act="calday" data-id="${k}" aria-pressed="${k===S.calDay}" aria-label="${esc(fmtD(k))}${ev.length?", "+ev.length+" item"+(ev.length===1?"":"s"):""}"><span class="cal-n">${d.getDate()}</span>${ev.slice(0,3).map(e=>`<span class="cev ${e.k}">${esc(e.short)}</span>`).join("")}${ev.length>3?`<span class="cev more">+${ev.length-3}</span>`:""}</button>`}
+  const ev=E[S.calDay]||[];
+  const ag=ev.length?ev.map(e=>`<div class="ag"><span class="cev ${e.k}">${e.t?esc(e.t):e.k==="sale"?"Sale":e.k==="view"?"View":"Appt"}</span><div class="ag-b"><b>${esc(e.title)}</b>${e.sub?`<small>${esc(e.sub)}</small>`:""}</div>${e.aid&&e.k!=="view"?`<button type="button" data-act="calsale" data-id="${esc(e.aid)}">Bids →</button>`:e.hid?`<button type="button" class="ghost" data-act="calappt" data-id="${esc(e.hid)}">Details</button>`:""}</div>`).join(""):`<div class="small" style="color:var(--muted)">Nothing on this day.</div>`;
+  const next=Object.keys(E).filter(d=>d>=today).sort().slice(0,1)[0];
+  return `<section class="panel">
+  <div class="cal-head"><h2>${first.toLocaleDateString("en-GB",{month:"long",year:"numeric"})}</h2><div class="cal-nav"><button type="button" class="ghost" data-act="calmove" data-id="-1" aria-label="Previous month">‹</button><button type="button" class="ghost" data-act="caltoday">Today</button><button type="button" class="ghost" data-act="calmove" data-id="1" aria-label="Next month">›</button></div></div>
+  <div class="cal-key"><span><i class="sale"></i>Sale</span><span><i class="view"></i>Viewing</span><span><i class="appt"></i>Appointment</span><span><i class="pend"></i>Not confirmed</span></div>
+  <div class="cal-grid">${g}</div></section>
+  <section class="panel"><div class="eyebrow">${esc(fmtD(S.calDay))}</div><div class="agenda">${ag}</div>${next&&!ev.length?`<button type="button" class="link" data-act="calday" data-id="${next}" style="align-self:flex-start">Next: ${esc(fmtD(next))} →</button>`:""}</section>`}
+function vGuide(){
+  return `<section class="panel guide">
+  <div class="eyebrow">How to write viewing notes</div>
+  <h3>Page setup</h3>
+  <ul><li>Top of every page: house, sale date, page number — <span class="code">CAMBI 10/11 p.2</span></li><li>One lot per block, blank line between lots.</li><li>Start each block with the lot number circled.</li></ul>
+  <h3>Same order, every lot</h3>
+  <div class="sample">⑱ Sapphire ring | 8.12 ct | SSEF NH KASH | E 40–60k € | 9k P/ct | ★★★ | slight abrasion
+㉔ Pearl necklace | 212 gr / 48 ch | 41 pcs | GUB NAT BAS | E 25–35k € | M 30k € | ★★</div>
+  <h3>Shorthand</h3>
+  <div class="tablewrap"><table>
+   <tr><td>ct · gr · ch · pcs</td><td>carats · grains · chow · pieces</td></tr>
+   <tr><td>P/ct · P/ch · L</td><td>price per carat · per chow · lump sum</td></tr>
+   <tr><td>GIA SSEF GUB AGL GRS LFG CIS</td><td>labs (GUB = Gübelin, CIS = CISGEM)</td></tr>
+   <tr><td>NH · H</td><td>no heat · heated</td></tr>
+   <tr><td>O0 O1 O2 O3</td><td>oil: none · minor · moderate · significant</td></tr>
+   <tr><td>NAT · CULT</td><td>natural · cultured pearl</td></tr>
+   <tr><td>BUR KASH CEY COL MOZ THAI MAD BAS</td><td>Burma, Kashmir, Ceylon, Colombia, Mozambique, Thailand, Madagascar, Basra</td></tr>
+   <tr><td>E 5–7k €</td><td>estimate — always write the currency</td></tr>
+   <tr><td>M 6k €</td><td>his maximum hammer</td></tr>
+   <tr><td>★★★ ★★ ★</td><td>must bid · maybe · pass</td></tr>
+  </table></div>
+  <h3>Handwriting</h3>
+  <ul><li>Write decimals clearly: 3.02 ct, never 302.</li><li>Cross the 7s, flag the 1s, keep 0 and 6 distinct.</li><li>Don't mix "k" and full numbers on one line.</li><li>Not sure? Write "?" next to it rather than guessing.</li><li>Write the cert number when visible; otherwise "cert seen" or "no cert".</li></ul>
+  <h3>Uploading</h3>
+  <ul><li>Photograph each page flat, in good light, whole page in frame.</li><li>Upload after each house, not at the end of the day.</li><li>Add a photo of the catalog page for every ★★★ lot.</li></ul>
+  </section>`;
+}
+
+function render(){
+  const tabs={upload:vUpload,appointments:vAppointments,auctions:vAuctions,lots:vLots,archive:vArchive,cal:vCalendar,calc:vCalcNew,guide:vGuide};
+  document.querySelectorAll("nav a").forEach(a=>a.setAttribute("aria-current",a.dataset.tab===S.tab?"page":"false"));
+  if(!S.pin){$("#main").innerHTML=vPin();return}
+  const pend=S.pending||0;
+  const banner=pend?`<div class="banner"><b>${navigator.onLine?"Syncing…":"No signal ·"}</b> ${pend} change${pend===1?"":"s"} saved on this phone ${navigator.onLine?"— uploading now.":"— they'll upload automatically when signal returns."}${S.mediaProgress?" · "+esc(S.mediaProgress.name)+" "+S.mediaProgress.pct+"%":""}</div>`:(S.offline?`<div class="banner"><b>No signal.</b> Showing the copy saved on this phone. Anything you add is kept and uploads later.</div>`:"");
+  const lf=document.getElementById("lotform");
+  if(lf&&S.editing){for(const[k,v]of new FormData(lf).entries())S.editing[k]=String(v)}
+  const ae=document.activeElement,focus=ae?.id,val=ae&&/^(INPUT|TEXTAREA)$/.test(ae.tagName)?ae.value:null;
+  let sel=null;try{sel=focus?[ae.selectionStart,ae.selectionEnd]:null}catch(e){}
+  $("#main").innerHTML=banner+tabs[S.tab]();
+  if(focus){const el=document.getElementById(focus);if(el){if(val!=null&&el.type!=="checkbox")el.value=val;el.focus({preventScroll:true});try{if(sel&&el.setSelectionRange)el.setSelectionRange(sel[0],sel[1])}catch(e){}}}
+}
+
+function route(){const t=location.hash.slice(1);S.tab=["upload","appointments","auctions","lots","archive","cal","calc","guide"].includes(t)?t:"lots";render()}
+window.addEventListener("hashchange",route);
+document.addEventListener("click",e=>{const a=e.target.closest("a[href^='#']");if(!a)return;e.preventDefault();const t=a.getAttribute("href").slice(1);if(["upload","appointments","auctions","lots","archive","cal","calc","guide"].includes(t)){S.tab=t;render();window.scrollTo(0,0)}},true);
+document.addEventListener("toggle",e=>{const d=e.target;if(d.matches?.("details.house")){if(d.open)S.openHouse=d.dataset.id;else if(S.openHouse===d.dataset.id)S.openHouse=null}},true);
+document.addEventListener("change",e=>{
+  const t=e.target,a=t.dataset.act;if(!a)return;
+  if(a==="check"){store.updateHouse(t.dataset.id,{checks:{[t.dataset.k]:t.checked}});t.closest("label").classList.toggle("done",t.checked);setTimeout(render,0)}
+  else if(a==="hf"){const v=t.dataset.k==="bp"?num(t.value):t.value;store.updateHouse(t.dataset.id,{[t.dataset.k]:v})}
+  else if(a==="lotfilter"){S.lotHouse=t.value;render()}
+  else if(a==="calc"){S.calc[t.dataset.k]=t.value;render()}
+  else if(a==="set"){const k=t.dataset.k;store.saveSettings({[k]:["buffer","costs"].includes(k)?num(t.value):t.value})}
+  else if(a==="setfx"){store.saveSettings({fx:{[t.dataset.k]:num(t.value)}})}
+  else if(a==="arcpick"){S.arcFocus=t.value;S.aFilter="all";render();window.scrollTo(0,0)}
+  else if(a==="focus"){S.focus=t.value;S.fFilter="all";S.bidOpen=null;try{localStorage.setItem("jr_focus",t.value)}catch(e){}render();window.scrollTo(0,0)}
+  else if(a==="bidwon"){S.draft=S.draft||{};(S.draft[t.dataset.id]=S.draft[t.dataset.id]||{}).won=t.checked;render()}
+  else if(a==="slseen"){const l=S.lots.find(x=>x.id===t.dataset.id);if(l){l.seen=t.checked;store.saveLot(l,true);render()}}
+  else if(a==="rvtoggle"){S.review.items[+t.dataset.ix]._keep=t.checked}
+});
+document.addEventListener("input",e=>{const t=e.target;if(t.dataset.act==="bidin"){S.draft=S.draft||{};const d=(S.draft[t.dataset.id]=S.draft[t.dataset.id]||{});d[t.dataset.k]=t.value;if(t.dataset.k==="maxUSD"){const l=S.lots.find(x=>x.id===t.dataset.id),o=document.getElementById("bback-"+t.dataset.id);if(l&&o)o.innerHTML=backLine(l,t.value)}if(["targetPerUnit","weight","mount"].includes(t.dataset.k)){const l=S.lots.find(x=>x.id===t.dataset.id),o=document.getElementById("ctot-"+t.dataset.id);if(l&&o)o.innerHTML=calcLine(calcVals(l),"USD")}const c=document.getElementById("bc-"+t.dataset.id);if(c){c.classList.add("dirty");const sb=c.querySelector("[data-act=bidsave]");if(sb)sb.textContent="Save changes"}return}if(t.dataset.act==="calc"&&t.tagName==="INPUT"){S.calc[t.dataset.k]=t.value;clearTimeout(S.ct);S.ct=setTimeout(render,350)}});
+document.addEventListener("toggle",e=>{const d=e.target;if(d&&d.matches&&d.matches("details[data-sale]")){(S.openSales=S.openSales||{})[d.dataset.sale]=d.open}},true);
+document.addEventListener("click",async e=>{
+  const b=e.target.closest("button[data-act]");if(!b)return;const a=b.dataset.act,id=b.dataset.id;
+  if(a==="msgtab"){S.msgLang[id]=b.dataset.k;render()}
+  else if(a==="copy"){const h=S.houses.find(x=>x.id===id),m=messages(h),k=S.msgLang[id]||Object.keys(m)[0],txt=m[k];
+    try{await navigator.clipboard.writeText(txt);toast("Message copied")}catch(_){const box=document.getElementById("msg-"+id);const r=document.createRange();r.selectNodeContents(box);const s=getSelection();s.removeAllRanges();s.addRange(r);toast("Selected — copy it from your keyboard")}}
+  else if(a==="newlot"){S.editing={houseId:S.lotHouse!=="all"?S.lotHouse:(S.houses[0]?.id||""),currency:"EUR",unit:"ct",myBasis:"ct"};render();document.getElementById("lf-lotNo")?.focus()}
+  else if(a==="editlot"){S.editing={...S.lots.find(x=>x.id===id)};render();scrollTo({top:0})}
+  else if(a==="cancellot"){S.editing=null;render()}
+  else if(a==="dellot"){S.confirmDel=id;render()}
+  else if(a==="dellot-no"){S.confirmDel=null;render()}
+  else if(a==="dellot-yes"){S.confirmDel=null;await store.deleteLot(id)}
+  else if(a==="photo"){pickPhotos()}
+  else if(a==="auedit"){S.editAuction={...S.auctions.find(x=>x.id===id)};S.auDel=null;render();document.getElementById("auctionform")?.scrollIntoView({behavior:"smooth"})}
+  else if(a==="aucancel"){S.editAuction=null;S.auDel=null;render()}
+  else if(a==="audel"){if(S.auDel===id){S.auDel=null;S.editAuction=null;S.lots.forEach(l=>{if(l.auctionId===id)l.auctionId=""});store.deleteAuction(id);render()}else{S.auDel=id;render()}}
+  else if(a==="addmedia"){pickMedia(id)}
+  else if(a==="bidsave"){const l=S.lots.find(x=>x.id===id);if(l){const v=k=>{const el=document.getElementById(k+"-"+id);return el?String(el.value).replace(/,/g,"").trim():(l[k]||"")};l.bid=v("bid");if(document.getElementById("targetPerUnit-"+id)){l.targetPerUnit=v("targetPerUnit");l.weight=v("weight");l.mount=v("mount")}if(document.getElementById("maxUSD-"+id))l.maxUSD=v("maxUSD");l.hammer=v("hammer");if(document.getElementById("soldFor-"+id))l.soldFor=v("soldFor");if(document.getElementById("curBid-"+id)){const nv=v("curBid");if(String(nv??"")!==String(l.curBid??"")){l.curBid=nv;l.curBidAt=Date.now();l.curBidInfo=""}}const wb=document.getElementById("won-"+id);l.won=wb?wb.checked:!!l.won;const rn=document.getElementById("remarks-"+id);if(rn)l.remarks=rn.value;if(S.draft)delete S.draft[id];store.saveLot(l,true);render();toast(note("Lot "+(l.lotNo||"")+" saved"))}}
+  else if(a==="usecalc"){const l=S.lots.find(x=>x.id===id);const t=l&&calcTotal(calcVals(l));if(t==null){toast("Enter price per ct and carats first")}else{const v=String(Math.round(t));S.draft=S.draft||{};(S.draft[id]=S.draft[id]||{}).maxUSD=v;render();toast("Max landed set to $"+Number(v).toLocaleString("en-US")+" — see max hammer below")}}
+  else if(a==="useback"){const l=S.lots.find(x=>x.id===id);const r=l&&backCalc(l,dval(l,"maxUSD"));if(!r||!r.rows){toast(r?r.msg:"")}else{S.draft=S.draft||{};(S.draft[id]=S.draft[id]||{}).bid=String(r.max);render();toast("Max bid set to "+r.max.toLocaleString("en-US")+" — tap Save")}}
+  else if(a==="resopen"){(S.resOpen=S.resOpen||{})[id]=true;render();document.getElementById("hammer-"+id)?.focus()}
+  else if(a==="biddet"){S.bidOpen=S.bidOpen===id?null:id;render()}
+  else if(a==="ffilter"){S.fFilter=b.dataset.k;render()}
+  else if(a==="calday"){S.calDay=id;if(id.slice(0,7)!==S.calMonth)S.calMonth=id.slice(0,7);render()}
+  else if(a==="calmove"){const[y,m]=S.calMonth.split("-").map(Number),d=new Date(y,m-1+Number(id),1);S.calMonth=ymd(d).slice(0,7);S.calDay=null;render()}
+  else if(a==="caltoday"){S.calMonth=null;S.calDay=null;render()}
+  else if(a==="calsale"&&isArchived(S.auctions.find(x=>x.id===id))){S.arcFocus=id;S.aFilter="all";S.tab="archive";render();window.scrollTo(0,0)}
+  else if(a==="arcmove"){const au=S.auctions.find(x=>x.id===id);if(au){store.saveAuction({...au,archived:"yes"});S.focus=null;S.arcFocus=id;try{localStorage.removeItem("jr_focus")}catch(e){}render();window.scrollTo(0,0)}}
+  else if(a==="arcback"){const au=S.auctions.find(x=>x.id===id);if(au){store.saveAuction({...au,archived:"no"});S.focus=id;S.fFilter="all";try{localStorage.setItem("jr_focus",id)}catch(e){}S.tab="lots";render();window.scrollTo(0,0)}}
+  else if(a==="afilter"){S.aFilter=b.dataset.k;render()}
+  else if(a==="askclaude"||a==="copyclaude"){const g=saleGroups(S.lots).find(x=>x.key===id);if(g){const p=claudePrompt(g);const cp=()=>{try{navigator.clipboard.writeText(p).catch(()=>{})}catch(e){}};cp();if(a==="askclaude"){const cb="https:"+"/"+"/"+"claude.ai/new",u=cb+"?q="+encodeURIComponent(p);const w=window.open(u.length>7500?cb:u,"_blank");toast(u.length>7500?"Long list: summary copied — paste it into Claude":"Opening Claude…");if(!w)toast("Pop-up blocked — summary copied, paste it into Claude")}else toast("Summary copied — paste it into Claude")}}
+  else if(a==="curbid"){const l=S.lots.find(x=>x.id===id);if(l){if(!l.catUrl){toast("This lot has no catalogue link yet — type the bid in");return}b.disabled=true;b.textContent="Checking…";call("getCurrentBid",l.catUrl).then(r=>{if(r&&r.found){l.curBid=r.amount;l.curBidAt=r.at;l.curBidInfo=r.info||"";if(S.draft&&S.draft[id])delete S.draft[id].curBid;store.saveLot(l,true);toast("Current bid: "+money(r.amount,lotFigures(l).cur))}else toast((r&&r.note)||"No current bid found");render()}).catch(e=>{toast(errText(e));render()})}}
+  else if(a==="arcopen"){S.arcOpen=S.arcOpen===id?null:id;render()}
+  else if(a==="calsale"){S.focus=id;S.lotsAll=false;S.fFilter="all";S.bidOpen=null;try{localStorage.setItem("jr_focus",id)}catch(e){}S.tab="lots";render();window.scrollTo(0,0)}
+  else if(a==="calappt"){S.openHouse=id;S.tab="appointments";render();window.scrollTo(0,0)}
+  else if(a==="lotsall"){S.lotsAll=true;render();window.scrollTo(0,0)}
+  else if(a==="lotsfocus"){S.lotsAll=false;render();window.scrollTo(0,0)}
+  else if(a==="approve"){const l=S.lots.find(x=>x.id===id);if(l){const w=approvers(l),n=b.dataset.who,i=w.indexOf(n);if(i>=0)w.splice(i,1);else w.push(n);l.approvedBy=w.join(", ");l.approvedAt=Date.now();store.saveLot(l,true);render();toast(i>=0?n+" removed approval":"Approved by "+n)}}
+  else if(a==="aulist"){S.listAuction=id;render();document.getElementById("shortlist")?.scrollIntoView({behavior:"smooth"});document.getElementById("sl-lot")?.focus()}
+  else if(a==="slclose"){S.listAuction=null;render()}
+  else if(a==="slcopy"){const au=S.auctions.find(x=>x.id===id);const txt=shortlistText(au);try{await navigator.clipboard.writeText(txt);toast("List copied")}catch(_){const box=document.getElementById("sltext");box.hidden=false;const r=document.createRange();r.selectNodeContents(box);const s=getSelection();s.removeAllRanges();s.addRange(r);toast("Selected — copy it from your keyboard")}}
+  else if(a==="aulot"){const au=S.auctions.find(x=>x.id===id)||{};S.editing={houseId:au.houseId,auctionId:id,currency:au.houseId&&String(au.houseId).startsWith("gva")?"CHF":"EUR",unit:"ct",myBasis:"ct"};S.tab="lots";if(!S.lotsAll){S.focus=id}render();window.scrollTo(0,0);document.getElementById("lf-lotNo")?.focus()}
+  else if(a==="uphouse"){S.upHouse=id;S.lastAdded=null;render()}
+  else if(a==="stopread"){S.review?.ctl?.abort()}
+  else if(a==="closereview"){S.review=null;render()}
+  else if(a==="addreview"){const hid=$("#rv-house").value,keep=S.review.items.filter(x=>x._keep),photo=(S.review.photos||[])[0]||"";S.review=null;render();toast("Saving "+keep.length+" lot"+(keep.length===1?"":"s")+"…");
+    for(const it of keep){const l={houseId:hid,lotNo:it.lotNo??"",desc:it.desc??"",weight:it.weight??"",unit:it.unit||"ct",pcs:it.pcs??"",lab:it.lab??"",certNo:it.certNo??"",treatment:it.treatment??"",origin:it.origin??"",currency:it.currency||"EUR",estLow:it.estLow??"",estHigh:it.estHigh??"",myPrice:it.myPrice??"",myBasis:it.myBasis||"ct",maxLocal:it.maxLocal??"",rating:it.rating?String(it.rating):"",remarks:[it.remarks,it.note].filter(Boolean).join(" · "),unsure:it.unsure||[],photo:photo,createdAt:Date.now()};await store.saveLot(l,true)}
+    S.lotHouse=hid;S.lastAdded={n:keep.length,name:(S.houses.find(x=>x.id===hid)||{}).name||""};render();toast(keep.length+" lot"+(keep.length===1?"":"s")+" added")}
+});
+document.addEventListener("submit",e=>{if(e.target.id!=="slform")return;e.preventDefault();const au=S.auctions.find(x=>x.id===S.listAuction);if(!au)return;const fd=Object.fromEntries(new FormData(e.target).entries());if(!String(fd.lotNo||"").trim())return;
+  store.saveLot({houseId:au.houseId,auctionId:au.id,lotNo:String(fd.lotNo).trim(),desc:String(fd.desc||"").trim(),rating:fd.rating||"",currency:String(au.houseId).startsWith("gva")?"CHF":"EUR",unit:"ct",myBasis:"ct",seen:false},true);
+  toast(note("Lot "+String(fd.lotNo).trim()+" added"));render();document.getElementById("sl-lot")?.focus()});
+document.addEventListener("submit",e=>{if(e.target.id!=="auctionform")return;e.preventDefault();const fd=Object.fromEntries(new FormData(e.target).entries());const a={...(S.editAuction||{}),...fd};if(!String(a.title||"").trim()){toast("Enter the sale name");return}store.saveAuction(a);S.editAuction=null;S.auDel=null;render()});
+document.addEventListener("submit",async e=>{if(e.target.id!=="houseform")return;e.preventDefault();const fd=Object.fromEntries(new FormData(e.target).entries());const nh=store.addHouse(fd);if(nh){S.openHouse=nh.id;render()}});
+document.addEventListener("submit",async e=>{
+  if(e.target.id!=="lotform")return;e.preventDefault();
+  const fd=new FormData(e.target),l={...S.editing};for(const[k,v]of fd.entries())l[k]=String(v).trim();
+  if(S.editing.id&&l.unsure?.length)l.unsure=[];
+  if(!l.createdAt)l.createdAt=Date.now();
+  S.editing=null;await store.saveLot(l);render();
+});
+
+function pickPhotos(){
+  const inp=document.createElement("input");inp.type="file";inp.accept="image"+"/"+"*";inp.multiple=true;
+  inp.onchange=()=>{if(inp.files?.length)readPhotos([...inp.files])};inp.click();
+}
+async function shrink(file){
+  try{const bmp=await createImageBitmap(file);const sc=Math.min(1,1800/Math.max(bmp.width,bmp.height));
+    const c=document.createElement("canvas");c.width=Math.round(bmp.width*sc);c.height=Math.round(bmp.height*sc);c.getContext("2d").drawImage(bmp,0,0,c.width,c.height);
+    return {name:file.name,mime:"image/jpeg",data:c.toDataURL("image/jpeg",0.85).split(",")[1]};
+  }catch(e){
+    if(!/^image\/(jpeg|png|webp|gif)$/.test(file.type))throw new Error("type");
+    const d=await new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=rej;fr.readAsDataURL(file)});
+    return {name:file.name,mime:file.type,data:String(d).split(",")[1]};
+  }
+}
+async function readPhotos(files){
+  const houseId=S.upHouse||(S.lotHouse!=="all"?S.lotHouse:(S.houses[0]?.id||""));S.lastAdded=null;
+  const hn=(S.houses.find(x=>x.id===houseId)||{}).name||"";
+  S.review={status:"working",ctl:{abort(){}},msg:"Preparing "+files.length+" page"+(files.length>1?"s":"")+"…",houseId:houseId};render();
+  try{
+    const imgs=[];for(const f of files.slice(0,8))imgs.push(await shrink(f));
+    const n=imgs.length,pl=n===1?"":"s",qid="p"+Date.now().toString(36);
+    try{await idbPut({id:qid,houseId:houseId,imgs:imgs,t:Date.now()})}
+    catch(e){const out=await call("readNotes",houseId,imgs);S.review={status:"saved",msg:"Saved "+n+" page"+pl+" to Drive under "+hn+"."};render();return}
+    await countPhotos();
+    S.review={status:"saved",qid:qid,msg:navigator.onLine?"Uploading "+n+" page"+pl+" to Drive under "+hn+"…":"Saved "+n+" page"+pl+" on this phone for "+hn+". They'll upload to Drive automatically when you have signal."};
+    render();flush();
+  }catch(err){if(String(err?.message||err).includes("PIN:")){lockOut();return}
+    S.review={status:"error",msg:String(err?.message)==="type"?"That photo type can't be read. Use JPEG or PNG.":(isNet(err)?"No signal and the phone couldn't store the photos. Try again when you have signal.":errText(err))};render()}
+}
+document.addEventListener("dragover",e=>{if(e.target.closest?.("#dropzone")&&S.upHouse&&S.canRead)e.preventDefault()});
+document.addEventListener("drop",e=>{const z=e.target.closest?.("#dropzone");if(!z||!S.upHouse||!S.canRead)return;e.preventDefault();const f=[...(e.dataTransfer?.files||[])].filter(x=>x.type.startsWith("image/"));if(f.length)readPhotos(f)});
+function vPin(){return `<form class="panel" id="pinform" style="max-width:360px;margin:24px auto"><div class="eyebrow">Jupiter Rain · private</div><h2>Enter PIN</h2>
+  <label class="field"><span>PIN from Karan</span><input id="pin" class="num" inputmode="numeric" autocomplete="off" required></label>
+  ${S.pinErr?`<div class="flag">${esc(S.pinErr)}</div>`:""}<button class="primary" type="submit">Open</button></form>`}
+function lockOut(){try{localStorage.removeItem("jr_pin")}catch(e){}S.pin=null;S.pinErr="That PIN is not right.";render()}
+document.addEventListener("submit",e=>{if(e.target.id!=="pinform")return;e.preventDefault();S.pin=$("#pin").value.trim();S.pinErr="";S.state="loading";render();load(true)},true);
+async function load(first){
+  if(!first&&(outbox().length||S.photoPending||S.mediaPending)){flush();return}
+  try{const d=await call("getAll");
+    if(first){try{localStorage.setItem("jr_pin",S.pin)}catch(e){}}
+    if(!first&&(outbox().length||S.photoPending||S.mediaPending)){flush();return}
+    S.offline=false;S.canRead=true;S.houses=d.houses;S.lots=d.lots;S.auctions=d.auctions||[];
+    S.settings=deepMerge(structuredClone(DEFAULT_SETTINGS),d.settings);S.state="ready";saveCache();
+  }catch(e){const m=String(e?.message||e);if(m.includes("PIN:")){lockOut();return}
+    if(m.includes("SETUP:")){S.state="ready";$("#main").innerHTML=`<div class="empty">${esc(errText(e))}</div>`;return}
+    S.offline=true;if(S.state==="loading")S.state=S.houses.length?"ready":"slow"}
+  const busy=document.activeElement&&/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+  if(!busy&&S.review?.status!=="working")render();
+}
+try{S.pin=localStorage.getItem("jr_pin")}catch(e){}
+try{const c=JSON.parse(localStorage.getItem("jr_cache")||"null");if(c&&c.houses){S.houses=c.houses;S.lots=c.lots||[];S.auctions=c.auctions||[];S.settings=deepMerge(structuredClone(DEFAULT_SETTINGS),c.settings||{});S.state="ready"}}catch(e){}
+S.pending=outbox().length;
+route();
+countPhotos().then(()=>{render();if(S.pin)load(false)});
+window.addEventListener("online",()=>{S.offline=false;render();flush()});
+window.addEventListener("offline",()=>{S.offline=true;render()});
+setInterval(()=>{if(!S.pin)return;if(S.pending)flush();else if(document.visibilityState==="visible"&&!S.editing&&!S.review&&!S.editAuction)load(false)},45000);
+document.addEventListener("visibilitychange",()=>{if(S.pin&&document.visibilityState==="visible"){if(S.pending)flush();else if(!S.editing&&!S.review&&!S.editAuction)load(false)}});
+})();
+</script>
+</body></html>
