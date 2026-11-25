@@ -727,6 +727,7 @@ function takeoutLoad(code) {
 }
 function takeoutSubmit(btn) {
   if (!choiceVal('oreason')) return bad('Pick a reason');
+  if (!window.confirm('Take ' + cur.sku + ' out of its bin?\n\nReason: ' + choiceVal('oreason') + ($('note').value ? '\nNote: ' + $('note').value : ''))) return;
   btn.disabled = true;
   call('BT_takeOut', { sku: cur.sku, reason: choiceVal('oreason'), note: $('note').value, source: cur.source || 'manual' }).then(function (r) {
     good(r.msg); $('body').innerHTML = '<div class="msg ok">✓ ' + esc(r.msg) + '</div><button class="btn primary" data-act="go" data-to="takeout">Next item</button><div style="height:10px"></div><button class="btn" data-act="home">Home</button>'; load();
@@ -767,7 +768,19 @@ function binsPdf(names, btn) {
   jrPdfLib().then(function () { return next(0); }).then(function () {
     busy('Adding photos…');
     var all = []; groups.forEach(function (g) { g.items.forEach(function (it) { all.push(it); }); });
-    return Promise.all(all.map(function (it) { return jrImg(it._photo).then(function (d) { it._img = d; }); }));
+    var urls = all.map(function (it) { return it._photo; }).filter(Boolean), got = {};
+    var chunks = []; for (var i = 0; i < urls.length; i += 40) chunks.push(urls.slice(i, i + 40));
+    var step = function (k) {
+      if (k >= chunks.length) return Promise.resolve();
+      busy('Adding photos (' + Math.min((k + 1) * 40, urls.length) + '/' + urls.length + ')…');
+      return call('BT_photos', chunks[k]).then(function (m) { for (var u in m) got[u] = m[u]; }).catch(function () {}).then(function () { return step(k + 1); });
+    };
+    return step(0).then(function () {
+      return Promise.all(all.map(function (it) {
+        if (!got[it._photo]) return jrImg(it._photo).then(function (d) { it._img = d; });
+        return new Promise(function (ok) { var im = new Image(); im.onload = function () { try { var c = document.createElement('canvas'), k2 = 160 / Math.max(im.width, im.height, 1); c.width = Math.max(1, Math.round(im.width * k2)); c.height = Math.max(1, Math.round(im.height * k2)); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); it._img = c.toDataURL('image/jpeg', .8); } catch (e) {} ok(); }; im.onerror = function () { ok(); }; im.src = got[it._photo]; });
+      }));
+    });
   }).then(function () {
     var doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' });
     var stamp = new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
