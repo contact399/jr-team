@@ -773,7 +773,7 @@ function binsPdf(names, btn) {
     var step = function (k) {
       if (k >= chunks.length) return Promise.resolve();
       busy('Adding photos (' + Math.min((k + 1) * 40, urls.length) + '/' + urls.length + ')…');
-      return call('BT_photos', chunks[k]).then(function (m) { for (var u in m) got[u] = m[u]; }).catch(function () {}).then(function () { return step(k + 1); });
+      return call('BT_photos', chunks[k]).then(function (m) { for (var u in m) got[u] = m[u]; }).catch(function (e) { window._jrPhotoErr = (e && e.message) || String(e); }).then(function () { return step(k + 1); });
     };
     return step(0).then(function () {
       return Promise.all(all.map(function (it) {
@@ -809,7 +809,9 @@ function binsPdf(names, btn) {
     for (var p = 1; p <= pages; p++) { doc.setPage(p); doc.setFontSize(8); doc.setTextColor(140); doc.text('Page ' + p + ' of ' + pages, 196, 290, { align: 'right' }); }
     var fname = (groups.length === 1 ? 'Bin ' + groups[0].bin : 'All bins') + ' ' + new Date().toISOString().slice(0, 10) + '.pdf';
     doc.save(fname.replace(/[\\/:*?"<>|]+/g, '-'));
-    toast('PDF ready: ' + fname, 'good');
+    var withUrl = 0, withImg = 0; groups.forEach(function (g) { g.items.forEach(function (it) { if (it._photo) withUrl++; if (it._img) withImg++; }); });
+    toast('PDF ready · photos ' + withImg + ' of ' + total + (withUrl < total ? ' (' + (total - withUrl) + ' have no Uploadify photo)' : '') + (window._jrPhotoErr ? ' · ' + window._jrPhotoErr : ''), withImg ? 'good' : 'info');
+    window._jrPhotoErr = '';
   }).catch(function (e) { toast(e.message || String(e), 'bad'); })
     .then(function () { if (btn) { btn.disabled = false; btn.innerHTML = old; } });
 }
