@@ -669,6 +669,7 @@ function binsHome() {
   h += '<h3>Bins</h3><div class="grid">' + B.bins.map(function (b) {
     return '<button class="btn" data-act="go" data-to="bin" data-sku="' + esc(b.name) + '"><b>' + esc(b.name) + '</b>&nbsp;<span class="meta">' + b.count + ' item' + (b.count === 1 ? '' : 's') + '</span></button>';
   }).join('') + '</div>';
+  if (B.bins.length) h += '<div style="margin:10px 0"><button class="btn" data-act="binpdf">📄 PDF of all bins</button></div>';
   if (B.out.length) {
     h += '<h3>Out of bin (' + B.out.length + ')</h3>' + B.out.map(function (it) { return binCard(it); }).join('');
   }
@@ -731,10 +732,86 @@ function takeoutSubmit(btn) {
     good(r.msg); $('body').innerHTML = '<div class="msg ok">✓ ' + esc(r.msg) + '</div><button class="btn primary" data-act="go" data-to="takeout">Next item</button><div style="height:10px"></div><button class="btn" data-act="home">Home</button>'; load();
   }).catch(function (e) { bad(e.message); btn.disabled = false; });
 }
+// ───────── PDF of bin contents ─────────
+var JRPDF_LIB = null;
+function jrPdfLib() {
+  if (JRPDF_LIB) return JRPDF_LIB;
+  var add = function (src) { return new Promise(function (ok, no) { var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = function () { no(new Error('Could not load the PDF maker. Check the connection.')); }; document.head.appendChild(s); }); };
+  JRPDF_LIB = add('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js')
+    .then(function () { return add('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js'); })
+    .catch(function (e) { JRPDF_LIB = null; throw e; });
+  return JRPDF_LIB;
+}
+function jrImg(url) {
+  if (!url) return Promise.resolve(null);
+  return new Promise(function (ok) {
+    var done = false, fin = function (v) { if (!done) { done = true; ok(v); } };
+    setTimeout(function () { fin(null); }, 6000);
+    var im = new Image(); im.crossOrigin = 'anonymous';
+    im.onload = function () { try { var c = document.createElement('canvas'), k = 160 / Math.max(im.width, im.height); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); fin(c.toDataURL('image/jpeg', .8)); } catch (e) { fin(null); } };
+    im.onerror = function () { fin(null); };
+    im.src = url;
+  });
+}
+function binsPdf(names, btn) {
+  if (!names.length) return toast('No bins to export.', 'info');
+  var old = btn ? btn.innerHTML : '';
+  var busy = function (t) { if (btn) { btn.disabled = true; btn.innerHTML = t; } };
+  busy('Making PDF…');
+  var groups = [];
+  var next = function (i) {
+    if (i >= names.length) return Promise.resolve();
+    busy('Reading ' + names[i] + ' (' + (i + 1) + '/' + names.length + ')…');
+    return call('BT_binContents', names[i]).then(function (r) { groups.push(r); return next(i + 1); });
+  };
+  jrPdfLib().then(function () { return next(0); }).then(function () {
+    busy('Adding photos…');
+    var all = []; groups.forEach(function (g) { g.items.forEach(function (it) { all.push(it); }); });
+    return Promise.all(all.map(function (it) { return jrImg(it._photo).then(function (d) { it._img = d; }); }));
+  }).then(function () {
+    var doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' });
+    var stamp = new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+    var total = groups.reduce(function (s, g) { return s + g.items.length; }, 0);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(16);
+    doc.text('Jupiter Rain · Bin contents', 14, 16);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(90);
+    doc.text((groups.length === 1 ? groups[0].bin : groups.length + ' bins') + ' · ' + total + ' item' + (total === 1 ? '' : 's') + ' · ' + stamp + (S.me && S.me.name ? ' · ' + S.me.name : ''), 14, 22);
+    var y = 28;
+    groups.forEach(function (g) {
+      doc.setTextColor(20); doc.setFont('helvetica', 'bold'); doc.setFontSize(12);
+      if (y > 270) { doc.addPage(); y = 16; }
+      doc.text(g.bin + '  (' + g.items.length + ')', 14, y + 4);
+      if (g.notes) { doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(90); doc.text(String(g.notes).slice(0, 110), 14, y + 9); y += 4; }
+      var body = g.items.map(function (it, n) { return ['', String(n + 1), String(it.SKU || ''), String(it.Description || ''), String(it['Updated At'] || '') + (it['Updated By'] ? '\n' + it['Updated By'] : '')]; });
+      if (!body.length) body = [['', '', '', 'Empty bin', '']];
+      doc.autoTable({
+        startY: y + 7, head: [['Photo', '#', 'SKU', 'Description', 'Put in']], body: body, theme: 'grid', margin: { left: 14, right: 14 },
+        styles: { fontSize: 9, cellPadding: 2, valign: 'middle', lineColor: 220 }, headStyles: { fillColor: [30, 90, 71], textColor: 255 },
+        columnStyles: { 0: { cellWidth: 20, minCellHeight: 18 }, 1: { cellWidth: 8 }, 2: { cellWidth: 26, fontStyle: 'bold' }, 4: { cellWidth: 32 } },
+        didDrawCell: function (d) { if (d.section === 'body' && d.column.index === 0) { var it = g.items[d.row.index]; if (it && it._img) { try { doc.addImage(it._img, 'JPEG', d.cell.x + 1.5, d.cell.y + 1.5, 16, 16); } catch (e) {} } } }
+      });
+      y = doc.lastAutoTable.finalY + 8;
+    });
+    var pages = doc.getNumberOfPages();
+    for (var p = 1; p <= pages; p++) { doc.setPage(p); doc.setFontSize(8); doc.setTextColor(140); doc.text('Page ' + p + ' of ' + pages, 196, 290, { align: 'right' }); }
+    var fname = (groups.length === 1 ? 'Bin ' + groups[0].bin : 'All bins') + ' ' + new Date().toISOString().slice(0, 10) + '.pdf';
+    doc.save(fname.replace(/[\\/:*?"<>|]+/g, '-'));
+    toast('PDF ready: ' + fname, 'good');
+  }).catch(function (e) { toast(e.message || String(e), 'bad'); })
+    .then(function () { if (btn) { btn.disabled = false; btn.innerHTML = old; } });
+}
+document.addEventListener('click', function (e) {
+  var b = e.target.closest && e.target.closest('[data-act="binpdf"]');
+  if (!b) return;
+  e.preventDefault();
+  var names = b.dataset.bin ? [b.dataset.bin] : ((S.bins && S.bins.bins) || []).map(function (x) { return x.name; });
+  binsPdf(names, b);
+});
+
 function binContents(name) {
   $('body').innerHTML = '<div class="loading">Loading…</div>';
   call('BT_binContents', name).then(function (r) {
-    $('body').innerHTML = '<button class="btn primary" data-act="go" data-to="putbin" data-sku="' + esc(r.bin) + '">📥 Put items in ' + esc(r.bin) + '</button><div style="height:12px"></div>' +
+    $('body').innerHTML = '<button class="btn primary" data-act="go" data-to="putbin" data-sku="' + esc(r.bin) + '">📥 Put items in ' + esc(r.bin) + '</button>' + (r.items.length ? '<button class="btn" style="margin-top:8px" data-act="binpdf" data-bin="' + esc(r.bin) + '">📄 PDF of this bin</button>' : '') + '<div style="height:12px"></div>' +
       (r.items.length ? r.items.map(function (it) { return binCard(it); }).join('') : '<div class="msg info">This bin is empty.</div>');
   }).catch(function (e) { $('body').innerHTML = '<div class="msg bad">' + esc(e.message) + '</div>'; });
 }
