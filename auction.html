@@ -455,7 +455,21 @@ function messages(h){
 }
 const MSG_LABEL={it_email:"Email (IT)",it_wa:"WhatsApp (IT)",fr_email:"Email (FR)",fr_wa:"WhatsApp (FR)",en:"English"};
 
+/* ===== Appointments: archive old ones ===== */
 function vAppointments(){
+  const all=S.houses,act=all.filter(h=>!h.archived),arc=all.filter(h=>h.archived);
+  let out;S.houses=act;try{out=vAppointmentsBase()}finally{S.houses=all}
+  if(act.length){const cities=[...new Set(act.map(h=>h.city))];
+    out=out.replace(/<div class="cityhead"><h2>([^<]*)<\/h2>/g,(m,c)=>cities.includes(c.replace(/&amp;/g,"&"))?m+`<button type="button" class="link small" data-act="harchcity" data-city="${c}">Archive all</button>`:m)}
+  if(arc.length)out+=`<details class="panel"><summary><b>Archived appointments (${arc.length})</b></summary>${arc.slice().sort((a,b)=>String(a.city).localeCompare(String(b.city))||a.name.localeCompare(b.name)).map(h=>`<div class="row" style="justify-content:space-between;border-bottom:1px solid var(--line);padding:8px 0"><div style="min-width:0"><b>${esc(h.name)}</b> <span class="muted small">${esc([h.city,h.date,h.slot].filter(Boolean).join(" · "))}</span></div><button type="button" class="ghost" data-act="harch" data-id="${h.id}" data-v="0">Restore</button></div>`).join("")}</details>`;
+  return out;
+}
+document.addEventListener("click",e=>{const b=e.target.closest("button[data-act]");if(!b)return;
+  if(b.dataset.act==="harch"){e.preventDefault();const on=b.dataset.v!=="0";store.updateHouse(b.dataset.id,{archived:on});toast(note(on?"Moved to archived appointments":"Restored"));render()}
+  else if(b.dataset.act==="harchcity"){e.preventDefault();const c=b.dataset.city.replace(/&amp;/g,"&");const L=S.houses.filter(h=>!h.archived&&h.city===c);if(!L.length)return;L.forEach(h=>store.updateHouse(h.id,{archived:true}));toast(note(L.length+" "+c+" appointment"+(L.length===1?"":"s")+" archived"));render()}
+});
+
+function vAppointmentsBase(){
   if(S.state==="loading")return `<div class="empty">Loading the checklist…</div>`;
   if(S.state==="slow"&&!S.houses.length)return `<div class="empty">Can't reach the saved checklist yet. Check your connection; it will appear as soon as it loads.</div>`;
   if(!S.houses.length)return `<div class="empty">No auction houses yet. Add them in the Houses tab of the Google Sheet.</div>`;
@@ -495,6 +509,7 @@ function vHouse(h){
     <label class="field full"><span>Notes</span><textarea id="hn-${h.id}" data-act="hf" data-id="${h.id}" data-k="notes">${esc(h.notes)}</textarea></label>
    </div>
    ${msgHtml}
+   <div class="row"><button type="button" class="ghost" data-act="harch" data-id="${h.id}" data-v="1">${h.suggested?"Dismiss suggestion":"Archive this appointment"}</button></div>
   </div></details>`;
 }
 function fld(h,k,label,cls){return `<label class="field"><span>${label}</span><input id="h-${h.id}-${k}" class="${cls||""}" ${cls==="num"?'inputmode="decimal"':""} data-act="hf" data-id="${h.id}" data-k="${k}" value="${esc(h[k])}"></label>`}
