@@ -795,12 +795,16 @@ function binsPdf(names, btn) {
       if (y > 270) { doc.addPage(); y = 16; }
       doc.text(g.bin + '  (' + g.items.length + ')', 14, y + 4);
       if (g.notes) { doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(90); doc.text(String(g.notes).slice(0, 110), 14, y + 9); y += 4; }
-      var body = g.items.map(function (it, n) { return ['', String(n + 1), String(it.SKU || ''), String(it.Description || ''), String(it['Updated At'] || '') + (it['Updated By'] ? '\n' + it['Updated By'] : '')]; });
-      if (!body.length) body = [['', '', '', 'Empty bin', '']];
+      var hasPrice = g.items.some(function (it) { return it._price !== undefined; });
+      var money = function (v) { var n = Number(String(v || '').replace(/[^0-9.\-]/g, '')); return v === '' || v == null || isNaN(n) ? '' : '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 }); };
+      var body = g.items.map(function (it, n) { var row = ['', String(n + 1), String(it.SKU || ''), String(it.Description || '')]; if (hasPrice) row.push(money(it._price)); row.push(String(it['Updated At'] || '') + (it['Updated By'] ? '\n' + it['Updated By'] : '')); return row; });
+      if (!body.length) body = [hasPrice ? ['', '', '', 'Empty bin', '', ''] : ['', '', '', 'Empty bin', '']];
+      var sum = g.items.reduce(function (t, it) { var n = Number(String(it._price || '').replace(/[^0-9.\-]/g, '')); return t + (isNaN(n) ? 0 : n); }, 0);
       doc.autoTable({
-        startY: y + 7, head: [['Photo', '#', 'SKU', 'Description', 'Put in']], body: body, theme: 'grid', margin: { left: 14, right: 14 },
+        startY: y + 7, head: [hasPrice ? ['Photo', '#', 'SKU', 'Description', 'Price', 'Put in'] : ['Photo', '#', 'SKU', 'Description', 'Put in']], body: body, theme: 'grid', margin: { left: 14, right: 14 },
+        foot: hasPrice && g.items.length ? [['', '', '', 'Total', money(sum), '']] : undefined, footStyles: { fillColor: [238, 241, 237], textColor: 20, fontStyle: 'bold' },
         styles: { fontSize: 9, cellPadding: 2, valign: 'middle', lineColor: 220 }, headStyles: { fillColor: [30, 90, 71], textColor: 255 },
-        columnStyles: { 0: { cellWidth: 20, minCellHeight: 18 }, 1: { cellWidth: 8 }, 2: { cellWidth: 26, fontStyle: 'bold' }, 4: { cellWidth: 32 } },
+        columnStyles: hasPrice ? { 0: { cellWidth: 20, minCellHeight: 18 }, 1: { cellWidth: 8 }, 2: { cellWidth: 24, fontStyle: 'bold' }, 4: { cellWidth: 22, halign: 'right' }, 5: { cellWidth: 28 } } : { 0: { cellWidth: 20, minCellHeight: 18 }, 1: { cellWidth: 8 }, 2: { cellWidth: 26, fontStyle: 'bold' }, 4: { cellWidth: 32 } },
         didDrawCell: function (d) { if (d.section === 'body' && d.column.index === 0) { var it = g.items[d.row.index]; if (it && it._img) { try { doc.addImage(it._img, 'JPEG', d.cell.x + 1.5, d.cell.y + 1.5, 16, 16); } catch (e) {} } } }
       });
       y = doc.lastAutoTable.finalY + 8;
