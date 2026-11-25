@@ -7,6 +7,7 @@
 <meta name="theme-color" content="#24508f"><link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
 <style>
   :root{
@@ -70,6 +71,14 @@
   .check{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:10px;margin-top:6px}
   .check input{width:auto}
   .hidden{display:none}
+
+/* Phone-friendly */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{overflow-x:hidden}
+nav{top:calc(46px + env(safe-area-inset-top,0px))}
+main{padding-bottom:calc(40px + env(safe-area-inset-bottom,0px))}
+.tbl{-webkit-overflow-scrolling:touch}
+@media (max-width:480px){header{flex-wrap:wrap}.status{margin-left:0;width:100%}}
 </style>
 </head>
 <body>
