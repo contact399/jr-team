@@ -8,6 +8,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <style>
   :root { --ink:#1b1b1b; --muted:#6b6b6b; --line:#e4e0d8; --gold:#a8843c; --bg:#faf8f4; --warn:#fff4e0; --bad:#fde8e8; }
   * { box-sizing:border-box; }
@@ -50,6 +51,12 @@
   .row { display:flex; gap:10px; }
   .row button { flex:1; }
   button.ghost { padding:12px; font-size:15px; border-radius:10px; border:1px solid var(--line); background:#fff; cursor:pointer; }
+
+/* Phone-friendly */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{overflow-x:hidden}
+main{padding-bottom:calc(60px + env(safe-area-inset-bottom,0px))}
+@media (max-width:480px){main{padding-left:12px;padding-right:12px}}
 </style>
 </head>
 <body>
