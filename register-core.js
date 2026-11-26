@@ -176,7 +176,7 @@
     return firstWords(clean(s), 4);
   }
   function firstWords(s, n) {
-    s = clean(s).replace(/^(MR|MRS|MS|DR)\.? /, '');
+    s = clean(s).replace(/^(MR|MRS|MS|DR)\.? /, '').replace(/ (NEW YORK|BROOKLYN|JERSEY CITY|HONG KONG|LONDON)$/, '');
     var c = s.match(/^(.+?),\s*(LLC|INC|LTD|CO|CORP|LIMITED|L\.L\.C\.)\b/);
     if (c) return c[1] + ', ' + c[2];
     s = s.split(',')[0];
@@ -234,11 +234,16 @@
     if (/JUPITER RAIN/.test(d) && /B\/O:|BNF:|ORIG:|BOOK TRANSFER/.test(d) ||
       /ONLINE TRANSFER (TO|FROM)|TRANSFER (TO|FROM) (SAV|CHK|MMA)|AGENT ASSISTED TRANSFER|ONLINE BANKING TRANSFER|TRANSFER FROM SAVINGS|TRANSFER TO SAVINGS/.test(d))
       return sug('Transfers', 'Between own accounts', 'Own account', 'Between your own accounts', false);
-    if (/WISE US|WISE INC|TRANSFERWISE|WISE PAYMENTS/.test(d))
+    var ach = (d.match(/ORIG CO NAME:\s*(.+?)(?:\s{2,}| ORIG ID)/) || [, ''])[1];
+    if ((/A\/C: WISE|BNF:WISE|TRANSFERWISE|WISE PAYMENTS/.test(d) || /^WISE/.test(ach) || /^ WISE /.test(d)) && !(ach && !/^WISE/.test(ach)))
       return sug('Transfers', 'To own Wise account', 'Wise (Jupiter Rain)', 'Your Wise account', false);
     if (!inn && /CHASE CREDIT CRD|PAYMENT TO CHASE CARD|CAPITAL ONE.*(PMT|PAYMENT|MOBILE)|AMEX EPAYMENT|AMERICAN EXPRESS.*PMT|BA ELECTRONIC PAYMENT|CITI CARD.*PAYMENT|DISCOVER.*PAYMENT/.test(d))
       return sug('Credit card payments', 'Card payment', titleCase(cp), 'Paying a credit card', false);
     if (r) return sug(r.category, r.type, r.party || titleCase(cp), 'Same as before', false);
+    if (!inn && /IND NAME:\s*KARAN JAIN/.test(d)) {
+      var pt = /GEICO|PROGRESSIVE|ALLSTATE|STATE FARM/.test(d) ? 'Auto insurance' : /LIFE/.test(d) ? 'Life insurance' : /AUDI|BMW|TOYOTA|HONDA|FINCL|AUTO/.test(d) ? 'Auto loan' : 'Personal';
+      return sug('Owner / personal', pt, titleCase(cp), 'In your own name — personal', false);
+    }
 
     // taxes, payroll, fees, interest
     if (/ORIG CO NAME:\s*IRS|USATAXPYMT|IRS USATAX/.test(d)) return sug('Taxes', 'Federal tax (IRS)', 'IRS', 'Tax payment', false);
@@ -283,6 +288,8 @@
       if (inn) return sug('Other income / refunds', 'Refund', titleCase(cp), 'Card refund', false);
       return sug('Expenses', mt2 || 'Other', titleCase(cp), mt2 ? 'Card purchase' : 'Card purchase — new shop', !mt2 && Math.abs(line.amount) >= 250);
     }
+    if (inn && /ORIG CO NAME/.test(d) && /RECEIVABLE|BILL\.COM|BI LL\.COM| INV |INVOICE|DESCR:WISE|PAYMENT/.test(d))
+      return sug('Sales', 'Sales receipt', titleCase(cp), 'Customer payment — new name', true);
     if (!inn && /ONLINE ACH PAYMENT|ACH PMT|BILL PAY|ONLINE BANKING PAYMENT/.test(d))
       return sug('Bills', 'Supplier invoice', titleCase(cp), 'Payment sent — new name', true);
     if (/^ACH|ACH_/.test(t) || /ORIG CO NAME/.test(d))
