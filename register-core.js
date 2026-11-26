@@ -5,7 +5,7 @@
   'use strict';
 
   var CATEGORIES = ['Sales', 'Bills', 'Expenses', 'Taxes', 'Owner / personal', 'Transfers',
-    'Credit card payments', 'Other income / refunds', 'Loans', 'Adjustments'];
+    'Credit card payments', 'Other income / refunds', 'Loans', 'Paid for others', 'Adjustments'];
   var TYPES = {
     'Sales': ['Sales receipt', 'Platform payout', 'Returned deposit'],
     'Bills': ['Supplier invoice', 'Auction purchase', 'Memo / consignment'],
@@ -20,9 +20,10 @@
     'Credit card payments': ['Card payment'],
     'Other income / refunds': ['Interest', 'Bank credit / fee reversal', 'Refund', 'Returned outgoing wire', 'Tax refund', 'Other'],
     'Loans': ['Lent money', 'Borrowed', 'Repayment received', 'We repaid'],
+    'Paid for others': ['Paid for them', 'Paid back to us'],
     'Adjustments': ['Cash count', 'Opening balance']
   };
-  var LOAN_DIR = { 'Lent money': 'out', 'Borrowed': 'in', 'Repayment received': 'in', 'We repaid': 'out' };
+  var LOAN_DIR = { 'Lent money': 'out', 'Borrowed': 'in', 'Repayment received': 'in', 'We repaid': 'out', 'Paid for them': 'out', 'Paid back to us': 'in' };
   var UPLOADIFY_CATS = ['Sales', 'Bills'];
 
   /* ---------- CSV ---------- */

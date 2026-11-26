@@ -105,9 +105,9 @@ function aname(k){ var a = acct(k); return a.name || k; }
 function short(k){ var a = acct(k); return a.kind === 'cash' ? 'Cash' : (a.bank === 'Bank of America' ? 'BofA' : a.bank || k) + (a.last4 ? ' …' + a.last4 : ''); }
 function today(){ return S.today || new Date().toISOString().slice(0,10); }
 function upsert(list){ (list||[]).forEach(function(r){ var i = S.rows.findIndex(function(x){ return x.id === r.id; }); if (i >= 0) S.rows[i] = r; else S.rows.push(r);
-  if (r.category === 'Loans') { var j = S.loans.findIndex(function(x){ return x.id === r.id; }); if (j >= 0) S.loans[j] = r; else S.loans.push(r); } }); recount(); }
+  if (r.category === 'Loans' || r.category === 'Paid for others') { var j = S.loans.findIndex(function(x){ return x.id === r.id; }); if (j >= 0) S.loans[j] = r; else S.loans.push(r); } }); recount(); }
 function recount(){ S.counts.review = S.rows.filter(function(r){ return r.status !== 'void' && r.review === '1'; }).length;
-  S.counts.uploadify = S.rows.filter(function(r){ return r.status !== 'void' && r.uploadify === 'to_record'; }).length; }
+  S.counts.uploadify = S.rows.filter(function(r){ return r.status !== 'void' && (r.uploadify === 'to_record' || /^bill_(expense|nonstock)$/.test(r.uploadify)); }).length; }
 function rulesForMatch(){ // user rules first
   return S.rules.slice().sort(function(a,b){ return (b.priority === 'user') - (a.priority === 'user'); }); }
 
@@ -127,7 +127,7 @@ function load(year){
 $('year').addEventListener('change', function(){ load(this.value); });
 
 /* ---------- tabs ---------- */
-var TABS = [['review','Review'],['register','Register'],['uploadify','Uploadify'],['cash','Cash'],['loans','Loans'],['import','Import'],['reports','Reports'],['accounts','Accounts']];
+var TABS = [['review','Review'],['register','Register'],['uploadify','Uploadify'],['cash','Cash'],['loans','Loans & owed'],['import','Import'],['reports','Reports'],['accounts','Accounts']];
 function renderTabs(){
   $('tabs').innerHTML = TABS.map(function(t){
     var n = t[0] === 'review' ? S.counts.review : t[0] === 'uploadify' ? S.counts.uploadify : 0;
@@ -146,7 +146,7 @@ function txLine(r, extra){
   return '<div class="tx" data-act="edit" data-id="' + esc(r.id) + '">' +
     '<div class="p">' + esc(r.party || r.description || '—') + '</div>' +
     '<div class="a ' + r.dir + '">' + (r.dir === 'in' ? '+' : '−') + money(r.amount).replace('$','$') + '</div>' +
-    '<div class="m">' + esc(r.date) + ' · ' + esc(short(r.account)) + ' · ' + pillFor(r) + (r.type ? ' ' + esc(r.type) : '') + (r.uploadify === 'to_record' ? ' · <b>to Uploadify</b>' : '') + '</div>' +
+    '<div class="m">' + esc(r.date) + ' · ' + esc(short(r.account)) + ' · ' + pillFor(r) + (r.type ? ' ' + esc(r.type) : '') + (r.uploadify === 'to_record' ? ' · <b>to Uploadify</b>' : /^bill_(expense|nonstock)$/.test(r.uploadify) ? ' · <b>Uploadify bill queued</b>' : r.uploadify === 'bill_done' ? ' · Uploadify bill entered' : '') + '</div>' +
     '<div class="r">' + (extra || '') + '</div></div>';
 }
 
@@ -200,12 +200,12 @@ VIEWS.register = function(){
 };
 
 VIEWS.uploadify = function(){
-  var list = S.rows.filter(function(r){ return r.status !== 'void' && (r.category === 'Sales' || r.category === 'Bills') && r.uploadify; });
+  if (F.upl === 'bills' || F.upl === 'billsDone') return uplChips() + uplBills();
+  var list = S.rows.filter(function(r){ return r.status !== 'void' && (r.category === 'Sales' || r.category === 'Bills') && (r.uploadify === 'to_record' || r.uploadify === 'recorded'); });
   var shown = list.filter(function(r){ return F.upl === 'payout' ? r.type === 'Platform payout' && r.uploadify === 'to_record' : F.upl === 'recorded' ? r.uploadify === 'recorded' : r.uploadify === 'to_record' && r.type !== 'Platform payout'; })
     .sort(function(a,b){ return F.upl === 'recorded' ? (a.date < b.date ? 1 : -1) : (a.date > b.date ? 1 : -1); });
   var tin = 0, tout = 0; shown.forEach(function(r){ if (r.dir === 'in') tin += Number(r.amount); else tout += Number(r.amount); });
-  var nP = list.filter(function(r){ return r.type === 'Platform payout' && r.uploadify === 'to_record'; }).length;
-  return '<div class="chips">' + [['to_record','To record'],['payout','Platform payouts' + (nP ? ' · ' + nP : '')],['recorded','Recorded']].map(function(c){ return '<button type="button" class="chip' + (F.upl === c[0] ? ' on' : '') + '" data-act="upl" data-v="' + c[0] + '">' + c[1] + '</button>'; }).join('') + '</div>' +
+  return uplChips() +
     '<div class="msg warn">' + (F.upl === 'recorded' ? 'Recorded in Uploadify: ' : 'Waiting for Uploadify: ') + money(tin) + ' in (sales) · ' + money(tout) + ' out (bills) · ' + shown.length + ' lines</div>' +
     (shown.length ? shown.slice(0, 300).map(function(r){
       return '<div class="card"><div style="display:flex;justify-content:space-between;gap:8px"><b>' + esc(r.party || '—') + '</b><b class="' + r.dir + '">' + (r.dir === 'in' ? '+' : '−') + money(r.amount) + '</b></div>' +
@@ -215,7 +215,24 @@ VIEWS.uploadify = function(){
         '<button type="button" class="btn ghost sm" data-act="edit" data-id="' + esc(r.id) + '">Edit</button></div></div>';
     }).join('') : '<div class="msg ok">Nothing here.</div>');
 };
-
+function uplChips(){
+  var nP = S.rows.filter(function(r){ return r.status !== 'void' && r.type === 'Platform payout' && r.uploadify === 'to_record'; }).length;
+  var nB = S.rows.filter(function(r){ return r.status !== 'void' && /^bill_(expense|nonstock)$/.test(r.uploadify); }).length;
+  return '<div class="chips">' + [['to_record','To record'],['payout','Platform payouts' + (nP ? ' · ' + nP : '')],['recorded','Recorded'],['bills','Bills to enter' + (nB ? ' · ' + nB : '')],['billsDone','Bills entered']].map(function(c){ return '<button type="button" class="chip' + (F.upl === c[0] ? ' on' : '') + '" data-act="upl" data-v="' + c[0] + '">' + c[1] + '</button>'; }).join('') + '</div>';
+}
+function uplBills(){
+  var done = F.upl === 'billsDone', list = S.rows.filter(function(r){ return r.status !== 'void' && (done ? r.uploadify === 'bill_done' : /^bill_(expense|nonstock)$/.test(r.uploadify)); }).sort(function(a,b){ return a.date < b.date ? 1 : -1; });
+  var tot = 0; list.forEach(function(r){ tot += Number(r.amount); });
+  return '<div class="msg ' + (done ? 'ok' : 'warn') + '">' + (done ? 'Entered in Uploadify as purchases: ' : 'Queued as Uploadify bills: ') + list.length + ' · ' + money(tot) + '</div>' +
+    (done ? '' : '<div class="msg info">Uploadify has no outside connection, so these wait here. Ask Claude to “do my Uploadify bills” and each one is entered as a Purchase with a non-stock line, then marked entered here.</div>') +
+    (list.length ? list.map(function(r){
+      var kind = r.uploadify === 'bill_expense' ? 'Expense' : r.uploadify === 'bill_nonstock' ? 'Non-stock bill' : 'Entered';
+      return '<div class="card"><div style="display:flex;justify-content:space-between;gap:8px"><b>' + esc(r.party || '—') + '</b><b class="out">' + money(r.amount) + '</b></div>' +
+        '<div class="small muted"><span class="pill b">' + kind + '</span> ' + esc(r.category) + (r.type ? ' · ' + esc(r.type) : '') + ' · ' + esc(r.date) + ' · ' + esc(short(r.account)) + (r.ref ? ' · ' + esc(r.ref) : '') + '</div>' +
+        (r.notes ? '<div class="small">' + esc(r.notes) + '</div>' : '') +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">' + (done ? '' : '<button type="button" class="btn ghost sm" data-act="billCancel" data-id="' + esc(r.id) + '">Take out of the queue</button>') + '<button type="button" class="btn ghost sm" data-act="edit" data-id="' + esc(r.id) + '">Edit</button></div></div>';
+    }).join('') : '<div class="msg ok">Nothing here.</div>');
+}
 VIEWS.cash = function(){
   var bal = S.balances.CASH || 0, rows = S.rows.filter(function(r){ return r.account === 'CASH' && r.status !== 'void'; }).sort(function(a,b){ return a.date < b.date ? 1 : a.date > b.date ? -1 : (a.id < b.id ? 1 : -1); });
   var last = S.years[S.years.length - 1] || S.year, running = bal, showRun = S.year >= last;
@@ -228,7 +245,7 @@ VIEWS.cash = function(){
 
 VIEWS.loans = function(){
   var by = {};
-  S.loans.forEach(function(r){ if (r.status === 'void') return; var k = r.party || '—'; by[k] = by[k] || { name: k, net: 0, rows: [] };
+  S.loans.forEach(function(r){ if (r.status === 'void' || r.category !== 'Loans') return; var k = r.party || '—'; by[k] = by[k] || { name: k, net: 0, rows: [] };
     by[k].net += (r.type === 'Lent money' || r.type === 'We repaid' ? 1 : -1) * Number(r.amount); by[k].rows.push(r); });
   var people = Object.keys(by).map(function(k){ return by[k]; }).sort(function(a,b){ return Math.abs(b.net) - Math.abs(a.net); });
   var owed = 0, owe = 0; people.forEach(function(p){ if (p.net > 0.004) owed += p.net; else if (p.net < -0.004) owe -= p.net; });
@@ -239,8 +256,30 @@ VIEWS.loans = function(){
       return '<div class="card"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>' + esc(p.name) + '</b>' + st + '</div>' +
         p.rows.sort(function(a,b){ return a.date < b.date ? 1 : -1; }).map(function(r){ return txLine(r, esc(r.type)); }).join('') +
         '<button type="button" class="btn ghost sm" data-act="add" data-kind="loan" data-party="' + esc(p.name) + '" style="margin-top:8px">+ Entry for ' + esc(p.name) + '</button></div>';
-    }).join('') : '<div class="msg info">No loans yet. Money lent or borrowed goes here, with a running balance for each person.</div>');
+    }).join('') : '<div class="msg info">No loans yet. Money lent or borrowed goes here, with a running balance for each person.</div>') + othersSection();
 };
+function othersSection(){
+  var by = {};
+  S.loans.forEach(function(r){ if (r.status === 'void' || r.category !== 'Paid for others') return; var k = r.party || '—';
+    by[k] = by[k] || { name: k, net: 0, unbilled: 0, rows: [] };
+    by[k].net += (r.type === 'Paid back to us' ? -1 : 1) * Number(r.amount);
+    if (r.type !== 'Paid back to us' && r.billed !== 'billed') by[k].unbilled += Number(r.amount); by[k].rows.push(r); });
+  var people = Object.keys(by).map(function(k){ return by[k]; }).sort(function(a,b){ return b.net - a.net; });
+  var owed = 0, unb = 0; people.forEach(function(p){ if (p.net > 0.004) owed += p.net; unb += p.unbilled; });
+  return '<h2 style="font-size:17px;margin:18px 0 8px">Paid for others — to bill</h2>' +
+    '<div class="stats"><div class="stat"><div class="l">Owed back to us</div><div class="n in">' + money(owed) + '</div></div><div class="stat"><div class="l">Not billed yet</div><div class="n out">' + money(unb) + '</div></div></div>' +
+    '<button type="button" class="btn full" data-act="add" data-kind="others" style="margin:0 0 10px">+ Paid for someone</button>' +
+    (people.length ? people.map(function(p){
+      var st = p.net > 0.004 ? '<span class="pill s">owes us ' + money(p.net) + '</span>' : '<span class="pill">settled</span>';
+      return '<div class="card"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>' + esc(p.name) + '</b>' + st + '</div>' +
+        (p.unbilled > 0.004 ? '<div class="small out" style="margin-top:4px">' + money(p.unbilled) + ' not billed yet</div>' : '') +
+        p.rows.sort(function(a,b){ return a.date < b.date ? 1 : -1; }).map(function(r){
+          var tag = r.type === 'Paid back to us' ? 'paid back' : r.billed === 'billed' ? 'billed' : '<button type="button" class="btn ghost sm" data-act="billed" data-id="' + esc(r.id) + '" style="min-height:30px;padding:4px 8px">Mark billed</button>';
+          return txLine(r, tag); }).join('') +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button type="button" class="btn ghost sm" data-act="add" data-kind="others" data-party="' + esc(p.name) + '">+ Paid for ' + esc(p.name) + '</button>' +
+        '<button type="button" class="btn ghost sm" data-act="add" data-kind="others" data-party="' + esc(p.name) + '" data-back="1">They paid us back</button></div></div>';
+    }).join('') : '<div class="msg info">Nothing yet. When you pay for something on someone else’s behalf, add it here so it stays out of your expenses and you can see what to bill.</div>');
+}
 
 VIEWS.import = function(){
   var h = '<div class="card"><h2>Weekly bank import</h2>' +
@@ -268,7 +307,7 @@ VIEWS.reports = function(){
     '<div class="stat"><div class="l">Taxes paid</div><div class="n">' + money(tot.Taxes) + '</div></div></div>';
   h += '<div class="card"><h2>' + esc(S.year) + ' by month</h2><div class="tbl"><table><tr><th>Month</th>' + cats.map(function(c){ return '<th>' + esc(c.replace(' / refunds','').replace('Credit card payments','Card pmts')) + '</th>'; }).join('') + '</tr>' +
     mons.map(function(k){ return '<tr><td>' + k + '</td>' + cats.map(function(c){ return '<td>' + cell(m[k][c] || 0) + '</td>'; }).join('') + '</tr>'; }).join('') +
-    '<tr class="tot"><td>Total</td>' + cats.map(function(c){ return '<td>' + cell(tot[c]) + '</td>'; }).join('') + '</tr></table></div><p class="small muted">Transfers between your own accounts, loans and opening balances are left out of these totals.</p></div>';
+    '<tr class="tot"><td>Total</td>' + cats.map(function(c){ return '<td>' + cell(tot[c]) + '</td>'; }).join('') + '</tr></table></div><p class="small muted">Transfers between your own accounts, loans, money paid for others and opening balances are left out of these totals.</p></div>';
   function top(cat, n, title){ var g = {}; rows.filter(function(r){ return r.category === cat; }).forEach(function(r){ var k = cat === 'Expenses' ? r.type || 'Other' : r.party || '—'; g[k] = (g[k] || 0) + signed(r) * (cat === 'Sales' ? 1 : -1); });
     var ks = Object.keys(g).sort(function(a,b){ return g[b] - g[a]; }).slice(0, n); if (!ks.length) return '';
     return '<div class="card"><h2>' + title + '</h2><div class="tbl"><table>' + ks.map(function(k){ return '<tr><td style="white-space:normal">' + esc(k) + '</td><td>' + money(g[k]) + '</td></tr>'; }).join('') + '</table></div></div>'; }
@@ -360,8 +399,14 @@ function acctOptions(val, filter){ return S.accounts.filter(filter || function()
 function addForm(kind, preset){
   preset = preset || {};
   ED = { kind: kind || 'cash', dir: preset.dir || 'in', loanType: preset.loanType || 'Lent money' };
-  var k = ED.kind, h = '<h3>Add to the register</h3><div class="seg" style="margin-bottom:10px">' + [['cash','Cash'],['loan','Loan'],['bank','Check / wire / other']].map(function(x){ return '<button type="button" data-act="kind" data-v="' + x[0] + '"' + (k === x[0] ? ' class="on"' : '') + '>' + x[1] + '</button>'; }).join('') + '</div>';
-  if (k === 'loan') {
+  var k = ED.kind, h = '<h3>Add to the register</h3><div class="seg" style="margin-bottom:10px">' + [['cash','Cash'],['loan','Loan'],['others','Paid for others'],['bank','Check / wire / other']].map(function(x){ return '<button type="button" data-act="kind" data-v="' + x[0] + '"' + (k === x[0] ? ' class="on"' : '') + '>' + x[1] + '</button>'; }).join('') + '</div>';
+  if (k === 'others') {
+    ED.othersType = preset.back ? 'Paid back to us' : 'Paid for them';
+    h += '<div class="seg" style="margin-bottom:4px">' + ['Paid for them','Paid back to us'].map(function(t){ return '<button type="button" data-act="otype" data-v="' + t + '"' + (ED.othersType === t ? ' class="on"' : '') + '>' + t + '</button>'; }).join('') + '</div>' +
+      '<label>Who (person or company)</label><input id="f-party" list="others-people" value="' + esc(preset.party || '') + '"><datalist id="others-people">' + uniq(S.loans.filter(function(r){ return r.category === 'Paid for others'; }).map(function(r){ return r.party; })).map(function(p){ return '<option value="' + esc(p) + '">'; }).join('') + '</datalist>' +
+      '<label>Paid from / into</label><select id="f-acct">' + acctOptions(preset.account || 'CH7081') + '</select>' +
+      '<div class="small muted">Kept out of your expenses and listed under Loans &amp; owed with what still needs billing. If the line already came in from the bank or card file, open that line instead and change its category to “Paid for others”.</div>';
+  } else if (k === 'loan') {
     h += '<label>What happened?</label><div class="seg" style="grid-auto-flow:row;grid-template-columns:1fr 1fr">' + ['Lent money','Borrowed','Repayment received','We repaid'].map(function(t){ return '<button type="button" data-act="ltype" data-v="' + t + '"' + (ED.loanType === t ? ' class="on"' : '') + '>' + t + ' · ' + C.LOAN_DIR[t] + '</button>'; }).join('') + '</div>' +
       '<label>Person / company</label><input id="f-party" list="loan-people" value="' + esc(preset.party || '') + '"><datalist id="loan-people">' + uniq(S.loans.map(function(r){ return r.party; })).map(function(p){ return '<option value="' + esc(p) + '">'; }).join('') + '</datalist>' +
       '<label>Paid from / into</label><select id="f-acct">' + acctOptions(preset.account || 'CASH', function(a){ return a.kind !== 'card'; }) + '</select>' +
@@ -389,7 +434,8 @@ function addSave(btn){
   var amt = C.num($('f-amt').value), date = $('f-date').value, party = ($('f-party') || {}).value || '', notes = $('f-notes').value;
   if (!(amt > 0)) return toast('Enter an amount', 1);
   var e = { date: date, amount: amt, party: party.trim(), notes: notes.trim(), source: 'manual' };
-  if (ED.kind === 'loan') { if (!e.party) return toast('Whose loan is it?', 1); e.category = 'Loans'; e.type = ED.loanType; e.dir = C.LOAN_DIR[ED.loanType]; e.account = $('f-acct').value; e.uploadify = ''; }
+  if (ED.kind === 'others') { if (!e.party) return toast('Who was it for?', 1); e.category = 'Paid for others'; e.type = ED.othersType; e.dir = C.LOAN_DIR[ED.othersType]; e.account = $('f-acct').value; e.uploadify = ''; }
+  else if (ED.kind === 'loan') { if (!e.party) return toast('Whose loan is it?', 1); e.category = 'Loans'; e.type = ED.loanType; e.dir = C.LOAN_DIR[ED.loanType]; e.account = $('f-acct').value; e.uploadify = ''; }
   else { e.dir = ED.dir; e.category = $('f-cat').value; e.type = $('f-type').value; e.account = ED.kind === 'cash' ? 'CASH' : $('f-acct').value; if ($('f-ref')) e.ref = $('f-ref').value.trim(); if (!e.category) return toast('Pick a category', 1); }
   btn.disabled = true; btn.textContent = 'Saving…';
   call('add', [e]).then(function(r){ upsert(r); bumpBal(r); closeSheet(); toast('Saved'); render(); }).catch(function(x){ toast(x.message, 1); btn.disabled = false; btn.textContent = 'Save'; });
@@ -417,8 +463,10 @@ function editForm(id){
     '<div class="row"><div><label>Account</label><select id="e-acct">' + acctOptions(r.account) + '</select></div><div><label>In / out</label><select id="e-dir"><option value="in"' + (r.dir === 'in' ? ' selected' : '') + '>Money in</option><option value="out"' + (r.dir === 'out' ? ' selected' : '') + '>Money out</option></select></div></div>' +
     '<div class="row"><div><label>Category</label>' + catSelect('e-cat', r.category) + '</div><div><label>Type</label>' + typeSelect('e-type', r.category, r.type) + '</div></div>' +
     '<label>Who</label><input id="e-party" value="' + esc(r.party) + '">' +
-    '<div class="row"><div><label>Check # / ref</label><input id="e-ref" value="' + esc(r.ref) + '"></div><div><label>Uploadify</label><select id="e-upl"><option value="">Not for Uploadify</option><option value="to_record"' + (r.uploadify === 'to_record' ? ' selected' : '') + '>To record</option><option value="recorded"' + (r.uploadify === 'recorded' ? ' selected' : '') + '>Recorded</option></select></div></div>' +
+    '<div class="row"><div><label>Check # / ref</label><input id="e-ref" value="' + esc(r.ref) + '"></div><div><label>Uploadify</label><select id="e-upl">' + [['','Not for Uploadify'],['to_record','To record'],['recorded','Recorded'],['bill_expense','Bill queued · expense'],['bill_nonstock','Bill queued · non-stock'],['bill_done','Bill entered']].map(function(o){ return '<option value="' + o[0] + '"' + (r.uploadify === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div></div>' +
+    (r.category === 'Paid for others' && r.type !== 'Paid back to us' ? '<label>Billed to them?</label><select id="e-billed"><option value="">Not billed yet</option><option value="billed"' + (r.billed === 'billed' ? ' selected' : '') + '>Billed</option></select>' : '') +
     '<label>Notes</label><textarea id="e-notes">' + esc(r.notes) + '</textarea>' +
+    (r.dir === 'out' && !/^bill_/.test(r.uploadify) && r.uploadify !== 'to_record' && r.uploadify !== 'recorded' ? '<div class="card" style="margin-top:10px;background:var(--gold-soft)"><b class="small">Send to Uploadify as a bill</b><div class="row" style="margin-top:6px"><button type="button" class="btn sm" data-act="billQueue" data-v="bill_expense">Expense</button><button type="button" class="btn ghost sm" data-act="billQueue" data-v="bill_nonstock">Non-stock bill</button></div><div class="small muted" style="margin-top:4px">Saves your changes and puts it in the Uploadify bills queue. Claude enters it as a purchase when you ask.</div></div>' : '') +
     (C.keyOf(r.description) ? '<label style="display:flex;gap:8px;align-items:center;font-size:13px;color:var(--ink)"><input type="checkbox" id="e-always" style="width:auto"> Always sort “' + esc(C.keyOf(r.description)) + '” like this</label>' : '') +
     '<button type="button" class="btn full" data-act="editSave">Save</button>' +
     '<div class="row" style="margin-top:8px"><button type="button" class="btn ghost" data-act="close">Cancel</button><button type="button" class="btn ghost" data-act="void" style="color:var(--bad)">' + (r.status === 'void' ? 'Un-void' : 'Void this line') + '</button></div>');
@@ -437,18 +485,20 @@ function cashMirror(r, p){   // a withdrawal confirmed as cash → put the money
   return call('add', [{ date: r.date, account: 'CASH', dir: 'in', amount: r.amount, category: 'Transfers', type: 'To cash register', party: 'From ' + r.account, notes: 'Cash taken out of the bank', uploadify: '', source: 'manual-link' }])
     .then(function(c){ upsert(c); bumpBal(c); return call('update', [r.id], { review: '' }); });
 }
-function editSave(btn){
+function editSave(btn, extra, okMsg){
   var r = S.rows.filter(function(x){ return x.id === ED.id; })[0] || S.loans.filter(function(x){ return x.id === ED.id; })[0];
   var p = { date: $('e-date').value, amount: C.num($('e-amt').value), account: $('e-acct').value, dir: $('e-dir').value, category: $('e-cat').value, type: $('e-type').value,
     party: $('e-party').value.trim(), ref: $('e-ref').value.trim(), uploadify: $('e-upl').value, notes: $('e-notes').value.trim(), review: '' };
   if (!(p.amount > 0)) return toast('Amount must be above 0', 1);
   if ((p.category === 'Sales' || p.category === 'Bills') && !p.uploadify && r.category !== p.category) p.uploadify = 'to_record';
-  if (p.category !== 'Sales' && p.category !== 'Bills') p.uploadify = '';
+  if (p.category !== 'Sales' && p.category !== 'Bills' && !/^bill_/.test(p.uploadify)) p.uploadify = '';
+  if ($('e-billed')) p.billed = $('e-billed').value;
+  if (extra) Object.keys(extra).forEach(function(k){ p[k] = extra[k]; });
   var always = $('e-always') && $('e-always').checked;
   btn.disabled = true;
   bumpBal([r], -1);
   call('update', [ED.id], p).then(function(u){ upsert(u); bumpBal(u); return cashMirror(r, p); }).then(function(){ return always ? saveRuleFor(r, p.category, p.type, p.party) : null; })
-    .then(function(){ closeSheet(); toast('Saved'); render(); }).catch(function(x){ bumpBal([r]); toast(x.message, 1); btn.disabled = false; });
+    .then(function(){ closeSheet(); toast(okMsg || 'Saved'); render(); }).catch(function(x){ bumpBal([r]); toast(x.message, 1); btn.disabled = false; });
 }
 function reviewOk(id, btn){
   var r = S.rows.filter(function(x){ return x.id === id; })[0], cat = $('c-' + id).value, type = $('t-' + id).value, party = $('p-' + id).value.trim();
@@ -466,6 +516,9 @@ function acceptAll(btn){
   if (!confirm('Accept the suggestion on ' + list.length + ' lines?')) return;
   btn.disabled = true;
   call('update', list.map(function(r){ return r.id; }), { review: '' }).then(function(u){ upsert(u); toast('Accepted ' + u.length); render(); }).catch(function(x){ toast(x.message, 1); btn.disabled = false; });
+}
+function quickSet(id, patch, msg){
+  call('update', [id], patch).then(function(u){ upsert(u); render(); toast(msg); }).catch(function(x){ toast(x.message, 1); });
 }
 function setUpl(id, v){ call('update', [id], { uploadify: v }).then(function(u){ upsert(u); render(); toast(v === 'recorded' ? 'Marked recorded' : 'Back in the queue'); }).catch(function(x){ toast(x.message, 1); }); }
 function voidIt(btn){
@@ -502,7 +555,11 @@ document.addEventListener('click', function(e){
   var b = e.target.closest('[data-act]'); if (!b) return;
   var act = b.getAttribute('data-act'), id = b.getAttribute('data-id');
   if (act === 'reload') return load(S.year);
-  if (act === 'add') return addForm(b.getAttribute('data-kind') || (S.tab === 'loans' ? 'loan' : S.tab === 'cash' ? 'cash' : 'cash'), { party: b.getAttribute('data-party') || '' });
+  if (act === 'add') return addForm(b.getAttribute('data-kind') || (S.tab === 'loans' ? 'loan' : 'cash'), { party: b.getAttribute('data-party') || '', back: b.getAttribute('data-back') === '1' });
+  if (act === 'otype') { ED.othersType = b.getAttribute('data-v'); b.parentNode.querySelectorAll('button').forEach(function(x){ x.classList.toggle('on', x === b); }); return; }
+  if (act === 'billed') return quickSet(id, { billed: 'billed' }, 'Marked billed');
+  if (act === 'billCancel') return quickSet(id, { uploadify: '' }, 'Taken out of the queue');
+  if (act === 'billQueue') { var kv = b.getAttribute('data-v'); return editSave(b, { uploadify: kv }, kv === 'bill_expense' ? 'Queued for Uploadify as an expense' : 'Queued for Uploadify as a non-stock bill'); }
   if (act === 'kind') { var keep = $('f-amt') ? $('f-amt').value : ''; addForm(b.getAttribute('data-v')); if ($('f-amt')) $('f-amt').value = keep; return; }
   if (act === 'dir' || act === 'ltype') {
     if (act === 'dir') ED.dir = b.getAttribute('data-v'); else ED.loanType = b.getAttribute('data-v');
