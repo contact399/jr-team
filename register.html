@@ -317,7 +317,10 @@ VIEWS.reports = function(){
 };
 
 VIEWS.accounts = function(){
-  return '<div class="card"><h2>Accounts</h2>' + S.accounts.map(function(a){ return '<div class="tx" data-act="acctEdit" data-k="' + esc(a.key) + '"><div class="p">' + esc(a.name) + '</div><div class="a">' + (a.kind === 'card' ? '' : money(S.balances[a.key] || 0)) + '</div><div class="m">' + esc(a.key) + ' · ' + esc(a.kind) + (a.personal === 'yes' ? ' · personal card' : '') + '</div><div class="r"></div></div>'; }).join('') +
+  return '<div class="card"><h2>Backup</h2><p class="small muted" style="margin:0 0 8px">Downloads every line from every year (voided ones too), plus your accounts and sorting rules, as two CSV files you keep on your own computer. Do it once a month.</p>' +
+    '<button type="button" class="btn full" data-act="backup" style="margin-top:0">Download everything</button>' +
+    (S.lastBackup ? '<div class="small muted" style="margin-top:6px">Last download on this device: ' + esc(S.lastBackup) + '</div>' : '') + '</div>' +
+    '<div class="card"><h2>Accounts</h2>' + S.accounts.map(function(a){ return '<div class="tx" data-act="acctEdit" data-k="' + esc(a.key) + '"><div class="p">' + esc(a.name) + '</div><div class="a">' + (a.kind === 'card' ? '' : money(S.balances[a.key] || 0)) + '</div><div class="m">' + esc(a.key) + ' · ' + esc(a.kind) + (a.personal === 'yes' ? ' · personal card' : '') + '</div><div class="r"></div></div>'; }).join('') +
     '<button type="button" class="btn ghost full" data-act="acctEdit">+ Add an account</button></div>' +
     '<div class="card"><h2>Sorting rules</h2><p class="small muted" style="margin:0 0 8px">' + S.rules.filter(function(r){ return r.priority === 'user'; }).length + ' of yours · ' + S.rules.filter(function(r){ return r.priority !== 'user'; }).length + ' learned from the 2025 tax package.</p>' +
     S.rules.filter(function(r){ return r.priority === 'user'; }).map(function(r){ return '<div class="tx" data-act="ruleDel" data-k="' + esc(r.key) + '" data-m="' + esc(r.match) + '"><div class="p">' + esc(r.key) + '</div><div class="a small">Remove</div><div class="m">' + esc(r.category) + ' · ' + esc(r.type) + ' · ' + esc(r.party) + '</div><div class="r"></div></div>'; }).join('') + '</div>' +
@@ -549,6 +552,30 @@ function csvOf(rows){
 }
 function download(name, text){ var b = new Blob(['﻿' + text], { type: 'text/csv' }), a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 500); }
 
+/* ---------- full backup ---------- */
+function backupAll(btn){
+  var years = S.years.slice(); if (!years.length) years = [S.year];
+  btn.disabled = true; var all = [], i = 0;
+  function next(){
+    if (i >= years.length) return Promise.resolve();
+    var y = years[i++]; btn.textContent = 'Getting ' + y + '…';
+    return call('yearRows', y).then(function(r){ all = all.concat(r); return next(); });
+  }
+  next().then(function(){
+    var cols = ['id','date','account','dir','amount','category','type','party','description','notes','ref','uploadify','review','billed','status','source','hash','link','addedAt','updatedAt'];
+    function q(v){ v = String(v == null ? '' : v); return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g,'""') + '"' : v; }
+    all.sort(function(a,b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : (a.id < b.id ? -1 : 1); });
+    var stamp = today();
+    download('JR Register backup ' + stamp + ' - all lines.csv', [cols.join(',')].concat(all.map(function(r){ return cols.map(function(c){ return q(r[c]); }).join(','); })).join('\r\n'));
+    var acols = ['key','name','bank','kind','personal','last4','lastBalance','lastBalanceDate','lastImport'];
+    var lines = ['ACCOUNTS', acols.join(',')].concat(S.accounts.map(function(a){ return acols.map(function(c){ return q(a[c]); }).join(','); }))
+      .concat(['', 'RULES', 'key,match,category,type,party,priority'], S.rules.map(function(r){ return [r.key, r.match, r.category, r.type, r.party, r.priority].map(q).join(','); }));
+    setTimeout(function(){ download('JR Register backup ' + stamp + ' - accounts and rules.csv', lines.join('\r\n')); }, 800);
+    try { localStorage.setItem('jr_reg_backup', stamp); } catch (e) {}
+    S.lastBackup = stamp; toast('Downloaded ' + all.length + ' lines'); render();
+  }).catch(function(x){ toast(x.message, 1); btn.disabled = false; btn.textContent = 'Download everything'; });
+}
+
 /* ---------- events ---------- */
 document.addEventListener('click', function(e){
   var t = e.target.closest('[data-tab]'); if (t) { S.tab = t.getAttribute('data-tab'); F.limit = 200; render(); return; }
@@ -584,6 +611,7 @@ document.addEventListener('click', function(e){
   if (act === 'acctEdit') return acctForm(b.getAttribute('data-k'));
   if (act === 'acctSave') return acctSave(b);
   if (act === 'ruleDel') { var k = b.getAttribute('data-k'), m = b.getAttribute('data-m'); if (!confirm('Remove the rule for “' + k + '”?')) return; return call('deleteRule', k, m).then(function(){ S.rules = S.rules.filter(function(r){ return !(r.key === k && r.match === m); }); render(); }); }
+  if (act === 'backup') return backupAll(b);
   if (act === 'csv' || act === 'csvYear') {
     var rows = act === 'csvYear' ? S.rows.filter(function(r){ return r.date.slice(0,4) === S.year && r.status !== 'void'; }) : S.rows.filter(function(r){ return r.date.slice(0,4) === S.year && (F.cat === '__void' ? r.status === 'void' : r.status !== 'void') && (!F.acct || r.account === F.acct) && (!F.cat || F.cat === '__void' || r.category === F.cat) && (!F.month || r.date.slice(0,7) === F.month); });
     rows.sort(function(a,b){ return a.date < b.date ? -1 : 1; });
@@ -604,6 +632,7 @@ document.addEventListener('change', function(e){
 var qt; document.addEventListener('input', function(e){ if (e.target.getAttribute('data-f') === 'q') { clearTimeout(qt); var v = e.target.value; qt = setTimeout(function(){ F.q = v; render(); var i = document.querySelector('[data-f=q]'); if (i) { i.focus(); i.setSelectionRange(v.length, v.length); } }, 350); } });
 document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeSheet(); });
 
+try { S.lastBackup = localStorage.getItem('jr_reg_backup') || ''; } catch (e) {}
 load();
 })();
 </script>
