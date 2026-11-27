@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>JR Team · Calls & Orders</title><script>window.JR_MOD="calls";</script><script src="jr.js"></script>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://script.google.com"><link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
+<meta name="theme-color" content="#24508f"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{--bg:#f6f5f2;--card:#fff;--ink:#1b1d21;--muted:#62666d;--line:#e3e1dc;--gold:#a8790f;--gold-soft:#f6ecd4;--navy:#1f3864;
+  --ok:#1d7a46;--ok-soft:#e3f3e9;--warn:#8a4b00;--warn-soft:#fdf0dc;--bad:#b3261e;--bad-soft:#fbe6e4;--blue-soft:#e4ecfa}
+@media (prefers-color-scheme:dark){:root{--bg:#141517;--card:#1e2023;--ink:#ecebe8;--muted:#a2a6ad;--line:#30333a;--gold:#e0b34d;--gold-soft:#3a3020;
+  --navy:#9db4e0;--ok:#6fcf97;--ok-soft:#1b3326;--warn:#f0b35c;--warn-soft:#3a2c17;--bad:#f28b82;--bad-soft:#3d2120;--blue-soft:#22304a}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow-x:hidden}
+header{padding:14px 14px 6px;display:flex;align-items:center;gap:10px;max-width:1100px;margin:0 auto}
+header h1{font-size:19px;margin:0;font-weight:700}
+header .sp{flex:1}
+input,textarea,select{font:inherit;font-size:16px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);width:100%}
+textarea{min-height:80px;resize:vertical}
+label{display:block;font-size:12px;color:var(--muted);margin:10px 0 3px;font-weight:600}
+main{padding:0 12px calc(96px + env(safe-area-inset-bottom,0px));max-width:1100px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
+.card h2{font-size:15px;margin:0 0 8px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media (max-width:420px){.row{grid-template-columns:1fr}}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:10px;background:var(--gold);color:#fff;font-weight:700;font-size:15px;padding:11px 14px;min-height:44px;cursor:pointer;text-decoration:none}
+.btn.full{width:100%;margin-top:14px}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:600}
+.btn.sm{font-size:13px;padding:7px 10px;min-height:36px}
+.btn:disabled{opacity:.5}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margin:8px 0 10px;-webkit-overflow-scrolling:touch}
+.chip{flex:0 0 auto;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.pill{display:inline-block;border-radius:999px;padding:1px 8px;font-size:11px;font-weight:700;background:var(--blue-soft);color:var(--navy);margin:0 4px 2px 0}
+.pill.g{background:var(--gold-soft);color:var(--warn)}
+.cu{display:flex;gap:10px;align-items:center;padding:11px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+.cu:last-child{border-bottom:0}
+.cu:focus-visible,.cu.on{background:var(--gold-soft);border-radius:10px}
+.av{flex:0 0 38px;height:38px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+@media (prefers-color-scheme:dark){.av{color:#141517}}
+.cu .t{flex:1;min-width:0}
+.cu .n{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cu .m{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cu .r{font-size:12px;color:var(--muted);text-align:right;white-space:nowrap}
+.muted{color:var(--muted)} .small{font-size:12px}
+.msg{padding:10px 12px;border-radius:10px;font-size:14px;margin:8px 0}
+.msg.ok{background:var(--ok-soft);color:var(--ok)} .msg.warn{background:var(--warn-soft);color:var(--warn)} .msg.bad{background:var(--bad-soft);color:var(--bad)} .msg.info{background:var(--blue-soft);color:var(--navy)}
+.dupe{border:1px solid var(--warn);background:var(--warn-soft);border-radius:12px;padding:10px;margin-top:12px}
+.dupe h4{margin:0 0 6px;font-size:14px;color:var(--warn)}
+.dupe .cu{border-color:rgba(0,0,0,.08)}
+.acts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.acts .btn{font-size:14px}
+.kv{display:grid;grid-template-columns:96px 1fr;gap:4px 10px;font-size:14px}
+.kv dt{color:var(--muted);font-size:12px;font-weight:600;padding-top:2px}
+.kv dd{margin:0;word-break:break-word}
+.tabs{display:flex;gap:6px;overflow-x:auto;margin:4px 0 10px}
+.tabs button{flex:0 0 auto;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 12px;border-radius:10px;font-weight:600;font-size:14px}
+.tabs button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+@media (prefers-color-scheme:dark){.tabs button.on{color:#141517}}
+.soon{padding:22px 10px;text-align:center;color:var(--muted);font-size:14px}
+.split{display:block}
+#detail{display:none}
+@media (min-width:900px){
+  .split{display:grid;grid-template-columns:minmax(320px,400px) 1fr;gap:14px;align-items:start}
+  #detail{display:block;position:sticky;top:calc(56px + env(safe-area-inset-top,0px))}
+  .back{display:none!important}
+}
+/* bottom bar (phone) / left rail (tablet+desktop) */
+#bar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--card);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding-bottom:env(safe-area-inset-bottom,0px)}
+#bar button{background:none;border:0;color:var(--muted);font:600 11px system-ui,-apple-system,sans-serif;padding:8px 2px 9px;min-height:54px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+#bar button .i{font-size:19px;line-height:1}
+#bar button.on{color:var(--navy)}
+#bar button.call{color:#fff}
+#bar button.call .i{background:var(--gold);width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;margin-top:-18px;box-shadow:0 3px 10px rgba(0,0,0,.2)}
+#bar button.call span:last-child{color:var(--muted)}
+#bar button:disabled{opacity:.45;cursor:default}
+@media (min-width:700px){
+  #bar{top:calc(46px + env(safe-area-inset-top,0px));right:auto;width:84px;grid-template-columns:1fr;grid-auto-rows:min-content;border-top:0;border-right:1px solid var(--line);padding-top:10px}
+  #bar button.call .i{margin-top:0}
+  body{padding-left:84px}
+  main{padding-bottom:30px}
+}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+.sheet .box{background:var(--bg);width:100%;max-width:620px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 14px calc(20px + env(safe-area-inset-bottom,0px))}
+@media (min-width:700px){.sheet{align-items:center}.sheet .box{border-radius:18px}}
+.sheet h3{margin:0 0 4px;font-size:17px;display:flex;align-items:center;gap:8px}
+.sheet h3 .sp{flex:1}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;z-index:60;font-size:14px;max-width:90vw}
+.loading{padding:40px 0;text-align:center;color:var(--muted)}
+.tagpick{display:flex;flex-wrap:wrap;gap:6px}
+
+/* review */
+.find{display:flex;gap:10px;align-items:center}
+.find .t{flex:1;min-width:0}.find .t b{display:block;font-size:15px}.find .t span{font-size:12px;color:var(--muted)}
+.rc{border-left:4px solid var(--gold)}.rc.upd{border-left-color:var(--navy)}.rc.warnc{border-left-color:var(--bad)}
+.top{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.pill.r{background:var(--bad-soft);color:var(--bad)}.pill.o{background:var(--ok-soft);color:var(--ok)}
+.who{font-weight:800;font-size:16px;margin:6px 0 2px}.match{font-size:12px;color:var(--muted)}
+.sum{margin:8px 0;white-space:pre-wrap}
+.alert{background:var(--bad-soft);color:var(--bad);border-radius:10px;padding:8px 10px;font-size:13px;margin:8px 0}
+.rkv{display:grid;grid-template-columns:76px 1fr;gap:3px 10px;font-size:13px;margin:6px 0}.rkv dt{color:var(--muted);font-weight:600}.rkv dd{margin:0}
+.tasks{margin:8px 0 4px;border-top:1px dashed var(--line);padding-top:8px}
+.tasks h4{margin:0 0 6px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.task{display:grid;gap:6px;padding:8px;border:1px solid var(--line);border-radius:10px;margin-bottom:6px}
+.task .tt{font-weight:600;font-size:14px}
+.task .ctl{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:center}
+.task select,.task input,.custpick{font-size:14px;padding:6px 8px}
+.urg{font-size:12px;font-weight:700;border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:var(--card);color:var(--muted);cursor:pointer;white-space:nowrap}
+.urg.on{background:var(--bad-soft);color:var(--bad);border-color:var(--bad)}
+.racts{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;margin-top:8px}
+.src{font-size:12px;margin-top:6px}.src a{color:var(--navy)}
+.done{display:flex;gap:8px;align-items:center;font-size:14px;flex-wrap:wrap}.done .u{margin-left:auto}
+.okt{color:var(--ok);font-weight:700}
+#bar .badge{position:absolute;top:3px;left:calc(50% + 6px);background:var(--bad);color:#fff;border-radius:999px;font-size:10px;padding:0 5px;min-width:16px;text-align:center;line-height:16px}
+#bar button{position:relative}
+@media (min-width:700px){.task .ctl{grid-template-columns:140px 150px auto}}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">Customers</h1>
+  <span class="sp"></span>
+  <button type="button" class="btn ghost sm" data-act="reload">Refresh</button>
+</header>
+<main id="main"><div class="loading">Loading…</div></main>
+<nav id="bar" aria-label="Calls & Orders">
+  <button type="button" data-go="today" disabled title="Coming in a later stage"><span class="i">◷</span><span>Today</span></button>
+  <button type="button" data-go="customers"><span class="i">☺</span><span>Customers</span></button>
+  <button type="button" data-go="call" class="call" disabled title="Coming in stage 2"><span class="i">+</span><span>Call</span></button>
+  <button type="button" data-go="jobs" disabled title="Coming in a later stage"><span class="i">⚒</span><span>Jobs</span></button>
+  <button type="button" data-go="review"><span class="i">✉</span><span>Review</span><span class="badge" id="badge" hidden></span></button>
+</nav>
+<div id="sheet"></div>
+<script>
+(function(){
+'use strict';
+var TAGS = ['Dealer', 'Retail', 'Auction', 'Unvault', 'Custom', 'Wholesale', 'VIP'];
+var S = { customers: [], intake: [], q: '', tag: '', sel: '', ctab: 'activity', loaded: false, view: '', rf: 'all', edit: {}, busy: {} };
+var OWNERS = ['Karan', 'Leo', 'Shivansh', 'DD'];
+var $ = function (id) { return document.getElementById(id); };
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function call(fn){ var a = [].slice.call(arguments, 1); return JR.rpc('calls', fn, a); }
+function toast(t){ var d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(function(){ d.remove(); }, 2600); }
+function tagsOf(c){ return String(c.tags || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean); }
+function initials(n){ var p = String(n || '?').replace(/^(mr|mrs|ms|dr)\.?\s+/i, '').trim().split(/\s+/); return ((p[0] || '?')[0] + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase(); }
+function digits(s){ return String(s || '').replace(/\D/g, ''); }
+function nm(s){ return String(s || '').toLowerCase().replace(/\b(mr|mrs|ms|miss|dr|shri|smt)\.?\s+/g, '').replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim(); }
+function samePhone(a, b){ a = digits(a); b = digits(b); return a.length >= 7 && b.length >= 7 && a.slice(-9) === b.slice(-9); }
+function findDupes(c){
+  var n = nm(c.name), e = String(c.email || '').toLowerCase().trim(), out = [];
+  S.customers.forEach(function (r) {
+    if (r.id === c.id) return;
+    var why = [], rn = nm(r.name);
+    if (n && rn === n) why.push('same name');
+    else if (n.length >= 4 && rn && (rn.indexOf(n) === 0 || n.indexOf(rn) === 0)) why.push('similar name');
+    if ([c.phone, c.whatsapp].some(function (p) { return p && (samePhone(p, r.phone) || samePhone(p, r.whatsapp)); })) why.push('same phone');
+    if (e && String(r.email || '').toLowerCase().trim() === e) why.push('same email');
+    if (c.uploadifyId && r.uploadifyId && String(c.uploadifyId).trim() === String(r.uploadifyId).trim()) why.push('same Uploadify ID');
+    if (why.length) out.push({ c: r, why: why.join(', ') });
+  });
+  return out;
+}
+function waLink(p){ var d = digits(p); if (!d) return ''; if (d.length === 10) d = '1' + d; return 'https://wa.me/' + d; }
+function when(s){ if (!s) return ''; var d = String(s).slice(0, 10); return d; }
+
+/* ---------- load ---------- */
+function load(){
+  return call('boot').then(function (r) {
+    S.customers = r.customers || []; S.intake = r.intake || []; S.loaded = true; S.sheetUrl = r.sheetUrl;
+    S.lastScan = r.lastScan; S.scanRequested = r.scanRequested; S.scanLinked = r.scanLinked;
+    if (!S.view) S.view = location.hash === '#customers' ? 'customers' : (location.hash === '#review' || pending().length ? 'review' : 'customers');
+    try { sessionStorage.setItem('jr_calls_cache', JSON.stringify({ c: S.customers, i: S.intake })); } catch (e) {}
+    render();
+  }, function (e) { $('main').innerHTML = '<div class="msg bad">' + esc(e.message) + '</div>'; });
+}
+
+/* ---------- list ---------- */
+function filtered(){
+  var q = S.q.toLowerCase().trim(), qd = digits(q);
+  return S.customers.filter(function (c) {
+    if (S.tag && tagsOf(c).map(function(t){return t.toLowerCase();}).indexOf(S.tag.toLowerCase()) < 0) return false;
+    if (!q) return true;
+    var hay = [c.name, c.company, c.city, c.email, c.tags, c.id, c.uploadifyId].join(' ').toLowerCase();
+    if (hay.indexOf(q) >= 0) return true;
+    return qd.length >= 4 && (digits(c.phone).indexOf(qd) >= 0 || digits(c.whatsapp).indexOf(qd) >= 0);
+  }).sort(function (a, b) { return String(b.lastContact || b.updated).localeCompare(String(a.lastContact || a.updated)) || String(a.name).localeCompare(String(b.name)); });
+}
+function row(c, on){
+  var sub = [c.company, c.city].filter(Boolean).join(' · ') || c.phone || c.email || '';
+  return '<div class="cu' + (on ? ' on' : '') + '" tabindex="0" role="button" data-open="' + esc(c.id) + '"><div class="av" aria-hidden="true">' + esc(initials(c.name)) + '</div>'
+    + '<div class="t"><div class="n">' + esc(c.name) + '</div><div class="m">' + esc(sub) + '</div></div>'
+    + '<div class="r">' + (c.lastContact ? 'Spoke ' + esc(when(c.lastContact)) : '') + (c.uploadifyId ? '' : '<div><span class="pill g">No Uploadify</span></div>') + '</div></div>';
+}
+function pending(){ return S.intake.filter(function (c) { return c.status === 'pending'; }); }
+function nav(){
+  [].forEach.call(document.querySelectorAll('#bar [data-go]'), function (b) { var on = b.getAttribute('data-go') === S.view; b.classList.toggle('on', on); if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+  var n = pending().length, bd = $('badge'); bd.textContent = n; bd.hidden = !n;
+}
+function render(){
+  nav();
+  if (S.view === 'review') return renderReview();
+  var wide = matchMedia('(min-width:900px)').matches;
+  if (S.sel && !wide) return renderCustomer();
+  $('title').textContent = 'Customers';
+  var list = filtered(), allTags = TAGS.slice();
+  S.customers.forEach(function (c) { tagsOf(c).forEach(function (t) { if (allTags.map(function(x){return x.toLowerCase();}).indexOf(t.toLowerCase()) < 0) allTags.push(t); }); });
+  var h = '<div class="split"><div>'
+    + '<input type="search" id="q" placeholder="Search name, company, phone, email…" value="' + esc(S.q) + '" aria-label="Search customers" autocomplete="off">'
+    + '<div class="chips"><button type="button" class="chip' + (S.tag ? '' : ' on') + '" data-tag="">All</button>'
+    + allTags.map(function (t) { return '<button type="button" class="chip' + (S.tag === t ? ' on' : '') + '" data-tag="' + esc(t) + '">' + esc(t) + '</button>'; }).join('') + '</div>'
+    + '<button type="button" class="btn full" data-act="new" style="margin:0 0 10px">+ Customer</button>'
+    + '<div class="card" style="padding:4px 8px">'
+    + (list.length ? list.map(function (c) { return row(c, wide && c.id === S.sel); }).join('')
+       : '<div class="soon">' + (S.customers.length ? 'No customer matches.' : 'No customers yet. Tap “+ Customer” to add the first one.') + '</div>')
+    + '</div><p class="small muted">' + S.customers.length + (S.customers.length === 1 ? ' customer' : ' customers') + (S.sheetUrl ? ' · <a href="' + esc(S.sheetUrl) + '" target="_blank" rel="noopener">data sheet</a>' : '') + '</p></div>'
+    + '<div id="detail">' + (S.sel ? customerHtml(byId(S.sel)) : '<div class="card soon">Pick a customer to see their page.</div>') + '</div></div>';
+  $('main').innerHTML = h;
+  var qi = $('q'); if (qi && S._focusQ) { qi.focus(); qi.setSelectionRange(qi.value.length, qi.value.length); }
+}
+function byId(id){ return S.customers.filter(function (c) { return c.id === id; })[0]; }
+
+/* ---------- customer page ---------- */
+function customerHtml(c){
+  if (!c) return '<div class="card soon">Customer not found.</div>';
+  var tel = c.phone ? 'tel:' + esc(String(c.phone).replace(/[^\d+]/g, '')) : '', wa = waLink(c.whatsapp || c.phone), mail = c.email ? 'mailto:' + esc(c.email) : '';
+  function act(href, label){ return href ? '<a class="btn ghost" href="' + href + '"' + (/^https/.test(href) ? ' target="_blank" rel="noopener"' : '') + '>' + label + '</a>' : '<button type="button" class="btn ghost" disabled>' + label + '</button>'; }
+  var upl = c.uploadifyId || c.uploadifyUrl
+    ? (c.uploadifyUrl ? '<a href="' + esc(c.uploadifyUrl) + '" target="_blank" rel="noopener">' + esc(c.uploadifyId || 'Open in Uploadify') + '</a>' : esc(c.uploadifyId))
+    : '<button type="button" class="btn sm ghost" data-act="edit" data-focus="uploadifyId">Link to Uploadify</button>';
+  var tabs = [['activity', 'Activity'], ['orders', 'Orders'], ['jobs', 'Jobs'], ['tasks', 'Tasks']];
+  var soon = { activity: 'Calls and messages will show here, newest first (stage 2).', orders: 'Orders arrive in stage 4.', jobs: 'Supplier jobs arrive in stage 5.', tasks: 'Open tasks for this customer arrive in stage 3.' };
+  return '<button type="button" class="btn ghost sm back" data-act="back" style="margin-bottom:8px">‹ Customers</button>'
+    + '<div class="card"><div style="display:flex;gap:10px;align-items:center"><div class="av" aria-hidden="true">' + esc(initials(c.name)) + '</div>'
+    + '<div style="flex:1;min-width:0"><div style="font-weight:800;font-size:17px">' + esc(c.name) + '</div><div class="small muted">' + esc([c.company, c.city].filter(Boolean).join(' · ')) + '</div></div>'
+    + '<button type="button" class="btn ghost sm" data-act="edit">Edit</button></div>'
+    + '<div style="margin-top:8px">' + tagsOf(c).map(function (t) { return '<span class="pill">' + esc(t) + '</span>'; }).join('') + '</div>'
+    + '<div class="acts">' + act(tel, 'Call') + act(wa, 'WhatsApp') + act(mail, 'Email') + '</div>'
+    + '<dl class="kv" style="margin:12px 0 0">'
+    + (c.phone ? '<dt>Phone</dt><dd>' + esc(c.phone) + '</dd>' : '')
+    + (c.whatsapp && c.whatsapp !== c.phone ? '<dt>WhatsApp</dt><dd>' + esc(c.whatsapp) + '</dd>' : '')
+    + (c.email ? '<dt>Email</dt><dd>' + esc(c.email) + '</dd>' : '')
+    + '<dt>Uploadify</dt><dd>' + upl + '</dd>'
+    + (c.notes ? '<dt>Notes</dt><dd style="white-space:pre-wrap">' + esc(c.notes) + '</dd>' : '')
+    + '<dt>Customer ID</dt><dd class="muted">' + esc(c.id) + '</dd></dl></div>'
+    + '<div class="card"><h2>Relationship summary</h2>'
+    + (c.summary ? '<div style="white-space:pre-wrap">' + esc(c.summary) + '</div>' : '<div class="muted small">Builds itself from logged calls: what they buy, budget range, last spoke, what’s pending.</div>')
+    + (c.budgetRange || c.lastContact ? '<dl class="kv" style="margin-top:8px">' + (c.budgetRange ? '<dt>Budget</dt><dd>' + esc(c.budgetRange) + '</dd>' : '') + (c.lastContact ? '<dt>Last spoke</dt><dd>' + esc(c.lastContact) + '</dd>' : '') + '</dl>' : '')
+    + '</div>'
+    + '<div class="tabs" role="tablist">' + tabs.map(function (t) { return '<button type="button" role="tab" aria-selected="' + (S.ctab === t[0]) + '" class="' + (S.ctab === t[0] ? 'on' : '') + '" data-ctab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>'
+    + '<div class="card soon">' + soon[S.ctab] + '</div>';
+}
+function renderCustomer(){
+  var c = byId(S.sel); $('title').textContent = c ? c.name : 'Customer';
+  $('main').innerHTML = customerHtml(c); window.scrollTo(0, 0);
+}
+
+
+/* ---------- Review ---------- */
+var KIND = { req: ['Request', 'g'], upd: ['Order update', ''], fu: ['Follow-up', 'o'] };
+function custName(id){ var c = byId(id); return c ? c.name : ''; }
+function reviewCard(c){
+  if (c.status !== 'pending') {
+    return '<div class="card"><div class="done">' + (c.status === 'added' ? '<span class="okt">✓ Added</span>' : '<span class="muted">Skipped</span>')
+      + '<span>' + esc(c.customerId ? custName(c.customerId) || c.who : c.who) + '</span>'
+      + (c.status === 'skipped' ? '<button type="button" class="btn ghost sm u" data-undo="' + esc(c.id) + '">Undo</button>' : (c.customerId ? '<button type="button" class="btn ghost sm u" data-open="' + esc(c.customerId) + '">Open</button>' : ''))
+      + '</div>' + (c.status === 'added' && c.result ? '<div class="small muted" style="margin-top:4px">' + esc(c.result) + ' pushed to the team list</div>' : '') + '</div>';
+  }
+  var k = KIND[c.kind] || KIND.req, ed = S.edit[c.id], busy = S.busy[c.id];
+  var cust = c.customerId ? '<div class="match">Matched: ' + esc(custName(c.customerId) || c.customerId) + '</div>'
+    : '<label class="small" style="margin:6px 0 2px">Customer</label><select class="custpick" data-cust="' + esc(c.id) + '">'
+      + '<option value="new"' + (c._cust === 'new' || !c._cust ? ' selected' : '') + '>Add as new customer: ' + esc(c.who) + '</option>'
+      + '<option value="none"' + (c._cust === 'none' ? ' selected' : '') + '>Don’t add as a customer</option>'
+      + S.customers.slice().sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); }).map(function (x) { return '<option value="' + esc(x.id) + '"' + (c._cust === x.id ? ' selected' : '') + '>' + esc(x.name) + (x.company ? ' · ' + esc(x.company) : '') + '</option>'; }).join('')
+      + '</select>';
+  return '<div class="card rc' + (c.kind === 'upd' ? ' upd' : '') + (c.alert ? ' warnc' : '') + '">'
+    + '<div class="top"><span class="pill ' + k[1] + '">' + k[0] + '</span>' + (c.alert ? '<span class="pill r">Check</span>' : '') + '<span>' + esc(c.source) + ' · ' + esc(c.receivedAt) + '</span></div>'
+    + '<div class="who">' + esc(c.who) + '</div>' + (c.match && !c.customerId ? '<div class="match">' + esc(c.match) + (c.partial ? ' · read from chat preview only' : '') + '</div>' : '')
+    + (ed ? '<textarea data-sum="' + esc(c.id) + '" style="margin:8px 0;min-height:110px">' + esc(c.summary) + '</textarea>' : '<div class="sum">' + esc(c.summary) + '</div>')
+    + (c.alert ? '<div class="alert">⚠ ' + esc(c.alert) + '</div>' : '')
+    + (c.details.length ? '<dl class="rkv">' + c.details.map(function (r) { return '<dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd>'; }).join('') + '</dl>' : '')
+    + cust
+    + (c.tasks.length ? '<div class="tasks"><h4>Tasks to push</h4>' + c.tasks.map(function (t, i) {
+        return '<div class="task">' + (ed ? '<input type="text" value="' + esc(t[0]) + '" data-ttext="' + esc(c.id) + ':' + i + '" aria-label="Task">' : '<div class="tt">' + esc(t[0]) + '</div>') + '<div class="ctl">'
+          + '<select aria-label="Owner" data-own="' + esc(c.id) + ':' + i + '">' + OWNERS.map(function (o) { return '<option' + (o === t[1] ? ' selected' : '') + '>' + o + '</option>'; }).join('') + '</select>'
+          + '<input type="date" aria-label="Due" value="' + esc(t[2]) + '" data-due="' + esc(c.id) + ':' + i + '">'
+          + '<button type="button" class="urg' + (t[3] ? ' on' : '') + '" data-urg="' + esc(c.id) + ':' + i + '" aria-pressed="' + !!t[3] + '">Urgent</button></div></div>';
+      }).join('') + '</div>' : '')
+    + '<div class="racts"><button type="button" class="btn" data-add="' + esc(c.id) + '"' + (busy ? ' disabled' : '') + '>' + (busy ? 'Saving…' : 'Add') + '</button><button type="button" class="btn ghost" data-edit="' + esc(c.id) + '">' + (ed ? 'Done' : 'Edit') + '</button><button type="button" class="btn ghost" data-skip="' + esc(c.id) + '"' + (busy ? ' disabled' : '') + '>Skip</button></div>'
+    + (c.link ? '<div class="src"><a href="' + esc(c.link) + '" target="_blank" rel="noopener">Open the original ›</a></div>' : '')
+    + '</div>';
+}
+function renderReview(){
+  $('title').textContent = 'Review';
+  var p = pending(), list = S.intake.filter(function (c) { return S.rf === 'all' ? c.status === 'pending' : S.rf === 'done' ? c.status !== 'pending' : (c.status === 'pending' && c.kind === S.rf); });
+  list.sort(function (a, b) { return String(b.receivedAt).localeCompare(String(a.receivedAt)); });
+  var cnt = function (k) { return p.filter(function (c) { return c.kind === k; }).length; };
+  $('main').innerHTML = '<div style="max-width:760px">'
+    + '<div class="card"><div class="find"><div class="t"><b>Find missed requests</b><span>' + (S.lastScan ? 'Last checked ' + esc(S.lastScan) : 'Not checked yet') + ' · Gmail, WhatsApp Business, personal WhatsApp</span></div>'
+    + '<button type="button" class="btn" data-act="find"' + (S.finding ? ' disabled' : '') + '>' + (S.finding ? 'Starting…' : 'Find') + '</button></div>'
+    + (S.scanRequested && (!S.lastScan || S.scanRequested > S.lastScan) ? '<div class="small muted" style="margin-top:6px">Requested ' + esc(S.scanRequested) + '. New cards show up here in a few minutes; tap Refresh.</div>' : '')
+    + '<div style="margin-top:6px"><button type="button" class="btn ghost sm" data-act="scanlink">Scan link' + (S.scanLinked ? ' ✓' : '') + '</button></div></div>'
+    + '<div class="card"><b>Import</b><div class="small muted" style="margin:2px 0 8px">Type or paste a note. Claude turns it into a card.</div>'
+    + '<textarea id="imp" placeholder="e.g. Spoke to Mr. Shah, wants a 3ct emerald ring, budget 40k, needs it by Jan 10">' + esc(S.impText || '') + '</textarea>'
+    + '<div id="imperr"></div><button type="button" class="btn ghost full" data-act="import" style="margin-top:8px"' + (S.importing ? ' disabled' : '') + '>' + (S.importing ? 'Claude is reading…' : 'Make card') + '</button></div>'
+    + '<div class="chips">' + [['all', 'Waiting ' + p.length], ['req', 'Requests ' + cnt('req')], ['upd', 'Order updates ' + cnt('upd')], ['fu', 'Follow-ups ' + cnt('fu')], ['done', 'Done']].map(function (x) { return '<button type="button" class="chip' + (S.rf === x[0] ? ' on' : '') + '" data-rf="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>'
+    + (list.length ? list.map(reviewCard).join('') : '<div class="card soon">' + (S.rf === 'done' ? 'Nothing added or skipped in the last 2 weeks.' : 'Nothing waiting. Tap Find to check WhatsApp and Gmail.') + '</div>')
+    + '</div>';
+}
+function cardById(id){ return S.intake.filter(function (c) { return c.id === id; })[0]; }
+function replaceCard(c){ var i = S.intake.map(function (x) { return x.id; }).indexOf(c.id); if (i >= 0) S.intake[i] = c; else S.intake.unshift(c); }
+function decide(id, action){
+  var c = cardById(id); if (!c) return;
+  var ta = document.querySelector('[data-sum="' + id + '"]'); if (ta) c.summary = ta.value;
+  var edit = { summary: c.summary, tasks: c.tasks };
+  if (!c.customerId) { var pick = c._cust || 'new'; if (pick === 'new') edit.addCustomer = true; else if (pick !== 'none') edit.customerId = pick; }
+  S.busy[id] = true; delete S.edit[id]; render();
+  call('decideIntake', id, action, action === 'add' ? edit : {}).then(function (r) {
+    delete S.busy[id]; replaceCard(r.card); if (r.customers) S.customers = r.customers; render();
+    toast(action === 'add' ? 'Added' + (r.card.result ? ': ' + r.card.result : '') + '.' : 'Skipped. It won’t be suggested again.');
+  }, function (e) { delete S.busy[id]; render(); toast(e.message); });
+}
+function openScanLink(){
+  $('sheet').innerHTML = '<div class="sheet" data-act="close-bg"><div class="box" role="dialog" aria-modal="true" aria-labelledby="stitle"><form id="sf" novalidate>'
+    + '<h3 id="stitle">Scan link<span class="sp"></span><button type="button" class="btn ghost sm" data-act="close">Cancel</button></h3>'
+    + '<p class="small muted">Paste the link and key of the “Find missed requests” Claude session. Claude gives you both when it sets it up.</p>'
+    + '<label for="s_url">Link</label><input id="s_url" type="url" autocomplete="off" placeholder="https://…">'
+    + '<label for="s_key">Key</label><input id="s_key" type="password" autocomplete="off">'
+    + '<div id="serr"></div><button type="submit" class="btn full">Save</button></form></div></div>';
+  setTimeout(function () { $('s_url').focus(); }, 50);
+}
+
+/* ---------- add / edit ---------- */
+var F = ['name', 'company', 'phone', 'whatsapp', 'email', 'city', 'uploadifyId', 'uploadifyUrl', 'notes'];
+function openForm(c, focus){
+  c = c || {}; var tags = tagsOf(c), extra = tags.filter(function (t) { return TAGS.map(function(x){return x.toLowerCase();}).indexOf(t.toLowerCase()) < 0; });
+  function f(k, label, type, ph){ return '<label for="f_' + k + '">' + label + '</label><input id="f_' + k + '" name="' + k + '" type="' + (type || 'text') + '" value="' + esc(c[k]) + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : '') + (type === 'tel' ? ' inputmode="tel" autocomplete="off"' : '') + (type === 'email' ? ' autocomplete="off" autocapitalize="off"' : '') + '>'; }
+  $('sheet').innerHTML = '<div class="sheet" data-act="close-bg"><div class="box" role="dialog" aria-modal="true" aria-labelledby="ftitle"><form id="cf" novalidate>'
+    + '<h3 id="ftitle">' + (c.id ? 'Edit customer' : 'New customer') + '<span class="sp"></span><button type="button" class="btn ghost sm" data-act="close">Cancel</button></h3>'
+    + f('name', 'Name *', 'text', 'e.g. Mr. Shah')
+    + '<div class="row"><div>' + f('company', 'Company') + '</div><div>' + f('city', 'City') + '</div></div>'
+    + '<div class="row"><div>' + f('phone', 'Phone', 'tel', '+1 212…') + '</div><div>' + f('whatsapp', 'WhatsApp', 'tel', 'if different') + '</div></div>'
+    + f('email', 'Email', 'email')
+    + '<label>Tags</label><div class="tagpick">' + TAGS.map(function (t) { var on = tags.map(function(x){return x.toLowerCase();}).indexOf(t.toLowerCase()) >= 0; return '<button type="button" class="chip' + (on ? ' on' : '') + '" data-ftag="' + esc(t) + '" aria-pressed="' + on + '">' + esc(t) + '</button>'; }).join('') + '</div>'
+    + '<input id="f_tagx" name="tagx" type="text" value="' + esc(extra.join(', ')) + '" placeholder="Other tags, comma separated" style="margin-top:6px" aria-label="Other tags">'
+    + '<div class="row"><div>' + f('uploadifyId', 'Uploadify customer ID') + '</div><div>' + f('uploadifyUrl', 'Uploadify link', 'url', 'https://…') + '</div></div>'
+    + '<label for="f_notes">Notes</label><textarea id="f_notes" name="notes">' + esc(c.notes) + '</textarea>'
+    + '<div id="dupes"></div><div id="ferr"></div>'
+    + '<input type="hidden" name="cid" value="' + esc(c.id) + '">'
+    + '<button type="submit" class="btn full" id="fsave">' + (c.id ? 'Save changes' : 'Add customer') + '</button>'
+    + '</form></div></div>';
+  var el = $('f_' + (focus || 'name')); if (el) setTimeout(function () { el.focus(); }, 50);
+  if (c.id) showDupes();
+}
+function formData(){
+  var fm = $('cf'), E = fm.elements, o = { id: E.namedItem('cid').value || '' };
+  F.forEach(function (k) { o[k] = E.namedItem(k).value.trim(); });
+  var tags = [].slice.call(fm.querySelectorAll('[data-ftag].on')).map(function (b) { return b.getAttribute('data-ftag'); });
+  E.namedItem('tagx').value.split(',').map(function (s) { return s.trim(); }).filter(Boolean).forEach(function (t) { if (tags.indexOf(t) < 0) tags.push(t); });
+  o.tags = tags.join(', ');
+  return o;
+}
+function showDupes(list){
+  var o = formData(); list = list || findDupes(o).map(function (d) { return { c: d.c, why: d.why }; });
+  var box = $('dupes'); if (!box) return;
+  if (!list.length) { box.innerHTML = ''; return; }
+  box.innerHTML = '<div class="dupe" role="status"><h4>Possible duplicate' + (list.length > 1 ? 's' : '') + '</h4>'
+    + list.slice(0, 4).map(function (d) { return '<div class="cu" style="cursor:default"><div class="av" aria-hidden="true">' + esc(initials(d.c.name)) + '</div><div class="t"><div class="n">' + esc(d.c.name) + '</div><div class="m">' + esc(d.why) + ' · ' + esc([d.c.company, d.c.phone, d.c.email].filter(Boolean).join(' · ')) + '</div></div>'
+      + (o.id ? '' : '<button type="button" class="btn sm" data-use="' + esc(d.c.id) + '">Use this one</button>') + '</div>'; }).join('')
+    + (o.id ? '' : '<p class="small" style="margin:6px 0 0">Not the same person? “Add customer” again saves a new one.</p>') + '</div>';
+}
+var pendingForce = false;
+function save(){
+  var o = formData(), btn = $('fsave'), err = $('ferr');
+  err.innerHTML = '';
+  if (!o.name) { err.innerHTML = '<div class="msg bad">A customer needs a name.</div>'; $('f_name').focus(); return; }
+  var local = o.id ? [] : findDupes(o);
+  if (!o.id && local.length && !pendingForce) { pendingForce = true; showDupes(); err.innerHTML = '<div class="msg warn">Check the possible duplicate above. Tap “Add customer” again to save anyway.</div>'; return; }
+  btn.disabled = true; btn.textContent = 'Saving…';
+  call('saveCustomer', o, pendingForce).then(function (r) {
+    btn.disabled = false; btn.textContent = o.id ? 'Save changes' : 'Add customer';
+    if (r.dupes) { pendingForce = true; showDupes(r.dupes.map(function (d) { return { c: d, why: d.why }; })); err.innerHTML = '<div class="msg warn">Someone similar is already saved. Tap “Add customer” again to save anyway.</div>'; return; }
+    var c = r.customer, i = S.customers.map(function (x) { return x.id; }).indexOf(c.id);
+    if (i >= 0) S.customers[i] = c; else S.customers.push(c);
+    closeForm(); S.sel = c.id; render(); toast(o.id ? 'Saved.' : 'Added ' + c.name + '.');
+  }, function (e) { btn.disabled = false; btn.textContent = o.id ? 'Save changes' : 'Add customer'; err.innerHTML = '<div class="msg bad">' + esc(e.message) + '</div>'; });
+}
+function closeForm(){ $('sheet').innerHTML = ''; pendingForce = false; }
+
+/* ---------- events ---------- */
+document.addEventListener('click', function (e) {
+  var t = e.target.closest('[data-act],[data-open],[data-tag],[data-ctab],[data-ftag],[data-use],[data-go],[data-rf],[data-add],[data-skip],[data-undo],[data-edit],[data-urg]');
+  if (!t) return;
+  if (t.hasAttribute('data-go')) { if (t.disabled) return; S.view = t.getAttribute('data-go'); S.sel = ''; history.replaceState(null, '', '#' + S.view); render(); window.scrollTo(0, 0); return; }
+  if (t.hasAttribute('data-rf')) { S.rf = t.getAttribute('data-rf'); render(); return; }
+  if (t.hasAttribute('data-add')) { decide(t.getAttribute('data-add'), 'add'); return; }
+  if (t.hasAttribute('data-skip')) { decide(t.getAttribute('data-skip'), 'skip'); return; }
+  if (t.hasAttribute('data-undo')) { var uid = t.getAttribute('data-undo'); call('undoIntake', uid).then(function (r) { replaceCard(r.card); render(); }, function (er) { toast(er.message); }); return; }
+  if (t.hasAttribute('data-edit')) { var eid = t.getAttribute('data-edit'), ec = cardById(eid); if (S.edit[eid]) { var ta = document.querySelector('[data-sum="' + eid + '"]'); if (ta) ec.summary = ta.value; delete S.edit[eid]; } else S.edit[eid] = true; render(); return; }
+  if (t.hasAttribute('data-urg')) { var up = t.getAttribute('data-urg').split(':'), tk = cardById(up[0]).tasks[+up[1]]; tk[3] = !tk[3]; t.classList.toggle('on', tk[3]); t.setAttribute('aria-pressed', tk[3]); return; }
+  if (t.hasAttribute('data-open')) { S.view = 'customers'; S.sel = t.getAttribute('data-open'); S.ctab = 'activity'; history.replaceState(null, '', '#customers'); render(); return; }
+  if (t.hasAttribute('data-tag')) { S.tag = t.getAttribute('data-tag'); render(); return; }
+  if (t.hasAttribute('data-ctab')) { S.ctab = t.getAttribute('data-ctab'); render(); return; }
+  if (t.hasAttribute('data-ftag')) { t.classList.toggle('on'); t.setAttribute('aria-pressed', t.classList.contains('on')); return; }
+  if (t.hasAttribute('data-use')) { closeForm(); S.sel = t.getAttribute('data-use'); render(); toast('Opened the saved customer.'); return; }
+  var a = t.getAttribute('data-act');
+  if (a === 'close-bg' && e.target !== t) return;
+  if (a === 'close' || a === 'close-bg') closeForm();
+  else if (a === 'new') openForm({});
+  else if (a === 'edit') openForm(byId(S.sel), t.getAttribute('data-focus'));
+  else if (a === 'back') { S.sel = ''; render(); }
+  else if (a === 'reload') { $('main').innerHTML = '<div class="loading">Loading…</div>'; load(); }
+  else if (a === 'scanlink') openScanLink();
+  else if (a === 'find') {
+    S.finding = true; render();
+    call('requestScan').then(function (r) {
+      S.finding = false; S.scanRequested = r.requested || S.scanRequested;
+      if (r.needsLink) { render(); toast('Set up the scan link first.'); openScanLink(); return; }
+      if (r.error) { render(); toast(r.error); return; }
+      S.scanRequested = new Date().toISOString().slice(0, 16).replace('T', ' '); render();
+      toast('Claude is checking WhatsApp and Gmail. New cards in a few minutes.');
+    }, function (er) { S.finding = false; render(); toast(er.message); });
+  }
+  else if (a === 'import') {
+    var txt = ($('imp') || {}).value || ''; S.impText = txt;
+    if (!txt.trim()) { toast('Type or paste a note first.'); return; }
+    S.importing = true; render();
+    call('importNote', txt).then(function (r) {
+      S.importing = false; S.impText = ''; r.cards.forEach(replaceCard); S.rf = 'all'; render(); toast(r.cards.length + ' card' + (r.cards.length > 1 ? 's' : '') + ' made. Check and tap Add.');
+    }, function (er) { S.importing = false; render(); $('imperr').innerHTML = '<div class="msg bad">' + esc(er.message) + '</div>'; });
+  }
+});
+document.addEventListener('keydown', function (e) {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.hasAttribute && e.target.hasAttribute('data-open')) { e.preventDefault(); e.target.click(); }
+  if (e.key === 'Escape' && $('sheet').innerHTML) closeForm();
+});
+document.addEventListener('input', function (e) {
+  if (e.target.id === 'imp') { S.impText = e.target.value; return; }
+  if (e.target.id === 'q') { S.q = e.target.value; S._focusQ = true; render(); S._focusQ = false; return; }
+  if (e.target.closest && e.target.closest('#cf')) { pendingForce = false; var n = e.target.name; if (['name', 'phone', 'whatsapp', 'email', 'uploadifyId'].indexOf(n) >= 0) showDupes(); }
+});
+document.addEventListener('submit', function (e) {
+  if (e.target === $('cf')) { e.preventDefault(); save(); }
+  if (e.target === $('sf')) { e.preventDefault(); call('setScanLink', $('s_url').value, $('s_key').value).then(function () { S.scanLinked = true; closeForm(); render(); toast('Scan link saved.'); }, function (er) { $('serr').innerHTML = '<div class="msg bad">' + esc(er.message) + '</div>'; }); }
+});
+document.addEventListener('change', function (e) {
+  var d = e.target.dataset || {};
+  if (d.own) { var p = d.own.split(':'); cardById(p[0]).tasks[+p[1]][1] = e.target.value; }
+  if (d.due) { var q = d.due.split(':'); cardById(q[0]).tasks[+q[1]][2] = e.target.value; }
+  if (d.ttext) { var w = d.ttext.split(':'); cardById(w[0]).tasks[+w[1]][0] = e.target.value; }
+  if (d.cust) { cardById(d.cust)._cust = e.target.value; }
+});
+window.addEventListener('popstate', function () { if (S.sel) { S.sel = ''; render(); } });
+var lastWide = matchMedia('(min-width:900px)').matches;
+window.addEventListener('resize', function () { var w = matchMedia('(min-width:900px)').matches; if (w !== lastWide) { lastWide = w; if (S.loaded) render(); } });
+
+try { var cache = JSON.parse(sessionStorage.getItem('jr_calls_cache') || 'null'); if (cache && cache.c) { S.customers = cache.c; S.intake = cache.i || []; S.loaded = true; S.view = location.hash === '#customers' ? 'customers' : (pending().length || location.hash === '#review' ? 'review' : 'customers'); render(); } } catch (e) {}
+load();
+})();
+</script>
+</body>
+</html>
