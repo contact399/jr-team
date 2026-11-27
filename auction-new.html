@@ -948,14 +948,17 @@ document.addEventListener("change",e=>{const t=e.target,a=t.dataset&&t.dataset.a
 document.addEventListener("click",e=>{const b=e.target.closest("button[data-act=wonf]");if(!b)return;S.wonF=b.dataset.k;render()});
 
 /* ===== Bid sheet PDF: my max bids for a sale, to share with a partner ===== */
+function bsBid(l){const b=num(dval(l,"bid"));if(b!=null&&b>0)return b;const f=lotFigures(l),m=num(dval(l,"maxUSD"))!=null?num(dval(l,"maxUSD")):f.target;if(m==null)return null;const r=hammerFromUSD(m,f.cur,bpOf(f.h));return r&&r.round>0?r.round:null}
+function bsGroups(){let all=[];try{all=saleGroups(S.lots)}catch(e){}
+  const cur=all.filter(g=>!isArchived(g.auction)),old=all.filter(g=>isArchived(g.auction));
+  return cur.concat(old).map(g=>({...g,B:g.L.filter(l=>bsBid(l)!=null&&!isWon(l))})).filter(g=>g.B.length)}
 function vBidSheet(){
   if(S.state==="loading"||!S.lots.length)return "";
-  let G=[];try{G=saleGroups(S.lots).filter(g=>!isArchived(g.auction))}catch(e){}
-  G=G.filter(g=>g.L.some(l=>num(dval(l,"bid"))!=null));
-  if(!G.length)return `<section class="panel bs-panel"><b>Bid sheet PDF</b><div class="small muted">Set a max bid on some lots first. Then you can make a PDF of your bids to share with a partner.</div></section>`;
+  const G=bsGroups();
+  if(!G.length)return `<section class="panel bs-panel"><b>Bid sheet PDF</b><div class="small muted">Set a max bid (or a max all-in in the Calculator) on some lots first. Then you can make a PDF of your bids to share with a partner.</div></section>`;
   const sel=S.bsSale&&G.some((g,i)=>String(i)===S.bsSale)?S.bsSale:"all";
-  return `<section class="panel bs-panel"><div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b>Bid sheet PDF</b><span class="small muted">Lots with a max bid: lot, details, hammer and landed USD</span></div>
-  <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:8px"><select id="bs-sale" data-act="bssale" style="flex:1;min-width:180px"><option value="all">All upcoming sales (${G.reduce((s,g)=>s+g.L.filter(l=>num(dval(l,"bid"))!=null).length,0)} bids)</option>${G.map((g,i)=>`<option value="${i}"${sel===String(i)?" selected":""}>${esc((g.house?g.house+" · ":"")+(g.title||"Sale")+(g.auction&&g.auction.saleDate?" · "+fmtD(g.auction.saleDate):""))} (${g.L.filter(l=>num(dval(l,"bid"))!=null).length})</option>`).join("")}</select>
+  return `<section class="panel bs-panel"><div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b>Bid sheet PDF</b><span class="small muted">Only lots with a max bid (or a max all-in) go in</span></div>
+  <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:8px"><select id="bs-sale" data-act="bssale" style="flex:1;min-width:180px"><option value="all">All sales with bids (${G.reduce((s,g)=>s+g.B.length,0)} bids)</option>${G.map((g,i)=>`<option value="${i}"${sel===String(i)?" selected":""}>${esc((isArchived(g.auction)?"Archive · ":"")+(g.house?g.house+" · ":"")+(g.title||"Sale")+(g.auction&&g.auction.saleDate?" · "+fmtD(g.auction.saleDate):""))} (${g.B.length})</option>`).join("")}</select>
   <input id="bs-for" placeholder="For (optional), e.g. Chetan" style="flex:1;min-width:140px">
   <button type="button" class="primary" data-act="bspdf">Make PDF &amp; share</button></div></section>`;
 }
@@ -963,8 +966,7 @@ let BS_LIB=null;
 function bsLib(){if(BS_LIB)return BS_LIB;const add=src=>new Promise((ok,no)=>{const s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=()=>no(new Error("Could not load the PDF maker. Check the connection."));document.head.appendChild(s)});
   BS_LIB=add("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js").then(()=>add("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js")).catch(e=>{BS_LIB=null;throw e});return BS_LIB}
 async function bidSheetPdf(btn){
-  let G=[];try{G=saleGroups(S.lots).filter(g=>!isArchived(g.auction))}catch(e){}
-  G=G.filter(g=>g.L.some(l=>num(dval(l,"bid"))!=null));
+  let G=bsGroups();
   const v=(document.getElementById("bs-sale")||{}).value||"all";if(v!=="all")G=[G[Number(v)]].filter(Boolean);
   if(!G.length){toast(note("No bids to put in the PDF."));return}
   const who=((document.getElementById("bs-for")||{}).value||"").trim();
@@ -979,7 +981,7 @@ async function bidSheetPdf(btn){
     doc.text(tx((who?"For "+who+" · ":"")+"Prepared "+new Date().toLocaleString("en-US",{dateStyle:"medium",timeStyle:"short"})+" · Do not bid above the hammer shown."),14,22);
     let y=28,grand=0,count=0;
     G.forEach(g=>{
-      const L=g.L.filter(l=>num(dval(l,"bid"))!=null).sort((a,b)=>String(a.lotNo).localeCompare(String(b.lotNo),undefined,{numeric:true}));
+      const L=g.B.slice().sort((a,b)=>String(a.lotNo).localeCompare(String(b.lotNo),undefined,{numeric:true}));
       const f0=lotFigures(L[0]),c0=f0.cur,bp=bpOf(f0.h),fx=fxOf(c0);
       if(y>255){doc.addPage();y=16}
       doc.setTextColor(20);doc.setFont("helvetica","bold");doc.setFontSize(12);
@@ -988,7 +990,7 @@ async function bidSheetPdf(btn){
       const a=g.auction||{};
       doc.text(tx([a.saleDate?fmtD(a.saleDate):"",a.saleTime||"",f0.h&&f0.h.city?f0.h.city:"",bp!=null?"Buyer's premium "+bp+"%":"",fx?c0+" rate "+fx+(num(S.settings.buffer)?" + "+S.settings.buffer+"% buffer":""):"",num(S.settings.costs)?"+ "+S.settings.costs+"% shipping/insurance/duty":""].filter(Boolean).join(" · ")),14,y+9);
       let sub=0;
-      const body=L.map(l=>{const f=lotFigures(l),c=f.cur,h=num(dval(l,"bid")),land=landedFromHammer(h,c,bpOf(f.h));sub+=land||0;count++;
+      const body=L.map(l=>{const f=lotFigures(l),c=f.cur,h=bsBid(l),land=landedFromHammer(h,c,bpOf(f.h));sub+=land||0;count++;
         const est=(l.estLow||l.estHigh)?m(num(l.estLow),c)+" - "+m(num(l.estHigh),c).replace(/^\D+/,""):"";
         const det=[l.desc||"",[l.weight?l.weight+" "+f.per:"",l.pcs?l.pcs+" pcs":"",l.lab?l.lab+(l.certNo?" "+l.certNo:""):"",l.treatment||"",l.origin||"",est?"Est. "+est:""].filter(Boolean).join(" · ")].filter(Boolean).join("\n");
         return [tx(l.lotNo||"-"),tx(det),tx(m(h,c)),tx(m(land,"USD"))+(num(l.weight)>0&&land!=null?"\n"+tx(m(land/num(l.weight),"USD"))+"/"+f.per:"")]});
