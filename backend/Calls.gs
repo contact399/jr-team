@@ -103,7 +103,12 @@ var MOD_CALLS = (function () {
     var st = getSet_(); if (!st.syncKey) setSet_('syncKey', Utilities.getUuid().replace(/-/g, ''));
     var calls = read_('Calls').rows.map(out_).sort(function (a, b) { return String(b.at).localeCompare(String(a.at)); }).slice(0, 300)
       .map(function (c) { c.details = json_(c.details, []); return c; });
-    return { me: JR__name, now: now_(), customers: cu, intake: ik, calls: calls, sheetUrl: ss_().getUrl(),
+    var tasks = [];
+    try {
+      var tv = tasksSheet_().getDataRange().getDisplayValues(); tv.shift();
+      tv.forEach(function (r) { var m = String(r[4] || '').match(/^\[(CALL-\d+)\]/); if (m) tasks.push({ id: r[0], owner: r[1], text: r[3], due: r[5], done: r[7] === 'true' || r[7] === 'TRUE', doneAt: r[8], callId: m[1] }); });
+    } catch (e) {}
+    return { me: JR__name, now: now_(), customers: cu, intake: ik, calls: calls, tasks: tasks, sheetUrl: ss_().getUrl(),
       lastScan: st.lastScan || '', scanRequested: st.scanRequested || '', scanLinked: !!(P.getProperty('calls.FIRE_URL') && P.getProperty('calls.FIRE_TOKEN')) };
   }
 
