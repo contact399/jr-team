@@ -92,6 +92,28 @@ main{padding:0 12px calc(96px + env(safe-area-inset-bottom,0px));max-width:1100p
 .loading{padding:40px 0;text-align:center;color:var(--muted)}
 .tagpick{display:flex;flex-wrap:wrap;gap:6px}
 
+/* picker + calls */
+.pick{position:relative}
+.pickres{border:1px solid var(--line);border-radius:10px;background:var(--card);margin-top:4px;overflow:hidden}
+.pickres:empty{display:none}
+.po{display:flex;gap:8px;align-items:center;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:9px 10px;color:var(--ink);font:inherit;font-size:14px;cursor:pointer}
+.po:last-child{border-bottom:0}
+.po:hover,.po:focus-visible{background:var(--gold-soft)}
+.po .pm{font-size:12px;color:var(--muted)}
+.po.new{color:var(--warn);font-weight:700}
+.chosen{display:flex;gap:8px;align-items:center;background:var(--blue-soft);color:var(--navy);border-radius:10px;padding:8px 10px;font-weight:700;font-size:14px}
+.chosen .x{margin-left:auto;background:none;border:0;color:inherit;font:inherit;font-size:13px;text-decoration:underline;cursor:pointer}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:var(--card);color:var(--ink);padding:9px 16px;font-weight:700;font-size:14px;cursor:pointer}
+.seg button.on{background:var(--navy);color:#fff}
+@media (prefers-color-scheme:dark){.seg button.on{color:#141517}}
+.cl{padding:11px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+.cl:last-child{border-bottom:0}
+.cl .h{display:flex;gap:8px;align-items:baseline}
+.cl .h b{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cl .h span{font-size:12px;color:var(--muted);white-space:nowrap}
+.cl .s{font-size:13px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:2px;white-space:pre-wrap}
+.cl.open .s{display:block;-webkit-line-clamp:unset;color:var(--ink)}
 /* review */
 .find{display:flex;gap:10px;align-items:center}
 .find .t{flex:1;min-width:0}.find .t b{display:block;font-size:15px}.find .t span{font-size:12px;color:var(--muted)}
@@ -129,7 +151,7 @@ main{padding:0 12px calc(96px + env(safe-area-inset-bottom,0px));max-width:1100p
 <nav id="bar" aria-label="Calls & Orders">
   <button type="button" data-go="today" disabled title="Coming in a later stage"><span class="i">◷</span><span>Today</span></button>
   <button type="button" data-go="customers"><span class="i">☺</span><span>Customers</span></button>
-  <button type="button" data-go="call" class="call" disabled title="Coming in stage 2"><span class="i">+</span><span>Call</span></button>
+  <button type="button" data-go="calls" class="call"><span class="i">+</span><span>Calls</span></button>
   <button type="button" data-go="jobs" disabled title="Coming in a later stage"><span class="i">⚒</span><span>Jobs</span></button>
   <button type="button" data-go="review"><span class="i">✉</span><span>Review</span><span class="badge" id="badge" hidden></span></button>
 </nav>
@@ -138,7 +160,7 @@ main{padding:0 12px calc(96px + env(safe-area-inset-bottom,0px));max-width:1100p
 (function(){
 'use strict';
 var TAGS = ['Dealer', 'Retail', 'Auction', 'Unvault', 'Custom', 'Wholesale', 'VIP'];
-var S = { customers: [], intake: [], q: '', tag: '', sel: '', ctab: 'activity', loaded: false, view: '', rf: 'all', edit: {}, busy: {} };
+var S = { customers: [], intake: [], calls: [], picks: {}, cq: '', openCall: '', q: '', tag: '', sel: '', ctab: 'activity', loaded: false, view: '', rf: 'all', edit: {}, busy: {} };
 var OWNERS = ['Karan', 'Leo', 'Shivansh', 'DD'];
 var $ = function (id) { return document.getElementById(id); };
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
@@ -169,10 +191,10 @@ function when(s){ if (!s) return ''; var d = String(s).slice(0, 10); return d; }
 /* ---------- load ---------- */
 function load(){
   return call('boot').then(function (r) {
-    S.customers = r.customers || []; S.intake = r.intake || []; S.loaded = true; S.sheetUrl = r.sheetUrl;
+    S.customers = r.customers || []; S.intake = r.intake || []; S.calls = r.calls || []; S.loaded = true; S.sheetUrl = r.sheetUrl;
     S.lastScan = r.lastScan; S.scanRequested = r.scanRequested; S.scanLinked = r.scanLinked;
-    if (!S.view) S.view = location.hash === '#customers' ? 'customers' : (location.hash === '#review' || pending().length ? 'review' : 'customers');
-    try { sessionStorage.setItem('jr_calls_cache', JSON.stringify({ c: S.customers, i: S.intake })); } catch (e) {}
+    if (!S.view) S.view = location.hash === '#customers' ? 'customers' : location.hash === '#calls' ? 'calls' : (location.hash === '#review' || pending().length ? 'review' : 'customers');
+    try { sessionStorage.setItem('jr_calls_cache', JSON.stringify({ c: S.customers, i: S.intake, k: S.calls })); } catch (e) {}
     render();
   }, function (e) { $('main').innerHTML = '<div class="msg bad">' + esc(e.message) + '</div>'; });
 }
@@ -202,6 +224,7 @@ function nav(){
 function render(){
   nav();
   if (S.view === 'review') return renderReview();
+  if (S.view === 'calls') return renderCalls();
   var wide = matchMedia('(min-width:900px)').matches;
   if (S.sel && !wide) return renderCustomer();
   $('title').textContent = 'Customers';
@@ -231,7 +254,7 @@ function customerHtml(c){
     ? (c.uploadifyUrl ? '<a href="' + esc(c.uploadifyUrl) + '" target="_blank" rel="noopener">' + esc(c.uploadifyId || 'Open in Uploadify') + '</a>' : esc(c.uploadifyId))
     : '<button type="button" class="btn sm ghost" data-act="edit" data-focus="uploadifyId">Link to Uploadify</button>';
   var tabs = [['activity', 'Activity'], ['orders', 'Orders'], ['jobs', 'Jobs'], ['tasks', 'Tasks']];
-  var soon = { activity: 'Calls and messages will show here, newest first (stage 2).', orders: 'Orders arrive in stage 4.', jobs: 'Supplier jobs arrive in stage 5.', tasks: 'Open tasks for this customer arrive in stage 3.' };
+  var soon = { activity: '', orders: 'Orders arrive in stage 4.', jobs: 'Supplier jobs arrive in stage 5.', tasks: 'Open tasks for this customer arrive in stage 3.' };
   return '<button type="button" class="btn ghost sm back" data-act="back" style="margin-bottom:8px">‹ Customers</button>'
     + '<div class="card"><div style="display:flex;gap:10px;align-items:center"><div class="av" aria-hidden="true">' + esc(initials(c.name)) + '</div>'
     + '<div style="flex:1;min-width:0"><div style="font-weight:800;font-size:17px">' + esc(c.name) + '</div><div class="small muted">' + esc([c.company, c.city].filter(Boolean).join(' · ')) + '</div></div>'
@@ -250,13 +273,101 @@ function customerHtml(c){
     + (c.budgetRange || c.lastContact ? '<dl class="kv" style="margin-top:8px">' + (c.budgetRange ? '<dt>Budget</dt><dd>' + esc(c.budgetRange) + '</dd>' : '') + (c.lastContact ? '<dt>Last spoke</dt><dd>' + esc(c.lastContact) + '</dd>' : '') + '</dl>' : '')
     + '</div>'
     + '<div class="tabs" role="tablist">' + tabs.map(function (t) { return '<button type="button" role="tab" aria-selected="' + (S.ctab === t[0]) + '" class="' + (S.ctab === t[0] ? 'on' : '') + '" data-ctab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>'
-    + '<div class="card soon">' + soon[S.ctab] + '</div>';
+    + (S.ctab === 'activity' ? activityHtml(c) : '<div class="card soon">' + soon[S.ctab] + '</div>');
 }
 function renderCustomer(){
   var c = byId(S.sel); $('title').textContent = c ? c.name : 'Customer';
   $('main').innerHTML = customerHtml(c); window.scrollTo(0, 0);
 }
 
+
+
+/* ---------- customer picker (all customers incl. Uploadify) ---------- */
+function matchCustomers(q, n){
+  q = String(q || '').trim(); if (!q) return [];
+  var qn = nm(q), qd = digits(q), out = [];
+  S.customers.forEach(function (c) {
+    var score = 0, cn = nm(c.name), co = nm(c.company);
+    if (cn === qn) score = 100; else if (cn.indexOf(qn) === 0) score = 80; else if (qn.length >= 2 && (' ' + cn).indexOf(' ' + qn) >= 0) score = 70;
+    else if (qn.length >= 2 && cn.indexOf(qn) >= 0) score = 50; else if (qn.length >= 2 && co.indexOf(qn) >= 0) score = 45;
+    else if (qd.length >= 4 && (digits(c.phone).indexOf(qd) >= 0 || digits(c.whatsapp).indexOf(qd) >= 0)) score = 60;
+    else if (q.indexOf('@') > 0 && String(c.email || '').toLowerCase() === q.toLowerCase()) score = 90;
+    if (score) out.push({ c: c, s: score });
+  });
+  return out.sort(function (a, b) { return b.s - a.s || String(a.c.name).localeCompare(String(b.c.name)); }).slice(0, n || 8).map(function (x) { return x.c; });
+}
+function pickerHtml(key, typed){
+  var p = S.picks[key] || {};
+  if (p.id) { var c = byId(p.id); return '<div class="chosen">☺ ' + esc(c ? c.name : p.id) + (c && c.company ? ' · ' + esc(c.company) : '') + (c && c.uploadifyId ? ' <span class="pill">Uploadify</span>' : '') + '<button type="button" class="x" data-unpick="' + esc(key) + '">Change</button></div>'; }
+  if (p.newName) return '<div class="chosen">＋ New customer: ' + esc(p.newName) + '<button type="button" class="x" data-unpick="' + esc(key) + '">Change</button></div>';
+  return '<div class="pick"><input type="search" data-pickq="' + esc(key) + '" placeholder="Search name, company or phone" autocomplete="off" value="' + esc(p.q != null ? p.q : (typed || '')) + '" aria-label="Customer"><div class="pickres" id="pr_' + esc(key) + '">' + pickResults(key, p.q != null ? p.q : typed) + '</div></div>';
+}
+function pickResults(key, q){
+  q = String(q || '').trim(); if (!q) return '';
+  var list = matchCustomers(q, 8);
+  return list.map(function (c) { return '<button type="button" class="po" data-pickid="' + esc(key) + '|' + esc(c.id) + '"><span style="flex:1;min-width:0"><b>' + esc(c.name) + '</b> <span class="pm">' + esc([c.company, c.phone || c.email].filter(Boolean).join(' · ')) + '</span></span>' + (c.uploadifyId ? '<span class="pill">Uploadify</span>' : '') + '</button>'; }).join('')
+    + '<button type="button" class="po new" data-picknew="' + esc(key) + '">＋ Add new customer “' + esc(q) + '”</button>';
+}
+
+/* ---------- Calls ---------- */
+function callRow(k){
+  var open = S.openCall === k.id, dir = k.direction === 'out' ? 'Out' : k.direction === 'in' ? 'In' : '';
+  return '<div class="cl' + (open ? ' open' : '') + '" tabindex="0" role="button" aria-expanded="' + open + '" data-call="' + esc(k.id) + '">'
+    + '<div class="h"><b>' + esc(k.who) + '</b><span>' + (dir ? '<span class="pill' + (dir === 'Out' ? ' g' : '') + '">' + dir + '</span> ' : '') + esc(String(k.at || '').slice(0, 16)) + '</span></div>'
+    + '<div class="small muted">' + esc(k.source || '') + (k.duration ? ' · ' + esc(k.duration) + ' min' : '') + (k.taskIds ? ' · ' + String(k.taskIds).split(',').filter(Boolean).length + ' tasks' : '') + '</div>'
+    + '<div class="s">' + esc(k.summary) + '</div>'
+    + (open ? ((k.details || []).length ? '<dl class="rkv">' + k.details.map(function (r) { return '<dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd>'; }).join('') + '</dl>' : '')
+      + (k.raw ? '<details style="margin-top:6px"><summary class="small">Your notes</summary><div class="small" style="white-space:pre-wrap;margin-top:4px">' + esc(k.raw) + '</div></details>' : '')
+      + (k.customerId ? '<div style="margin-top:8px"><button type="button" class="btn ghost sm" data-open="' + esc(k.customerId) + '">Customer page</button></div>' : '') : '')
+    + '</div>';
+}
+function activityHtml(c){
+  var list = S.calls.filter(function (k) { return k.customerId === c.id; });
+  return '<div class="card" style="padding:4px 10px">' + (list.length ? list.map(callRow).join('') : '<div class="soon">No calls or messages logged yet.</div>') + '</div>'
+    + '<button type="button" class="btn ghost full" data-act="logfor" data-cid="' + esc(c.id) + '">+ Log a call with ' + esc(c.name) + '</button>';
+}
+function renderCalls(){
+  $('title').textContent = 'Calls';
+  var q = S.cq.toLowerCase().trim(), drafts = S.intake.filter(function (c) { return c.status === 'pending' && /^Call/.test(c.source); });
+  var list = S.calls.filter(function (k) { return !q || [k.who, k.summary, k.raw, k.source].join(' ').toLowerCase().indexOf(q) >= 0; });
+  $('main').innerHTML = '<div style="max-width:760px">'
+    + '<button type="button" class="btn full" data-act="logcall" style="margin-bottom:10px">+ Log a call</button>'
+    + (drafts.length ? '<h2 style="font-size:14px;margin:4px 2px 8px">Check and add</h2>' + drafts.map(reviewCard).join('') : '')
+    + '<input type="search" id="cq" placeholder="Search calls" value="' + esc(S.cq) + '" aria-label="Search calls" autocomplete="off" style="margin-bottom:10px">'
+    + '<div class="card" style="padding:4px 10px">' + (list.length ? list.map(callRow).join('') : '<div class="soon">' + (S.calls.length ? 'No call matches.' : 'No calls logged yet. Tap “+ Log a call”, or add cards from Review.') + '</div>') + '</div>'
+    + '<p class="small muted">' + S.calls.length + (S.calls.length === 1 ? ' call' : ' calls') + ' · newest first</p></div>';
+  if (S._focusCq) { var el = $('cq'); el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+}
+function nowLocal(){ var d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); }
+function openLogCall(cid){
+  S.picks.call = cid ? { id: cid } : {}; S.callDir = 'in';
+  $('sheet').innerHTML = '<div class="sheet" data-act="close-bg"><div class="box" role="dialog" aria-modal="true" aria-labelledby="ltitle"><form id="lf" novalidate>'
+    + '<h3 id="ltitle">Log a call<span class="sp"></span><button type="button" class="btn ghost sm" data-act="close">Cancel</button></h3>'
+    + '<label>Customer</label><div id="lpick">' + pickerHtml('call', '') + '</div>'
+    + '<div id="lnewphone"></div>'
+    + '<div class="row"><div><label>Direction</label><div class="seg" role="group" aria-label="Direction"><button type="button" class="on" data-dir="in" aria-pressed="true">In</button><button type="button" data-dir="out" aria-pressed="false">Out</button></div></div>'
+    + '<div><label for="l_dur">Minutes</label><input id="l_dur" type="number" inputmode="numeric" min="0" max="600" placeholder="optional"></div></div>'
+    + '<label for="l_at">When</label><input id="l_at" type="datetime-local" value="' + nowLocal() + '">'
+    + '<label for="l_notes">Notes</label><textarea id="l_notes" style="min-height:130px" placeholder="Type, paste or dictate (tap the mic on your keyboard). Rough is fine."></textarea>'
+    + '<div id="lerr"></div><button type="submit" class="btn full" id="lsave" style="margin-top:14px">Save &amp; summarise</button></form></div></div>';
+  setTimeout(function () { var i = document.querySelector('[data-pickq="call"]'); (i || $('l_notes')).focus(); }, 50);
+}
+function refreshPick(key){
+  if (key === 'call') { $('lpick').innerHTML = pickerHtml('call', ''); var p = S.picks.call || {}; $('lnewphone').innerHTML = p.newName ? '<label for="l_phone">Phone (new customer)</label><input id="l_phone" type="tel" inputmode="tel" autocomplete="off">' : ''; var i = document.querySelector('[data-pickq="call"]'); if (i) i.focus(); }
+  else render();
+}
+function saveCall(){
+  var p = S.picks.call || {}, err = $('lerr'), btn = $('lsave'), notes = $('l_notes').value.trim();
+  err.innerHTML = '';
+  if (!p.id && !p.newName) { err.innerHTML = '<div class="msg bad">Pick a customer, or add a new one.</div>'; return; }
+  if (!notes) { err.innerHTML = '<div class="msg bad">Type or dictate your notes first.</div>'; $('l_notes').focus(); return; }
+  btn.disabled = true; btn.textContent = 'Claude is summarising…';
+  var at = $('l_at').value;   // phone's local time
+  call('logCall', { customerId: p.id || '', newName: p.newName || '', newPhone: ($('l_phone') || {}).value || '', direction: S.callDir, at: at, duration: $('l_dur').value, notes: notes }).then(function (r) {
+    S.customers = r.customers || S.customers; replaceCard(r.card); closeForm(); S.view = 'calls'; render(); window.scrollTo(0, 0);
+    toast('Summary ready. Check the tasks and tap Add.');
+  }, function (e) { btn.disabled = false; btn.textContent = 'Save & summarise'; err.innerHTML = '<div class="msg bad">' + esc(e.message) + '</div>'; });
+}
 
 /* ---------- Review ---------- */
 var KIND = { req: ['Request', 'g'], upd: ['Order update', ''], fu: ['Follow-up', 'o'] };
@@ -269,12 +380,9 @@ function reviewCard(c){
       + '</div>' + (c.status === 'added' && c.result ? '<div class="small muted" style="margin-top:4px">' + esc(c.result) + ' pushed to the team list</div>' : '') + '</div>';
   }
   var k = KIND[c.kind] || KIND.req, ed = S.edit[c.id], busy = S.busy[c.id];
+  if (!c.customerId && !S.picks[c.id]) { var best = matchCustomers(c.who, 1)[0]; S.picks[c.id] = best && nm(best.name) === nm(c.who) ? { id: best.id } : { newName: c.who }; }
   var cust = c.customerId ? '<div class="match">Matched: ' + esc(custName(c.customerId) || c.customerId) + '</div>'
-    : '<label class="small" style="margin:6px 0 2px">Customer</label><select class="custpick" data-cust="' + esc(c.id) + '">'
-      + '<option value="new"' + (c._cust === 'new' || !c._cust ? ' selected' : '') + '>Add as new customer: ' + esc(c.who) + '</option>'
-      + '<option value="none"' + (c._cust === 'none' ? ' selected' : '') + '>Don’t add as a customer</option>'
-      + S.customers.slice().sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); }).map(function (x) { return '<option value="' + esc(x.id) + '"' + (c._cust === x.id ? ' selected' : '') + '>' + esc(x.name) + (x.company ? ' · ' + esc(x.company) : '') + '</option>'; }).join('')
-      + '</select>';
+    : '<label class="small" style="margin:6px 0 2px">Customer</label>' + pickerHtml(c.id, c.who);
   return '<div class="card rc' + (c.kind === 'upd' ? ' upd' : '') + (c.alert ? ' warnc' : '') + '">'
     + '<div class="top"><span class="pill ' + k[1] + '">' + k[0] + '</span>' + (c.alert ? '<span class="pill r">Check</span>' : '') + '<span>' + esc(c.source) + ' · ' + esc(c.receivedAt) + '</span></div>'
     + '<div class="who">' + esc(c.who) + '</div>' + (c.match && !c.customerId ? '<div class="match">' + esc(c.match) + (c.partial ? ' · read from chat preview only' : '') + '</div>' : '')
@@ -315,10 +423,10 @@ function decide(id, action){
   var c = cardById(id); if (!c) return;
   var ta = document.querySelector('[data-sum="' + id + '"]'); if (ta) c.summary = ta.value;
   var edit = { summary: c.summary, tasks: c.tasks };
-  if (!c.customerId) { var pick = c._cust || 'new'; if (pick === 'new') edit.addCustomer = true; else if (pick !== 'none') edit.customerId = pick; }
+  if (!c.customerId) { var pk = S.picks[id] || {}; if (pk.id) edit.customerId = pk.id; else if (pk.newName) edit.addCustomer = true; }
   S.busy[id] = true; delete S.edit[id]; render();
   call('decideIntake', id, action, action === 'add' ? edit : {}).then(function (r) {
-    delete S.busy[id]; replaceCard(r.card); if (r.customers) S.customers = r.customers; render();
+    delete S.busy[id]; replaceCard(r.card); if (r.customers) S.customers = r.customers; if (r.call) S.calls.unshift(r.call); render();
     toast(action === 'add' ? 'Added' + (r.card.result ? ': ' + r.card.result : '') + '.' : 'Skipped. It won’t be suggested again.');
   }, function (e) { delete S.busy[id]; render(); toast(e.message); });
 }
@@ -391,8 +499,13 @@ function closeForm(){ $('sheet').innerHTML = ''; pendingForce = false; }
 
 /* ---------- events ---------- */
 document.addEventListener('click', function (e) {
-  var t = e.target.closest('[data-act],[data-open],[data-tag],[data-ctab],[data-ftag],[data-use],[data-go],[data-rf],[data-add],[data-skip],[data-undo],[data-edit],[data-urg]');
+  var t = e.target.closest('[data-pickid],[data-picknew],[data-unpick],[data-dir],[data-call],[data-act],[data-open],[data-tag],[data-ctab],[data-ftag],[data-use],[data-go],[data-rf],[data-add],[data-skip],[data-undo],[data-edit],[data-urg]');
   if (!t) return;
+  if (t.hasAttribute('data-pickid')) { var pp = t.getAttribute('data-pickid').split('|'); S.picks[pp[0]] = { id: pp[1] }; refreshPick(pp[0]); return; }
+  if (t.hasAttribute('data-picknew')) { var pk = t.getAttribute('data-picknew'), pq = document.querySelector('[data-pickq="' + pk + '"]'); var nmv = pq ? pq.value.trim() : ''; if (!nmv) return; S.picks[pk] = { newName: nmv }; refreshPick(pk); return; }
+  if (t.hasAttribute('data-unpick')) { var uk = t.getAttribute('data-unpick'), was = S.picks[uk] || {}; S.picks[uk] = { q: was.newName || '' }; refreshPick(uk); return; }
+  if (t.hasAttribute('data-dir')) { S.callDir = t.getAttribute('data-dir'); [].forEach.call(t.parentNode.children, function (b) { var on = b === t; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); }); return; }
+  if (t.hasAttribute('data-call')) { if (e.target.closest('summary,details,button')) { if (!e.target.closest('[data-open]')) return; } else { S.openCall = S.openCall === t.getAttribute('data-call') ? '' : t.getAttribute('data-call'); render(); return; } }
   if (t.hasAttribute('data-go')) { if (t.disabled) return; S.view = t.getAttribute('data-go'); S.sel = ''; history.replaceState(null, '', '#' + S.view); render(); window.scrollTo(0, 0); return; }
   if (t.hasAttribute('data-rf')) { S.rf = t.getAttribute('data-rf'); render(); return; }
   if (t.hasAttribute('data-add')) { decide(t.getAttribute('data-add'), 'add'); return; }
@@ -413,6 +526,8 @@ document.addEventListener('click', function (e) {
   else if (a === 'back') { S.sel = ''; render(); }
   else if (a === 'reload') { $('main').innerHTML = '<div class="loading">Loading…</div>'; load(); }
   else if (a === 'scanlink') openScanLink();
+  else if (a === 'logcall') openLogCall('');
+  else if (a === 'logfor') openLogCall(t.getAttribute('data-cid'));
   else if (a === 'find') {
     S.finding = true; render();
     call('requestScan').then(function (r) {
@@ -433,16 +548,20 @@ document.addEventListener('click', function (e) {
   }
 });
 document.addEventListener('keydown', function (e) {
-  if ((e.key === 'Enter' || e.key === ' ') && e.target.hasAttribute && e.target.hasAttribute('data-open')) { e.preventDefault(); e.target.click(); }
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.hasAttribute && (e.target.hasAttribute('data-open') || e.target.hasAttribute('data-call'))) { e.preventDefault(); e.target.click(); }
   if (e.key === 'Escape' && $('sheet').innerHTML) closeForm();
 });
 document.addEventListener('input', function (e) {
   if (e.target.id === 'imp') { S.impText = e.target.value; return; }
+  if (e.target.id === 'cq') { S.cq = e.target.value; S._focusCq = true; render(); S._focusCq = false; return; }
+  var pq = e.target.getAttribute && e.target.getAttribute('data-pickq');
+  if (pq) { S.picks[pq] = { q: e.target.value }; var pr = $('pr_' + pq); if (pr) pr.innerHTML = pickResults(pq, e.target.value); return; }
   if (e.target.id === 'q') { S.q = e.target.value; S._focusQ = true; render(); S._focusQ = false; return; }
   if (e.target.closest && e.target.closest('#cf')) { pendingForce = false; var n = e.target.name; if (['name', 'phone', 'whatsapp', 'email', 'uploadifyId'].indexOf(n) >= 0) showDupes(); }
 });
 document.addEventListener('submit', function (e) {
   if (e.target === $('cf')) { e.preventDefault(); save(); }
+  if (e.target === $('lf')) { e.preventDefault(); saveCall(); }
   if (e.target === $('sf')) { e.preventDefault(); call('setScanLink', $('s_url').value, $('s_key').value).then(function () { S.scanLinked = true; closeForm(); render(); toast('Scan link saved.'); }, function (er) { $('serr').innerHTML = '<div class="msg bad">' + esc(er.message) + '</div>'; }); }
 });
 document.addEventListener('change', function (e) {
@@ -450,13 +569,12 @@ document.addEventListener('change', function (e) {
   if (d.own) { var p = d.own.split(':'); cardById(p[0]).tasks[+p[1]][1] = e.target.value; }
   if (d.due) { var q = d.due.split(':'); cardById(q[0]).tasks[+q[1]][2] = e.target.value; }
   if (d.ttext) { var w = d.ttext.split(':'); cardById(w[0]).tasks[+w[1]][0] = e.target.value; }
-  if (d.cust) { cardById(d.cust)._cust = e.target.value; }
 });
 window.addEventListener('popstate', function () { if (S.sel) { S.sel = ''; render(); } });
 var lastWide = matchMedia('(min-width:900px)').matches;
 window.addEventListener('resize', function () { var w = matchMedia('(min-width:900px)').matches; if (w !== lastWide) { lastWide = w; if (S.loaded) render(); } });
 
-try { var cache = JSON.parse(sessionStorage.getItem('jr_calls_cache') || 'null'); if (cache && cache.c) { S.customers = cache.c; S.intake = cache.i || []; S.loaded = true; S.view = location.hash === '#customers' ? 'customers' : (pending().length || location.hash === '#review' ? 'review' : 'customers'); render(); } } catch (e) {}
+try { var cache = JSON.parse(sessionStorage.getItem('jr_calls_cache') || 'null'); if (cache && cache.c) { S.customers = cache.c; S.intake = cache.i || []; S.calls = cache.k || []; S.loaded = true; S.view = location.hash === '#customers' ? 'customers' : (pending().length || location.hash === '#review' ? 'review' : 'customers'); render(); } } catch (e) {}
 load();
 })();
 </script>
