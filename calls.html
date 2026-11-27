@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<title>JR Team · Calls & Orders</title><script>window.JR_MOD="calls";</script><script src="jr.js"></script>
+<title>JR Team · Requests</title><script>window.JR_MOD="calls";</script><script src="jr.js"></script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://script.google.com"><link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
 <meta name="theme-color" content="#24508f"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
@@ -105,6 +105,7 @@ main{padding:0 12px calc(96px + env(safe-area-inset-bottom,0px));max-width:1100p
 .chosen .x{margin-left:auto;background:none;border:0;color:inherit;font:inherit;font-size:13px;text-decoration:underline;cursor:pointer}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .seg button{border:0;background:var(--card);color:var(--ink);padding:9px 16px;font-weight:700;font-size:14px;cursor:pointer}
+.seg.wrap{display:flex;flex-wrap:wrap}.seg.wrap button{flex:1 0 auto;border-right:1px solid var(--line)}
 .seg button.on{background:var(--navy);color:#fff}
 @media (prefers-color-scheme:dark){.seg button.on{color:#141517}}
 .cl{padding:11px 4px;border-bottom:1px solid var(--line);cursor:pointer}
@@ -116,8 +117,8 @@ main{padding:0 12px calc(96px + env(safe-area-inset-bottom,0px));max-width:1100p
 .cl.open .s{display:block;-webkit-line-clamp:unset;color:var(--ink)}
 /* summary */
 .tot{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px}
-@media (max-width:599px){.tot button:last-child{grid-column:1/-1}}
-@media (min-width:600px){.tot{grid-template-columns:repeat(5,1fr)}}
+
+@media (min-width:600px){.tot{grid-template-columns:repeat(6,1fr)}}
 .tot button{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:left;cursor:pointer;color:var(--ink);font:inherit}
 .tot button.on{border-color:var(--navy);box-shadow:inset 0 0 0 1px var(--navy)}
 .tot b{display:block;font-size:22px;line-height:1.1}
@@ -130,7 +131,7 @@ main{padding:0 12px calc(96px + env(safe-area-inset-bottom,0px));max-width:1100p
 .sl .nx.late{color:var(--bad);font-weight:700}
 .st{font-size:11px;font-weight:800;border-radius:999px;padding:2px 8px;white-space:nowrap;align-self:start}
 .st.wait{background:var(--bad-soft);color:var(--bad)}.st.rev{background:var(--gold-soft);color:var(--warn)}.st.quo{background:var(--blue-soft);color:var(--navy)}
-.st.inv{background:var(--warn-soft);color:var(--warn)}.st.paid,.st.ship,.st.done{background:var(--ok-soft);color:var(--ok)}.st.fu{background:var(--blue-soft);color:var(--navy)}
+.st.inv{background:var(--warn-soft);color:var(--warn)}.st.paid,.st.ship,.st.done,.st.sold{background:var(--ok-soft);color:var(--ok)}.st.lost,.st.closed{background:var(--line);color:var(--muted)}.st.fu{background:var(--blue-soft);color:var(--navy)}
 
 /* review */
 .find{display:flex;gap:10px;align-items:center}
@@ -166,10 +167,10 @@ main{padding:0 12px calc(96px + env(safe-area-inset-bottom,0px));max-width:1100p
   <button type="button" class="btn ghost sm" data-act="reload">Refresh</button>
 </header>
 <main id="main"><div class="loading">Loading…</div></main>
-<nav id="bar" aria-label="Calls & Orders">
+<nav id="bar" aria-label="Requests">
   <button type="button" data-go="today" disabled title="Coming in a later stage"><span class="i">◷</span><span>Today</span></button>
   <button type="button" data-go="customers"><span class="i">☺</span><span>Customers</span></button>
-  <button type="button" data-go="calls" class="call"><span class="i">+</span><span>Calls</span></button>
+  <button type="button" data-go="calls" class="call"><span class="i">+</span><span>Requests</span></button>
   <button type="button" data-go="jobs" disabled title="Coming in a later stage"><span class="i">⚒</span><span>Jobs</span></button>
   <button type="button" data-go="review"><span class="i">✉</span><span>Review</span><span class="badge" id="badge" hidden></span></button>
 </nav>
@@ -232,7 +233,7 @@ function row(c, on){
   var sub = [c.company, c.city].filter(Boolean).join(' · ') || c.phone || c.email || '';
   return '<div class="cu' + (on ? ' on' : '') + '" tabindex="0" role="button" data-open="' + esc(c.id) + '"><div class="av" aria-hidden="true">' + esc(initials(c.name)) + '</div>'
     + '<div class="t"><div class="n">' + esc(c.name) + '</div><div class="m">' + esc(sub) + '</div></div>'
-    + '<div class="r">' + (c.lastContact ? 'Spoke ' + esc(when(c.lastContact)) : '') + (c.uploadifyId ? '' : '<div><span class="pill g">No Uploadify</span></div>') + '</div></div>';
+    + '<div class="r">' + (c.lastContact ? 'Last ' + esc(when(c.lastContact)) : '') + (c.uploadifyId ? '' : '<div><span class="pill g">No Uploadify</span></div>') + '</div></div>';
 }
 function pending(){ return S.intake.filter(function (c) { return c.status === 'pending'; }); }
 function nav(){
@@ -287,8 +288,8 @@ function customerHtml(c){
     + (c.notes ? '<dt>Notes</dt><dd style="white-space:pre-wrap">' + esc(c.notes) + '</dd>' : '')
     + '<dt>Customer ID</dt><dd class="muted">' + esc(c.id) + '</dd></dl></div>'
     + '<div class="card"><h2>Relationship summary</h2>'
-    + (c.summary ? '<div style="white-space:pre-wrap">' + esc(c.summary) + '</div>' : '<div class="muted small">Builds itself from logged calls: what they buy, budget range, last spoke, what’s pending.</div>')
-    + (c.budgetRange || c.lastContact ? '<dl class="kv" style="margin-top:8px">' + (c.budgetRange ? '<dt>Budget</dt><dd>' + esc(c.budgetRange) + '</dd>' : '') + (c.lastContact ? '<dt>Last spoke</dt><dd>' + esc(c.lastContact) + '</dd>' : '') + '</dl>' : '')
+    + (c.summary ? '<div style="white-space:pre-wrap">' + esc(c.summary) + '</div>' : '<div class="muted small">Builds itself from logged requests: what they buy, budget range, last spoke, what’s pending.</div>')
+    + (c.budgetRange || c.lastContact ? '<dl class="kv" style="margin-top:8px">' + (c.budgetRange ? '<dt>Budget</dt><dd>' + esc(c.budgetRange) + '</dd>' : '') + (c.lastContact ? '<dt>Last contact</dt><dd>' + esc(c.lastContact) + '</dd>' : '') + '</dl>' : '')
     + '</div>'
     + '<div class="tabs" role="tablist">' + tabs.map(function (t) { return '<button type="button" role="tab" aria-selected="' + (S.ctab === t[0]) + '" class="' + (S.ctab === t[0] ? 'on' : '') + '" data-ctab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>'
     + (S.ctab === 'activity' ? activityHtml(c) : '<div class="card soon">' + soon[S.ctab] + '</div>');
@@ -328,7 +329,8 @@ function pickResults(key, q){
 }
 
 /* ---------- Calls summary ---------- */
-var STAT = { rev: 'To review', wait: 'Waiting on you', fu: 'Follow-up', quo: 'Quoted', inv: 'Awaiting payment', ship: 'Shipped', paid: 'Paid', done: 'Done' };
+var STAT = { rev: 'To review', wait: 'Waiting on you', fu: 'Follow-up', quo: 'Quoted', inv: 'Awaiting payment', ship: 'Shipped', paid: 'Paid', done: 'Done', sold: 'Sold', lost: 'Lost', closed: 'Closed' };
+var CLOSED = { sold: 1, lost: 1, closed: 1 };
 function dv(det, re){ var r = (det || []).filter(function (x) { return re.test(x[0]); })[0]; return r ? r[1] : ''; }
 function todayStr(){ var d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); }
 function summaryRows(){
@@ -341,10 +343,11 @@ function summaryRows(){
     var x = g[id]; x.items.sort(function (a, b) { return String(b.at).localeCompare(String(a.at)); });
     var last = x.items[0], src = last.t === 'call' ? last.k : last.c, det = src.details || [];
     var callIds = x.items.filter(function (i) { return i.t === 'call'; }).map(function (i) { return i.k.id; });
-    var tasks = []; callIds.forEach(function (cid) { (open[cid] || []).forEach(function (t) { tasks.push(t); }); });
+    var tasks = []; x.items.forEach(function (i) { if (i.t === 'call' && !CLOSED[i.k.state]) (open[i.k.id] || []).forEach(function (t) { tasks.push(t); }); });
     tasks.sort(function (a, b) { return String(a.due || '9999').localeCompare(String(b.due || '9999')); });
     var ord = (dv(det, /order/i) + ' ' + src.summary).toLowerCase(), st;
     if (last.t === 'card') st = 'rev';
+    else if (CLOSED[src.state]) st = src.state;
     else if (/\bpaid\b/.test(ord) && !/not paid|unpaid|not seen/.test(ord)) st = 'paid';
     else if (/shipped|delivered|handed over/.test(ord)) st = tasks.length ? 'inv' : 'ship';
     else if (/invoice/.test(ord)) st = tasks.length ? 'inv' : 'done';
@@ -354,7 +357,7 @@ function summaryRows(){
     var c = x.cid ? byId(x.cid) : null;
     return { id: x.id, cid: x.cid, who: c ? c.name : x.who, at: last.at, st: st, want: String(src.summary || '').replace(/\s*\n\s*/g, ' ').slice(0, 220),
       price: dv(det, /quot|price|amount|budget/i), next: tasks[0] || null, nTasks: tasks.length, calls: callIds.length };
-  }).sort(function (a, b) { var o = ['wait', 'rev', 'fu', 'quo', 'inv', 'ship', 'paid', 'done']; return o.indexOf(a.st) - o.indexOf(b.st) || String(b.at).localeCompare(String(a.at)); });
+  }).sort(function (a, b) { var o = ['wait', 'rev', 'fu', 'quo', 'inv', 'ship', 'paid', 'done']; return (o.indexOf(a.st) + 1 || 99) - (o.indexOf(b.st) + 1 || 99) || String(b.at).localeCompare(String(a.at)); });
 }
 function summaryHtml(){
   var rows = summaryRows(), today = todayStr(), weekAgo = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
@@ -364,17 +367,18 @@ function summaryHtml(){
     ['quo', 'Quotes out', cnt(function (r) { return r.st === 'quo'; })],
     ['inv', 'Awaiting payment', cnt(function (r) { return r.st === 'inv'; })],
     ['late', 'Tasks overdue', S.tasks.filter(function (t) { return !t.done && t.due && t.due < today; }).length],
-    ['week', 'Calls this week', S.calls.filter(function (k) { return String(k.at).slice(0, 10) >= weekAgo; }).length]
+    ['sold', 'Sold this month', S.calls.filter(function (k) { return k.state === 'sold' && String(k.closedAt).slice(0, 7) === today.slice(0, 7); }).length],
+    ['week', 'Requests this week', S.calls.filter(function (k) { return String(k.at).slice(0, 10) >= weekAgo; }).length]
   ];
   var f = S.sf, list = rows.filter(function (r) {
-    if (!f) return r.st !== 'done' && r.st !== 'paid';
+    if (!f) return r.st !== 'done' && r.st !== 'paid' && !CLOSED[r.st];
     if (f === 'open') return r.st === 'wait' || r.st === 'rev' || r.st === 'fu';
     if (f === 'late') return r.next && r.next.due && r.next.due < today;
     if (f === 'week') return String(r.at).slice(0, 10) >= weekAgo;
     if (f === 'all') return true;
     return r.st === f;
   });
-  var title = f ? ({ open: 'Open requests', quo: 'Quotes out', inv: 'Awaiting payment', late: 'Overdue', week: 'Talked to this week', all: 'All customers' })[f] : 'Open business';
+  var title = f ? ({ open: 'Open requests', quo: 'Quotes out', inv: 'Awaiting payment', late: 'Overdue', week: 'This week', sold: 'Sold', all: 'All customers' })[f] : 'Open business';
   return '<div class="tot">' + tiles.map(function (t) { return '<button type="button" class="' + (S.sf === t[0] ? 'on' : '') + '" data-sf="' + t[0] + '" aria-pressed="' + (S.sf === t[0]) + '"><b>' + t[2] + '</b><span>' + t[1] + '</span></button>'; }).join('') + '</div>'
     + '<div class="card" style="padding:4px 10px"><div style="display:flex;align-items:center;padding:8px 4px 4px"><b style="flex:1;font-size:14px">' + title + ' · ' + list.length + '</b>'
     + '<button type="button" class="btn ghost sm" data-sf="' + (f === 'all' ? '' : 'all') + '">' + (f === 'all' ? 'Open only' : 'Show all') + '</button></div>'
@@ -391,43 +395,45 @@ function summaryHtml(){
 function callRow(k){
   var open = S.openCall === k.id, dir = k.direction === 'out' ? 'Out' : k.direction === 'in' ? 'In' : '';
   return '<div class="cl' + (open ? ' open' : '') + '" tabindex="0" role="button" aria-expanded="' + open + '" data-call="' + esc(k.id) + '">'
-    + '<div class="h"><b>' + esc(k.who) + '</b><span>' + (dir ? '<span class="pill' + (dir === 'Out' ? ' g' : '') + '">' + dir + '</span> ' : '') + esc(String(k.at || '').slice(0, 16)) + '</span></div>'
-    + '<div class="small muted">' + esc(k.source || '') + (k.duration ? ' · ' + esc(k.duration) + ' min' : '') + (k.taskIds ? ' · ' + String(k.taskIds).split(',').filter(Boolean).length + ' tasks' : '') + '</div>'
+    + '<div class="h"><b>' + esc(k.who) + '</b><span>' + (CLOSED[k.state] ? '<span class="st ' + k.state + '">' + STAT[k.state] + '</span> ' : '') + esc(String(k.at || '').slice(0, 16)) + '</span></div>'
+    + '<div class="small muted">' + esc(String(k.source || '').replace(/^Call · (in|out)$/, 'Phone')) + (k.taskIds ? ' · ' + String(k.taskIds).split(',').filter(Boolean).length + ' tasks' : '') + '</div>'
     + '<div class="s">' + esc(k.summary) + '</div>'
     + (open ? ((k.details || []).length ? '<dl class="rkv">' + k.details.map(function (r) { return '<dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd>'; }).join('') + '</dl>' : '')
       + (k.raw ? '<details style="margin-top:6px"><summary class="small">Your notes</summary><div class="small" style="white-space:pre-wrap;margin-top:4px">' + esc(k.raw) + '</div></details>' : '')
-      + (k.customerId ? '<div style="margin-top:8px"><button type="button" class="btn ghost sm" data-open="' + esc(k.customerId) + '">Customer page</button></div>' : '') : '')
+      + '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">'
+      + (CLOSED[k.state] ? '<span class="small muted" style="align-self:center">' + STAT[k.state] + ' ' + esc(String(k.closedAt || '').slice(0, 10)) + '</span><button type="button" class="btn ghost sm" data-rstate="' + esc(k.id) + '|open">Reopen</button>'
+         : '<button type="button" class="btn sm" data-rstate="' + esc(k.id) + '|sold">✓ Sold</button><button type="button" class="btn ghost sm" data-rstate="' + esc(k.id) + '|lost">Lost</button><button type="button" class="btn ghost sm" data-rstate="' + esc(k.id) + '|closed">Close</button>')
+      + (k.customerId ? '<button type="button" class="btn ghost sm" data-open="' + esc(k.customerId) + '">Customer page</button>' : '') + '</div>' : '')
     + '</div>';
 }
 function activityHtml(c){
   var list = S.calls.filter(function (k) { return k.customerId === c.id; });
-  return '<div class="card" style="padding:4px 10px">' + (list.length ? list.map(callRow).join('') : '<div class="soon">No calls or messages logged yet.</div>') + '</div>'
-    + '<button type="button" class="btn ghost full" data-act="logfor" data-cid="' + esc(c.id) + '">+ Log a call with ' + esc(c.name) + '</button>';
+  return '<div class="card" style="padding:4px 10px">' + (list.length ? list.map(callRow).join('') : '<div class="soon">No requests logged yet.</div>') + '</div>'
+    + '<button type="button" class="btn ghost full" data-act="logfor" data-cid="' + esc(c.id) + '">+ New request from ' + esc(c.name) + '</button>';
 }
 function renderCalls(){
-  $('title').textContent = 'Calls';
-  var q = S.cq.toLowerCase().trim(), drafts = S.intake.filter(function (c) { return c.status === 'pending' && /^Call/.test(c.source); });
+  $('title').textContent = 'Requests';
+  var q = S.cq.toLowerCase().trim(), drafts = S.intake.filter(function (c) { return c.status === 'pending' && /^(call|req):/.test(c.sourceRef || ''); });
   var list = S.calls.filter(function (k) { return !q || [k.who, k.summary, k.raw, k.source].join(' ').toLowerCase().indexOf(q) >= 0; });
   $('main').innerHTML = '<div style="max-width:760px">'
-    + '<button type="button" class="btn full" data-act="logcall" style="margin-bottom:10px">+ Log a call</button>'
+    + '<button type="button" class="btn full" data-act="logcall" style="margin-bottom:10px">+ New request</button>'
     + summaryHtml()
     + (drafts.length ? '<h2 style="font-size:14px;margin:4px 2px 8px">Check and add</h2>' + drafts.map(reviewCard).join('') : '')
-    + '<h2 style="font-size:14px;margin:14px 2px 8px">All calls</h2><input type="search" id="cq" placeholder="Search calls" value="' + esc(S.cq) + '" aria-label="Search calls" autocomplete="off" style="margin-bottom:10px">'
-    + '<div class="card" style="padding:4px 10px">' + (list.length ? list.map(callRow).join('') : '<div class="soon">' + (S.calls.length ? 'No call matches.' : 'No calls logged yet. Tap “+ Log a call”, or add cards from Review.') + '</div>') + '</div>'
-    + '<p class="small muted">' + S.calls.length + (S.calls.length === 1 ? ' call' : ' calls') + ' · newest first</p></div>';
+    + '<h2 style="font-size:14px;margin:14px 2px 8px">All requests</h2><input type="search" id="cq" placeholder="Search requests" value="' + esc(S.cq) + '" aria-label="Search requests" autocomplete="off" style="margin-bottom:10px">'
+    + '<div class="card" style="padding:4px 10px">' + (list.length ? list.map(callRow).join('') : '<div class="soon">' + (S.calls.length ? 'No request matches.' : 'Nothing logged yet. Tap “+ New request”, or add cards from Review.') + '</div>') + '</div>'
+    + '<p class="small muted">' + S.calls.length + (S.calls.length === 1 ? ' request' : ' requests') + ' · newest first</p></div>';
   if (S._focusCq) { var el = $('cq'); el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
 }
 function nowLocal(){ var d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); }
 function openLogCall(cid){
-  S.picks.call = cid ? { id: cid } : {}; S.callDir = 'in';
+  S.picks.call = cid ? { id: cid } : {}; S.callDir = 'WhatsApp';
   $('sheet').innerHTML = '<div class="sheet" data-act="close-bg"><div class="box" role="dialog" aria-modal="true" aria-labelledby="ltitle"><form id="lf" novalidate>'
-    + '<h3 id="ltitle">Log a call<span class="sp"></span><button type="button" class="btn ghost sm" data-act="close">Cancel</button></h3>'
+    + '<h3 id="ltitle">New request<span class="sp"></span><button type="button" class="btn ghost sm" data-act="close">Cancel</button></h3>'
     + '<label>Customer</label><div id="lpick">' + pickerHtml('call', '') + '</div>'
     + '<div id="lnewphone"></div>'
-    + '<div class="row"><div><label>Direction</label><div class="seg" role="group" aria-label="Direction"><button type="button" class="on" data-dir="in" aria-pressed="true">In</button><button type="button" data-dir="out" aria-pressed="false">Out</button></div></div>'
-    + '<div><label for="l_dur">Minutes</label><input id="l_dur" type="number" inputmode="numeric" min="0" max="600" placeholder="optional"></div></div>'
+    + '<label>Came in by</label><div class="seg wrap" role="group" aria-label="Came in by">' + ['WhatsApp', 'Email', 'In person', 'Phone', 'Show', 'Other'].map(function (x, i) { return '<button type="button"' + (i ? '' : ' class="on"') + ' data-dir="' + x + '" aria-pressed="' + !i + '">' + x + '</button>'; }).join('') + '</div>'
     + '<label for="l_at">When</label><input id="l_at" type="datetime-local" value="' + nowLocal() + '">'
-    + '<label for="l_notes">Notes</label><textarea id="l_notes" style="min-height:130px" placeholder="Type, paste or dictate (tap the mic on your keyboard). Rough is fine."></textarea>'
+    + '<label for="l_notes">Notes</label><textarea id="l_notes" style="min-height:130px" placeholder="What do they want? Item, specs, budget, deadline. Type, paste or dictate; rough is fine."></textarea>'
     + '<div id="lerr"></div><button type="submit" class="btn full" id="lsave" style="margin-top:14px">Save &amp; summarise</button></form></div></div>';
   setTimeout(function () { var i = document.querySelector('[data-pickq="call"]'); (i || $('l_notes')).focus(); }, 50);
 }
@@ -442,7 +448,7 @@ function saveCall(){
   if (!notes) { err.innerHTML = '<div class="msg bad">Type or dictate your notes first.</div>'; $('l_notes').focus(); return; }
   btn.disabled = true; btn.textContent = 'Claude is summarising…';
   var at = $('l_at').value;   // phone's local time
-  call('logCall', { customerId: p.id || '', newName: p.newName || '', newPhone: ($('l_phone') || {}).value || '', direction: S.callDir, at: at, duration: $('l_dur').value, notes: notes }).then(function (r) {
+  call('logCall', { customerId: p.id || '', newName: p.newName || '', newPhone: ($('l_phone') || {}).value || '', channel: S.callDir, at: at, notes: notes }).then(function (r) {
     S.customers = r.customers || S.customers; replaceCard(r.card); closeForm(); S.view = 'calls'; render(); window.scrollTo(0, 0);
     toast('Summary ready. Check the tasks and tap Add.');
   }, function (e) { btn.disabled = false; btn.textContent = 'Save & summarise'; err.innerHTML = '<div class="msg bad">' + esc(e.message) + '</div>'; });
@@ -578,14 +584,22 @@ function closeForm(){ $('sheet').innerHTML = ''; pendingForce = false; }
 
 /* ---------- events ---------- */
 document.addEventListener('click', function (e) {
-  var t = e.target.closest('[data-sf],[data-pickid],[data-picknew],[data-unpick],[data-dir],[data-call],[data-act],[data-open],[data-tag],[data-ctab],[data-ftag],[data-use],[data-go],[data-rf],[data-add],[data-skip],[data-undo],[data-edit],[data-urg]');
+  var t = e.target.closest('[data-rstate],[data-sf],[data-pickid],[data-picknew],[data-unpick],[data-dir],[data-call],[data-act],[data-open],[data-tag],[data-ctab],[data-ftag],[data-use],[data-go],[data-rf],[data-add],[data-skip],[data-undo],[data-edit],[data-urg]');
   if (!t) return;
+  if (t.hasAttribute('data-rstate')) {
+    var rs = t.getAttribute('data-rstate').split('|'); t.disabled = true;
+    call('setRequestState', rs[0], rs[1], '').then(function (r) {
+      var i = S.calls.map(function (k) { return k.id; }).indexOf(r.call.id); if (i >= 0) S.calls[i] = r.call; render();
+      toast(rs[1] === 'open' ? 'Reopened.' : 'Marked ' + STAT[rs[1]].toLowerCase() + '. It drops off the open list.');
+    }, function (er) { t.disabled = false; toast(er.message); });
+    return;
+  }
   if (t.hasAttribute('data-sf')) { var sv = t.getAttribute('data-sf'); S.sf = (S.sf === sv && sv !== 'all') ? '' : sv; render(); return; }
   if (t.hasAttribute('data-pickid')) { var pp = t.getAttribute('data-pickid').split('|'); S.picks[pp[0]] = { id: pp[1] }; refreshPick(pp[0]); return; }
   if (t.hasAttribute('data-picknew')) { var pk = t.getAttribute('data-picknew'), pq = document.querySelector('[data-pickq="' + pk + '"]'); var nmv = pq ? pq.value.trim() : ''; if (!nmv) return; S.picks[pk] = { newName: nmv }; refreshPick(pk); return; }
   if (t.hasAttribute('data-unpick')) { var uk = t.getAttribute('data-unpick'), was = S.picks[uk] || {}; S.picks[uk] = { q: was.newName || '' }; refreshPick(uk); return; }
   if (t.hasAttribute('data-dir')) { S.callDir = t.getAttribute('data-dir'); [].forEach.call(t.parentNode.children, function (b) { var on = b === t; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); }); return; }
-  if (t.hasAttribute('data-call')) { if (e.target.closest('summary,details,button')) { if (!e.target.closest('[data-open]')) return; } else { S.openCall = S.openCall === t.getAttribute('data-call') ? '' : t.getAttribute('data-call'); render(); return; } }
+  if (t.hasAttribute('data-call')) { if (e.target.closest('summary,details,button')) { return; } else { S.openCall = S.openCall === t.getAttribute('data-call') ? '' : t.getAttribute('data-call'); render(); return; } }
   if (t.hasAttribute('data-go')) { if (t.disabled) return; S.view = t.getAttribute('data-go'); S.sel = ''; history.replaceState(null, '', '#' + S.view); render(); window.scrollTo(0, 0); return; }
   if (t.hasAttribute('data-rf')) { S.rf = t.getAttribute('data-rf'); render(); return; }
   if (t.hasAttribute('data-add')) { decide(t.getAttribute('data-add'), 'add'); return; }

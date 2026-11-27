@@ -12,7 +12,7 @@
     { id: 'melt', label: 'Melt', href: 'melt.html' },
     { id: 'pearl', label: 'Pearl Chau', href: 'pearl.html' },
     { id: 'reg', label: 'Register', href: 'register.html' },
-    { id: 'calls', label: 'Calls & Orders', href: 'calls.html' }
+    { id: 'calls', label: 'Requests', href: 'calls.html' }
   ];
   function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }
