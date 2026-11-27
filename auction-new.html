@@ -952,23 +952,26 @@ function bsBid(l){const b=num(dval(l,"bid"));if(b!=null&&b>0)return b;const f=lo
 function bsGroups(){let all=[];try{all=saleGroups(S.lots)}catch(e){}
   const cur=all.filter(g=>!isArchived(g.auction)),old=all.filter(g=>isArchived(g.auction));
   return cur.concat(old).map(g=>({...g,B:g.L.filter(l=>bsBid(l)!=null&&!isWon(l))})).filter(g=>g.B.length)}
+function bsCurrent(){let key=S.focus;if(!key){try{key=localStorage.getItem("jr_focus")}catch(e){}}
+  let all=[];try{all=saleGroups(S.lots)}catch(e){}
+  let g=all.find(x=>x.key===key);
+  if(!g){const up=all.filter(x=>!isArchived(x.auction)),today=new Date().toISOString().slice(0,10);g=up.find(x=>x.saleDate&&x.saleDate>=today)||up[0]}
+  return g?{...g,B:g.L.filter(l=>bsBid(l)!=null&&!isWon(l))}:null}
 function vBidSheet(){
-  if(S.state==="loading"||!S.lots.length)return "";
-  const G=bsGroups();
-  if(!G.length)return `<section class="panel bs-panel"><b>Bid sheet PDF</b><div class="small muted">Set a max bid (or a max all-in in the Calculator) on some lots first. Then you can make a PDF of your bids to share with a partner.</div></section>`;
-  const sel=S.bsSale&&G.some((g,i)=>String(i)===S.bsSale)?S.bsSale:"all";
-  return `<section class="panel bs-panel"><div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b>Bid sheet PDF</b><span class="small muted">Only lots with a max bid (or a max all-in) go in</span></div>
-  <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:8px"><select id="bs-sale" data-act="bssale" style="flex:1;min-width:180px"><option value="all">All sales with bids (${G.reduce((s,g)=>s+g.B.length,0)} bids)</option>${G.map((g,i)=>`<option value="${i}"${sel===String(i)?" selected":""}>${esc((isArchived(g.auction)?"Archive · ":"")+(g.house?g.house+" · ":"")+(g.title||"Sale")+(g.auction&&g.auction.saleDate?" · "+fmtD(g.auction.saleDate):""))} (${g.B.length})</option>`).join("")}</select>
-  <input id="bs-for" placeholder="For (optional), e.g. Chetan" style="flex:1;min-width:140px">
+  if(S.state==="loading"||!S.lots.length||S.editing)return "";
+  const g=bsCurrent();if(!g)return "";
+  const name=[g.house,g.title].filter(Boolean).join(" · ")||"this auction";
+  if(!g.B.length)return `<section class="panel bs-panel"><b>Bid sheet PDF</b><div class="small muted">No max bids yet for ${esc(name)}. Lots without a max bid are left off the sheet.</div></section>`;
+  return `<section class="panel bs-panel"><div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b>Bid sheet PDF · ${esc(name)}</b><span class="small muted">${g.B.length} lot${g.B.length===1?"":"s"} with a max bid</span></div>
+  <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:8px"><input id="bs-for" placeholder="For (optional), e.g. Chetan" style="flex:1;min-width:140px">
   <button type="button" class="primary" data-act="bspdf">Make PDF &amp; share</button></div></section>`;
 }
 let BS_LIB=null;
 function bsLib(){if(BS_LIB)return BS_LIB;const add=src=>new Promise((ok,no)=>{const s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=()=>no(new Error("Could not load the PDF maker. Check the connection."));document.head.appendChild(s)});
   BS_LIB=add("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js").then(()=>add("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js")).catch(e=>{BS_LIB=null;throw e});return BS_LIB}
 async function bidSheetPdf(btn){
-  let G=bsGroups();
-  const v=(document.getElementById("bs-sale")||{}).value||"all";if(v!=="all")G=[G[Number(v)]].filter(Boolean);
-  if(!G.length){toast(note("No bids to put in the PDF."));return}
+  const g0=bsCurrent();const G=g0&&g0.B.length?[g0]:[];
+  if(!G.length){toast(note("No max bids for this auction yet."));return}
   const who=((document.getElementById("bs-for")||{}).value||"").trim();
   const old=btn.textContent;btn.disabled=true;btn.textContent="Making PDF…";
   try{
@@ -1012,7 +1015,6 @@ async function bidSheetPdf(btn){
 }
 function vLotsWithSheet(){return vBidSheet()+vLots()}
 document.addEventListener("click",e=>{const b=e.target.closest("button[data-act=bspdf]");if(!b)return;e.preventDefault();bidSheetPdf(b)});
-document.addEventListener("change",e=>{if(e.target.dataset&&e.target.dataset.act==="bssale")S.bsSale=e.target.value});
 
 function vCalc(){
   const st=S.settings,c=S.calc||(S.calc={cur:"EUR",bp:"",maxUSD:"",hammer:"",houseId:""});
