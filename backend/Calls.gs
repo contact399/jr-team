@@ -17,7 +17,7 @@ var MOD_CALLS = (function () {
                 'uploadifyId', 'uploadifyUrl', 'summary', 'budgetRange', 'lastContact', 'created', 'updated'],
     Intake: ['id', 'source', 'sourceRef', 'receivedAt', 'kind', 'who', 'customerId', 'match', 'summary', 'alert',
              'details', 'tasks', 'link', 'partial', 'status', 'decidedAt', 'result', 'created', 'raw', 'direction', 'duration'],
-    Calls: ['id', 'customerId', 'who', 'source', 'sourceRef', 'at', 'summary', 'details', 'intakeId', 'taskIds', 'created', 'raw', 'direction', 'duration'],
+    Calls: ['id', 'customerId', 'who', 'source', 'sourceRef', 'at', 'summary', 'details', 'intakeId', 'taskIds', 'created', 'raw', 'direction', 'duration', 'state', 'closedAt', 'closeNote'],
     Settings: ['key', 'value', 'updated']
   };
   var OWNERS = ['Karan', 'Leo', 'Shivansh', 'DD'];
@@ -235,6 +235,18 @@ var MOD_CALLS = (function () {
     return cards;
   }
 
+  /* ---- close / reopen a request: open → sold | lost | closed ---- */
+  function setRequestState(id, state, note) {
+    if (['open', 'sold', 'lost', 'closed'].indexOf(state) < 0) throw new Error('Unknown stage.');
+    return lock_(function () {
+      var t = read_('Calls'), r = t.rows.filter(function (x) { return x.id === id; })[0];
+      if (!r) throw new Error('That request was not found. Refresh and try again.');
+      r.state = state === 'open' ? '' : state; r.closedAt = state === 'open' ? '' : now_(); r.closeNote = state === 'open' ? '' : txt_(note || '', 300);
+      t.sh.getRange(r._row, 1, 1, TABS.Calls.length).setValues([line_(r, TABS.Calls)]);
+      var o = out_(r); o.details = json_(o.details, []); return { call: o };
+    });
+  }
+
   /* ---- Uploadify contacts → Customers (read from Uploadify, never written back) ---- */
   function uploadifyImport(list) {
     if (!Array.isArray(list)) throw new Error('No list.');
@@ -307,11 +319,11 @@ var MOD_CALLS = (function () {
   function checkDupes(c) { return dupes_(c || {}, read_('Customers').rows); }
 
   return { boot: boot, saveCustomer: saveCustomer, checkDupes: checkDupes, decideIntake: decideIntake, undoIntake: undoIntake,
-    importNote: importNote, logCall: logCall, requestScan: requestScan, setScanLink: setScanLink, uploadifyImport: uploadifyImport, _addCards: addCards_, _key: function () { return getSet_().syncKey || ''; } };
+    importNote: importNote, logCall: logCall, setRequestState: setRequestState, requestScan: requestScan, setScanLink: setScanLink, uploadifyImport: uploadifyImport, _addCards: addCards_, _key: function () { return getSet_().syncKey || ''; } };
 })();
 
 /* ---- plug into the router (no edits to Code.gs needed). Keep this file BELOW Code.gs and Register. ---- */
-var JR_CALLS_MOD_ = { who: ['Karan'], pub: ['boot', 'saveCustomer', 'checkDupes', 'decideIntake', 'undoIntake', 'importNote', 'logCall', 'requestScan', 'setScanLink'] };
+var JR_CALLS_MOD_ = { who: ['Karan'], pub: ['boot', 'saveCustomer', 'checkDupes', 'decideIntake', 'undoIntake', 'importNote', 'logCall', 'setRequestState', 'requestScan', 'setScanLink'] };
 JR_MODS.calls = JR_CALLS_MOD_;
 var JR_route_before_calls_ = JR_route_;
 JR_route_ = function (q) {
