@@ -106,7 +106,7 @@ var MOD_CALLS = (function () {
     var tasks = [];
     try {
       var tv = tasksSheet_().getDataRange().getDisplayValues(); tv.shift();
-      tv.forEach(function (r) { var m = String(r[4] || '').match(/^\[(CALL-\d+)\]/); if (m) tasks.push({ id: r[0], owner: r[1], text: r[3], due: r[5], done: r[7] === 'true' || r[7] === 'TRUE', doneAt: r[8], callId: m[1] }); });
+      tv.forEach(function (r) { var m = String(r[4] || '').match(/^\[((?:CALL|REQ)-\d+)\]/); if (m) tasks.push({ id: r[0], owner: r[1], text: r[3], due: r[5], done: r[7] === 'true' || r[7] === 'TRUE', doneAt: r[8], callId: m[1] }); });
     } catch (e) {}
     return { me: JR__name, now: now_(), customers: cu, intake: ik, calls: calls, tasks: tasks, sheetUrl: ss_().getUrl(),
       lastScan: st.lastScan || '', scanRequested: st.scanRequested || '', scanLinked: !!(P.getProperty('calls.FIRE_URL') && P.getProperty('calls.FIRE_TOKEN')) };
@@ -143,7 +143,7 @@ var MOD_CALLS = (function () {
           var nc = { id: nextId_(cuT.rows, 'CUS'), name: r.who, phone: isPhone ? r.who : '', created: now_(), updated: now_(), notes: 'Added from Review (' + r.source + ')', lastContact: String(r.receivedAt || '').slice(0, 16) };
           cuT.sh.appendRow(line_(nc, TABS.Customers)); cuT.rows.push(nc); cust = nc;
         }
-        var name = cust ? cust.name : r.who, callT = read_('Calls'), callId = nextId_(callT.rows, 'CALL');
+        var name = cust ? cust.name : r.who, callT = read_('Calls'), callId = nextId_(callT.rows, 'REQ');
         var ts = tasksSheet_(), ids = tasks.filter(function (k) { return k && k[0]; }).map(function (k) {
           return pushTask_(ts, k[1], k[0], '[' + callId + '] ' + name + ' · ' + r.source, k[2], !!k[3]);
         });
@@ -196,7 +196,7 @@ var MOD_CALLS = (function () {
   function logCall(o) {
     o = o || {};
     var notes = String(o.notes || '').trim().slice(0, 6000);
-    if (!notes) throw new Error('Type or dictate your notes first.');
+    if (!notes) throw new Error('Type or dictate what they want first.');
     var cuT = read_('Customers'), cust = o.customerId ? cuT.rows.filter(function (c) { return c.id === o.customerId; })[0] : null;
     if (!cust && o.newName) {
       var nm = txt_(o.newName, 120); if (!nm) throw new Error('Pick a customer or type a new name.');
@@ -204,17 +204,17 @@ var MOD_CALLS = (function () {
       lock_(function () { cuT.sh.appendRow(line_(nc, TABS.Customers)); }); cust = nc;
     }
     if (!cust) throw new Error('Pick a customer or type a new name.');
-    var dir = o.direction === 'out' ? 'out' : 'in', at = /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}$/.test(String(o.at || '')) ? String(o.at).replace('T', ' ') : now_();
+    var CH = ['WhatsApp', 'Email', 'In person', 'Phone', 'Show', 'Other'], ch = CH.indexOf(o.channel) >= 0 ? o.channel : 'Other', at = /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}$/.test(String(o.at || '')) ? String(o.at).replace('T', ' ') : now_();
     var cards = claudeCards_(notes, cust), c = cards[0] || { kind: 'req', summary: notes.slice(0, 500), details: [], tasks: [] };
-    c.who = cust.name; c.customerId = cust.id; c.match = ''; c.receivedAt = at; c.raw = notes; c.direction = dir; c.duration = o.duration;
-    c.sourceRef = 'call:' + cust.id + ':' + at + ':' + Utilities.getUuid().slice(0, 6);
-    return { card: addCards_([c], dir === 'out' ? 'Call · out' : 'Call · in')[0], customers: read_('Customers').rows.map(out_) };
+    c.who = cust.name; c.customerId = cust.id; c.match = ''; c.receivedAt = at; c.raw = notes; c.direction = ''; c.duration = '';
+    c.sourceRef = 'req:' + cust.id + ':' + at + ':' + Utilities.getUuid().slice(0, 6);
+    return { card: addCards_([c], ch)[0], customers: read_('Customers').rows.map(out_) };
   }
   function claudeCards_(text, cust) {
     var key = apiKey_(); if (!key) throw new Error('No Claude API key is set (Script Property calls.ANTHROPIC_API_KEY).');
     var names = cust ? '(customer already chosen)' : read_('Customers').rows.map(function (c) { return c.id + ' = ' + c.name + (c.company ? ' (' + c.company + ')' : ''); }).slice(0, 600).join('\n');
     var today = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd (EEEE)');
-    var prompt = (cust ? 'These are Karan\'s notes from a call with ' + cust.name + (cust.company ? ' (' + cust.company + ')' : '') + '. Make exactly ONE card for this customer.\n' : '') +
+    var prompt = (cust ? 'These are Karan\'s notes about a request from ' + cust.name + (cust.company ? ' (' + cust.company + ')' : '') + '. Make exactly ONE card for this customer.\n' : '') +
       'You turn Karan Jain\'s rough notes about jewellery customers (Jupiter Rain, New York) into review cards.\n' +
       'Today is ' + today + '. Team: Karan, Leo, Shivansh, DD. Default owner Karan.\n' +
       'Known customers (id = name):\n' + (names || '(none yet)') + '\n\n' +
@@ -338,7 +338,7 @@ var JR_tasks_api_before_calls_ = MOD_TASKS.api;
 MOD_TASKS.api = function () {
   var r = JR_tasks_api_before_calls_.apply(null, arguments);
   if (r && r.me && Array.isArray(r.links) && JR_CALLS_MOD_.who.indexOf(r.me) >= 0 &&
-      !r.links.some(function (l) { return l.url === 'calls.html'; })) r.links.push({ name: 'Calls & Orders', url: 'calls.html' });
+      !r.links.some(function (l) { return l.url === 'calls.html'; })) r.links.push({ name: 'Requests', url: 'calls.html' });
   return r;
 };
 

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<title>JR Team · Calls & Orders</title><script>window.JR_MOD="calls";</script><script src="jr.js"></script>
+<title>JR Team · Requests</title><script>window.JR_MOD="calls";</script><script src="jr.js"></script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://script.google.com"><link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
 <meta name="theme-color" content="#24508f"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
@@ -105,6 +105,7 @@ main{padding:0 12px calc(96px + env(safe-area-inset-bottom,0px));max-width:1100p
 .chosen .x{margin-left:auto;background:none;border:0;color:inherit;font:inherit;font-size:13px;text-decoration:underline;cursor:pointer}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .seg button{border:0;background:var(--card);color:var(--ink);padding:9px 16px;font-weight:700;font-size:14px;cursor:pointer}
+.seg.wrap{display:flex;flex-wrap:wrap}.seg.wrap button{flex:1 0 auto;border-right:1px solid var(--line)}
 .seg button.on{background:var(--navy);color:#fff}
 @media (prefers-color-scheme:dark){.seg button.on{color:#141517}}
 .cl{padding:11px 4px;border-bottom:1px solid var(--line);cursor:pointer}
@@ -166,10 +167,10 @@ main{padding:0 12px calc(96px + env(safe-area-inset-bottom,0px));max-width:1100p
   <button type="button" class="btn ghost sm" data-act="reload">Refresh</button>
 </header>
 <main id="main"><div class="loading">Loading…</div></main>
-<nav id="bar" aria-label="Calls & Orders">
+<nav id="bar" aria-label="Requests">
   <button type="button" data-go="today" disabled title="Coming in a later stage"><span class="i">◷</span><span>Today</span></button>
   <button type="button" data-go="customers"><span class="i">☺</span><span>Customers</span></button>
-  <button type="button" data-go="calls" class="call"><span class="i">+</span><span>Calls</span></button>
+  <button type="button" data-go="calls" class="call"><span class="i">+</span><span>Requests</span></button>
   <button type="button" data-go="jobs" disabled title="Coming in a later stage"><span class="i">⚒</span><span>Jobs</span></button>
   <button type="button" data-go="review"><span class="i">✉</span><span>Review</span><span class="badge" id="badge" hidden></span></button>
 </nav>
@@ -232,7 +233,7 @@ function row(c, on){
   var sub = [c.company, c.city].filter(Boolean).join(' · ') || c.phone || c.email || '';
   return '<div class="cu' + (on ? ' on' : '') + '" tabindex="0" role="button" data-open="' + esc(c.id) + '"><div class="av" aria-hidden="true">' + esc(initials(c.name)) + '</div>'
     + '<div class="t"><div class="n">' + esc(c.name) + '</div><div class="m">' + esc(sub) + '</div></div>'
-    + '<div class="r">' + (c.lastContact ? 'Spoke ' + esc(when(c.lastContact)) : '') + (c.uploadifyId ? '' : '<div><span class="pill g">No Uploadify</span></div>') + '</div></div>';
+    + '<div class="r">' + (c.lastContact ? 'Last ' + esc(when(c.lastContact)) : '') + (c.uploadifyId ? '' : '<div><span class="pill g">No Uploadify</span></div>') + '</div></div>';
 }
 function pending(){ return S.intake.filter(function (c) { return c.status === 'pending'; }); }
 function nav(){
@@ -287,8 +288,8 @@ function customerHtml(c){
     + (c.notes ? '<dt>Notes</dt><dd style="white-space:pre-wrap">' + esc(c.notes) + '</dd>' : '')
     + '<dt>Customer ID</dt><dd class="muted">' + esc(c.id) + '</dd></dl></div>'
     + '<div class="card"><h2>Relationship summary</h2>'
-    + (c.summary ? '<div style="white-space:pre-wrap">' + esc(c.summary) + '</div>' : '<div class="muted small">Builds itself from logged calls: what they buy, budget range, last spoke, what’s pending.</div>')
-    + (c.budgetRange || c.lastContact ? '<dl class="kv" style="margin-top:8px">' + (c.budgetRange ? '<dt>Budget</dt><dd>' + esc(c.budgetRange) + '</dd>' : '') + (c.lastContact ? '<dt>Last spoke</dt><dd>' + esc(c.lastContact) + '</dd>' : '') + '</dl>' : '')
+    + (c.summary ? '<div style="white-space:pre-wrap">' + esc(c.summary) + '</div>' : '<div class="muted small">Builds itself from logged requests: what they buy, budget range, last spoke, what’s pending.</div>')
+    + (c.budgetRange || c.lastContact ? '<dl class="kv" style="margin-top:8px">' + (c.budgetRange ? '<dt>Budget</dt><dd>' + esc(c.budgetRange) + '</dd>' : '') + (c.lastContact ? '<dt>Last contact</dt><dd>' + esc(c.lastContact) + '</dd>' : '') + '</dl>' : '')
     + '</div>'
     + '<div class="tabs" role="tablist">' + tabs.map(function (t) { return '<button type="button" role="tab" aria-selected="' + (S.ctab === t[0]) + '" class="' + (S.ctab === t[0] ? 'on' : '') + '" data-ctab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>'
     + (S.ctab === 'activity' ? activityHtml(c) : '<div class="card soon">' + soon[S.ctab] + '</div>');
@@ -364,7 +365,7 @@ function summaryHtml(){
     ['quo', 'Quotes out', cnt(function (r) { return r.st === 'quo'; })],
     ['inv', 'Awaiting payment', cnt(function (r) { return r.st === 'inv'; })],
     ['late', 'Tasks overdue', S.tasks.filter(function (t) { return !t.done && t.due && t.due < today; }).length],
-    ['week', 'Calls this week', S.calls.filter(function (k) { return String(k.at).slice(0, 10) >= weekAgo; }).length]
+    ['week', 'Requests this week', S.calls.filter(function (k) { return String(k.at).slice(0, 10) >= weekAgo; }).length]
   ];
   var f = S.sf, list = rows.filter(function (r) {
     if (!f) return r.st !== 'done' && r.st !== 'paid';
@@ -374,7 +375,7 @@ function summaryHtml(){
     if (f === 'all') return true;
     return r.st === f;
   });
-  var title = f ? ({ open: 'Open requests', quo: 'Quotes out', inv: 'Awaiting payment', late: 'Overdue', week: 'Talked to this week', all: 'All customers' })[f] : 'Open business';
+  var title = f ? ({ open: 'Open requests', quo: 'Quotes out', inv: 'Awaiting payment', late: 'Overdue', week: 'This week', all: 'All customers' })[f] : 'Open business';
   return '<div class="tot">' + tiles.map(function (t) { return '<button type="button" class="' + (S.sf === t[0] ? 'on' : '') + '" data-sf="' + t[0] + '" aria-pressed="' + (S.sf === t[0]) + '"><b>' + t[2] + '</b><span>' + t[1] + '</span></button>'; }).join('') + '</div>'
     + '<div class="card" style="padding:4px 10px"><div style="display:flex;align-items:center;padding:8px 4px 4px"><b style="flex:1;font-size:14px">' + title + ' · ' + list.length + '</b>'
     + '<button type="button" class="btn ghost sm" data-sf="' + (f === 'all' ? '' : 'all') + '">' + (f === 'all' ? 'Open only' : 'Show all') + '</button></div>'
@@ -391,8 +392,8 @@ function summaryHtml(){
 function callRow(k){
   var open = S.openCall === k.id, dir = k.direction === 'out' ? 'Out' : k.direction === 'in' ? 'In' : '';
   return '<div class="cl' + (open ? ' open' : '') + '" tabindex="0" role="button" aria-expanded="' + open + '" data-call="' + esc(k.id) + '">'
-    + '<div class="h"><b>' + esc(k.who) + '</b><span>' + (dir ? '<span class="pill' + (dir === 'Out' ? ' g' : '') + '">' + dir + '</span> ' : '') + esc(String(k.at || '').slice(0, 16)) + '</span></div>'
-    + '<div class="small muted">' + esc(k.source || '') + (k.duration ? ' · ' + esc(k.duration) + ' min' : '') + (k.taskIds ? ' · ' + String(k.taskIds).split(',').filter(Boolean).length + ' tasks' : '') + '</div>'
+    + '<div class="h"><b>' + esc(k.who) + '</b><span>' + esc(String(k.at || '').slice(0, 16)) + '</span></div>'
+    + '<div class="small muted">' + esc(String(k.source || '').replace(/^Call · (in|out)$/, 'Phone')) + (k.taskIds ? ' · ' + String(k.taskIds).split(',').filter(Boolean).length + ' tasks' : '') + '</div>'
     + '<div class="s">' + esc(k.summary) + '</div>'
     + (open ? ((k.details || []).length ? '<dl class="rkv">' + k.details.map(function (r) { return '<dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd>'; }).join('') + '</dl>' : '')
       + (k.raw ? '<details style="margin-top:6px"><summary class="small">Your notes</summary><div class="small" style="white-space:pre-wrap;margin-top:4px">' + esc(k.raw) + '</div></details>' : '')
@@ -401,33 +402,32 @@ function callRow(k){
 }
 function activityHtml(c){
   var list = S.calls.filter(function (k) { return k.customerId === c.id; });
-  return '<div class="card" style="padding:4px 10px">' + (list.length ? list.map(callRow).join('') : '<div class="soon">No calls or messages logged yet.</div>') + '</div>'
-    + '<button type="button" class="btn ghost full" data-act="logfor" data-cid="' + esc(c.id) + '">+ Log a call with ' + esc(c.name) + '</button>';
+  return '<div class="card" style="padding:4px 10px">' + (list.length ? list.map(callRow).join('') : '<div class="soon">No requests logged yet.</div>') + '</div>'
+    + '<button type="button" class="btn ghost full" data-act="logfor" data-cid="' + esc(c.id) + '">+ New request from ' + esc(c.name) + '</button>';
 }
 function renderCalls(){
-  $('title').textContent = 'Calls';
-  var q = S.cq.toLowerCase().trim(), drafts = S.intake.filter(function (c) { return c.status === 'pending' && /^Call/.test(c.source); });
+  $('title').textContent = 'Requests';
+  var q = S.cq.toLowerCase().trim(), drafts = S.intake.filter(function (c) { return c.status === 'pending' && /^(call|req):/.test(c.sourceRef || ''); });
   var list = S.calls.filter(function (k) { return !q || [k.who, k.summary, k.raw, k.source].join(' ').toLowerCase().indexOf(q) >= 0; });
   $('main').innerHTML = '<div style="max-width:760px">'
-    + '<button type="button" class="btn full" data-act="logcall" style="margin-bottom:10px">+ Log a call</button>'
+    + '<button type="button" class="btn full" data-act="logcall" style="margin-bottom:10px">+ New request</button>'
     + summaryHtml()
     + (drafts.length ? '<h2 style="font-size:14px;margin:4px 2px 8px">Check and add</h2>' + drafts.map(reviewCard).join('') : '')
-    + '<h2 style="font-size:14px;margin:14px 2px 8px">All calls</h2><input type="search" id="cq" placeholder="Search calls" value="' + esc(S.cq) + '" aria-label="Search calls" autocomplete="off" style="margin-bottom:10px">'
-    + '<div class="card" style="padding:4px 10px">' + (list.length ? list.map(callRow).join('') : '<div class="soon">' + (S.calls.length ? 'No call matches.' : 'No calls logged yet. Tap “+ Log a call”, or add cards from Review.') + '</div>') + '</div>'
-    + '<p class="small muted">' + S.calls.length + (S.calls.length === 1 ? ' call' : ' calls') + ' · newest first</p></div>';
+    + '<h2 style="font-size:14px;margin:14px 2px 8px">All requests</h2><input type="search" id="cq" placeholder="Search requests" value="' + esc(S.cq) + '" aria-label="Search requests" autocomplete="off" style="margin-bottom:10px">'
+    + '<div class="card" style="padding:4px 10px">' + (list.length ? list.map(callRow).join('') : '<div class="soon">' + (S.calls.length ? 'No request matches.' : 'Nothing logged yet. Tap “+ New request”, or add cards from Review.') + '</div>') + '</div>'
+    + '<p class="small muted">' + S.calls.length + (S.calls.length === 1 ? ' request' : ' requests') + ' · newest first</p></div>';
   if (S._focusCq) { var el = $('cq'); el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
 }
 function nowLocal(){ var d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); }
 function openLogCall(cid){
-  S.picks.call = cid ? { id: cid } : {}; S.callDir = 'in';
+  S.picks.call = cid ? { id: cid } : {}; S.callDir = 'WhatsApp';
   $('sheet').innerHTML = '<div class="sheet" data-act="close-bg"><div class="box" role="dialog" aria-modal="true" aria-labelledby="ltitle"><form id="lf" novalidate>'
-    + '<h3 id="ltitle">Log a call<span class="sp"></span><button type="button" class="btn ghost sm" data-act="close">Cancel</button></h3>'
+    + '<h3 id="ltitle">New request<span class="sp"></span><button type="button" class="btn ghost sm" data-act="close">Cancel</button></h3>'
     + '<label>Customer</label><div id="lpick">' + pickerHtml('call', '') + '</div>'
     + '<div id="lnewphone"></div>'
-    + '<div class="row"><div><label>Direction</label><div class="seg" role="group" aria-label="Direction"><button type="button" class="on" data-dir="in" aria-pressed="true">In</button><button type="button" data-dir="out" aria-pressed="false">Out</button></div></div>'
-    + '<div><label for="l_dur">Minutes</label><input id="l_dur" type="number" inputmode="numeric" min="0" max="600" placeholder="optional"></div></div>'
+    + '<label>Came in by</label><div class="seg wrap" role="group" aria-label="Came in by">' + ['WhatsApp', 'Email', 'In person', 'Phone', 'Show', 'Other'].map(function (x, i) { return '<button type="button"' + (i ? '' : ' class="on"') + ' data-dir="' + x + '" aria-pressed="' + !i + '">' + x + '</button>'; }).join('') + '</div>'
     + '<label for="l_at">When</label><input id="l_at" type="datetime-local" value="' + nowLocal() + '">'
-    + '<label for="l_notes">Notes</label><textarea id="l_notes" style="min-height:130px" placeholder="Type, paste or dictate (tap the mic on your keyboard). Rough is fine."></textarea>'
+    + '<label for="l_notes">Notes</label><textarea id="l_notes" style="min-height:130px" placeholder="What do they want? Item, specs, budget, deadline. Type, paste or dictate; rough is fine."></textarea>'
     + '<div id="lerr"></div><button type="submit" class="btn full" id="lsave" style="margin-top:14px">Save &amp; summarise</button></form></div></div>';
   setTimeout(function () { var i = document.querySelector('[data-pickq="call"]'); (i || $('l_notes')).focus(); }, 50);
 }
@@ -442,7 +442,7 @@ function saveCall(){
   if (!notes) { err.innerHTML = '<div class="msg bad">Type or dictate your notes first.</div>'; $('l_notes').focus(); return; }
   btn.disabled = true; btn.textContent = 'Claude is summarising…';
   var at = $('l_at').value;   // phone's local time
-  call('logCall', { customerId: p.id || '', newName: p.newName || '', newPhone: ($('l_phone') || {}).value || '', direction: S.callDir, at: at, duration: $('l_dur').value, notes: notes }).then(function (r) {
+  call('logCall', { customerId: p.id || '', newName: p.newName || '', newPhone: ($('l_phone') || {}).value || '', channel: S.callDir, at: at, notes: notes }).then(function (r) {
     S.customers = r.customers || S.customers; replaceCard(r.card); closeForm(); S.view = 'calls'; render(); window.scrollTo(0, 0);
     toast('Summary ready. Check the tasks and tap Add.');
   }, function (e) { btn.disabled = false; btn.textContent = 'Save & summarise'; err.innerHTML = '<div class="msg bad">' + esc(e.message) + '</div>'; });
