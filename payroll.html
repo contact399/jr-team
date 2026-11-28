@@ -68,7 +68,7 @@ td.r,th.r{text-align:right}
 <script>
 (function(){
 'use strict';
-var S={tab:'run',staff:[],lines:[],hours:[],run:null,hp:null};
+var S={tab:'run',staff:[],lines:[],hours:[],loans:[],run:null,hp:null};
 var $=function(id){return document.getElementById(id)};
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function n(v){return Number(String(v==null?'':v).replace(/[$,\s]/g,''))||0}
@@ -97,47 +97,47 @@ function salFor(s,start,end){var full=per(s.rate);if(!s.start||s.start<=start)re
   var d=days(s.start,end),tot=days(start,end);return{amt:r2(full*d/tot),note:'Prorated: started '+fmtD(s.start)+' ('+d+' of '+tot+' days)'}}
 function calc(l){var rate=n(l.rate),base=l.type==='hourly'?r2(rate*n(l.regHrs)+rate*(n(l.otRate)||1.5)*n(l.otHrs)):r2(n(l.base));var gross=r2(base+n(l.bonus));return{base:base,gross:gross,pay:r2(gross+n(l.reimb)-n(l.deduct))}}
 
-function runs(){var m={};S.lines.forEach(function(l){var r=m[l.runId]||(m[l.runId]={runId:l.runId,start:l.start,end:l.end,payDate:l.payDate,status:l.status,lines:[],gross:0,pay:0});r.lines.push(l);r.gross+=n(l.gross);r.pay+=n(l.pay);if(l.status==='final')r.status='final'});
+function runs(){var m={};S.lines.forEach(function(l){var r=m[l.runId]||(m[l.runId]={runId:l.runId,start:l.start,end:l.end,payDate:l.payDate,status:l.status,lines:[],gross:0,pay:0});r.lines.push(l);r.gross+=n(l.gross);r.pay+=n(l.pay);if(l.status==='paid')r.status='paid';else if(l.status==='final'&&r.status!=='paid')r.status='final'});
   return Object.keys(m).map(function(k){return m[k]}).sort(function(a,b){return a.end<b.end?1:-1})}
 
-function take(r){S.staff=r.staff||[];S.lines=r.lines||[];S.hours=r.hours||[];S.today=r.today;if(r.sheetUrl){$('sheet').href=r.sheetUrl;$('sheet').hidden=false}
+function take(r){S.staff=r.staff||[];S.lines=r.lines||[];S.hours=r.hours||[];S.loans=r.loans||[];S.today=r.today;if(r.sheetUrl){$('sheet').href=r.sheetUrl;$('sheet').hidden=false}
   if(r.runId){S.run=runs().filter(function(x){return x.runId===r.runId})[0]||S.run}render()}
 function load(){return call('boot').then(function(r){take(r);if(!S.run)S.run=openDraft()||null;render()}).catch(function(e){$('main').innerHTML='<div class="msg bad">'+esc(e.message)+'</div>'})}
-function openDraft(){var d=runs().filter(function(r){return r.status!=='final'})[0];return d?clone(d):null}
+function openDraft(){var d=runs().filter(function(r){return r.status==='draft'})[0]||runs().filter(function(r){return r.status==='final'})[0];return d?clone(d):null}
 function clone(r){return JSON.parse(JSON.stringify(r))}
 
 function render(){
-  $('tabs').innerHTML=[['run','Pay run'],['hours','Hours'],['staff','Staff'],['history','History']].map(function(t){return'<button type="button" data-tab="'+t[0]+'"'+(S.tab===t[0]?' class="on"':'')+'>'+t[1]+'</button>'}).join('');
-  $('main').innerHTML=S.tab==='hours'?vHours():S.tab==='staff'?vStaff():S.tab==='history'?vHistory():vRun();
+  $('tabs').innerHTML=[['run','Pay run'],['hours','Hours'],['loans','Loans & bonuses'],['staff','Staff'],['history','History']].map(function(t){return'<button type="button" data-tab="'+t[0]+'"'+(S.tab===t[0]?' class="on"':'')+'>'+t[1]+'</button>'}).join('');
+  $('main').innerHTML=S.tab==='loans'?vLoans():S.tab==='hours'?vHours():S.tab==='staff'?vStaff():S.tab==='history'?vHistory():vRun();
 }
 
 /* ---------- pay run ---------- */
 function newRun(){
   var last=runs()[0],P=periodOf(last?addDays(last.end,1):S.today),start=P.start,end=P.end;
-  var lines=S.staff.filter(function(s){return s.active!=='no'&&!(s.start&&s.start>end)}).map(function(s){var sf=s.type==='salary'?salFor(s,start,end):{amt:'',note:''};return{empId:s.id,name:s.name,type:s.type,rate:s.rate,otRate:s.otRate,regHrs:'',otHrs:'',base:s.type==='salary'?String(sf.amt):'',bonus:'',reimb:'',deduct:'',note:sf.note,rokar:n(s.rokar)?String(n(s.rokar)):''}});
+  var lines=S.staff.filter(function(s){return s.active!=='no'&&!(s.start&&s.start>end)}).map(function(s){var sf=s.type==='salary'?salFor(s,start,end):{amt:'',note:''};return{empId:s.id,name:s.name,type:s.type,rate:s.rate,otRate:s.otRate,regHrs:'',otHrs:'',base:s.type==='salary'?String(sf.amt):'',reimb:'',deduct:'',note:sf.note,rokar:n(s.rokar)?String(n(s.rokar)):'',bonus:pendBonus(s.id)||''}});
   var R={runId:'',start:start,end:end,payDate:payDay(end),status:'draft',lines:lines};fillHours(R,true);return R;
 }
 function vRun(){
   if(!S.staff.length)return'<div class="msg">Add your staff first on the <b>Staff</b> tab.</div>';
   if(!S.run)return'<div class="card"><h2>No pay run open</h2><p class="muted">Start the next pay run (every other Friday, covering the 2 weeks up to that Friday). It picks up from the last one.</p><button class="btn primary" type="button" data-act="new">Start next pay run</button></div>';
-  var R=S.run,fin=R.status==='final',dis=fin?' disabled':'';
+  var R=S.run,fin=R.status==='final'||R.status==='paid',paid=R.status==='paid',dis=fin?' disabled':'';
   var tg=0,tp=0;R.lines.forEach(function(l){var c=calc(l);tg+=c.gross;tp+=c.pay});
-  var h='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 style="margin:0">'+(R.runId?'Pay run':'New pay run')+'</h2><span class="pill'+(fin?' final':'')+'">'+(fin?'Final':'Draft')+'</span></div>'+
+  var h='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 style="margin:0">'+(R.runId?'Pay run':'New pay run')+'</h2><span class="pill'+(fin?' final':'')+'">'+(paid?'Paid ✓':fin?'Final · not paid yet':'Draft')+'</span></div>'+
     '<div class="grid"><div><label>Period start</label><input type="date" data-r="start" value="'+esc(R.start)+'"'+dis+'></div><div><label>Period end</label><input type="date" data-r="end" value="'+esc(R.end)+'"'+dis+'></div><div><label>Pay date</label><input type="date" data-r="payDate" value="'+esc(R.payDate)+'"'+dis+'></div></div>'+
     '<div class="sum" style="margin-top:12px"><div><div class="l">Staff</div><div class="v">'+R.lines.length+'</div></div><div><div class="l">Earned</div><div class="v" id="tg">'+money(tg)+'</div></div><div><div class="l">Net pay to staff</div><div class="v" id="tp">'+money(tp)+'</div></div></div>'+
     '<div class="small muted" style="margin-top:6px">All amounts are net to the employee. Employer taxes are handled separately with the accountant.</div></div>';
   h+=R.lines.map(function(l,i){var c=calc(l),hr=l.type==='hourly';
     return'<div class="emp" data-i="'+i+'"><div class="hd"><b>'+esc(l.name)+'</b><span class="sub">'+(hr?money(l.rate)+'/hr':'Salary '+money(r2(n(l.rate)/12))+'/month · '+money(per(l.rate))+' per pay run')+'</span></div><div class="f">'+
       (hr?fld(i,'regHrs','Hours',l.regHrs,dis):fld(i,'base','Salary this period ($)',l.base,dis))+
-      fld(i,'bonus','Bonus ($)',l.bonus,dis)+fld(i,'reimb','Reimbursement ($)',l.reimb,dis)+fld(i,'deduct','Advance / deduction ($)',l.deduct,dis)+fld(i,'chase','From Chase ($)',String(r2(calc(l).pay-Math.min(Math.max(n(l.rokar),0),calc(l).pay))),dis)+fld(i,'rokar','From Rokar ($)',String(Math.min(Math.max(n(l.rokar),0),calc(l).pay)),dis)+
+      fld(i,'bonus','Bonus ($)',l.bonus,dis)+fld(i,'reimb','Reimbursement ($)',l.reimb,dis)+fld(i,'deduct','Advance / deduction ($)'+(loanBal(l.empId)?' · owes '+money(loanBal(l.empId)):''),l.deduct,dis)+fld(i,'chase','From Chase ($)',String(r2(calc(l).pay-Math.min(Math.max(n(l.rokar),0),calc(l).pay))),dis)+fld(i,'rokar','From Rokar ($)',String(Math.min(Math.max(n(l.rokar),0),calc(l).pay)),dis)+
       '</div><label>Note</label><input data-i="'+i+'" data-k="note" value="'+esc(l.note)+'"'+dis+'>'+
       '<div class="tot"><span class="muted">Earned <b id="g'+i+'">'+money(c.gross)+'</b></span><span>Net pay <b id="p'+i+'">'+money(c.pay)+'</b></span></div><div class="small muted" style="text-align:right" id="sp'+i+'">'+split(l)+'</div><div></div>'+
       (!fin?'<div style="text-align:right;margin-top:6px"><button type="button" class="btn sm" data-act="dropline" data-i="'+i+'">Remove from this run</button></div>':'')+'</div>'}).join('');
   var missing=S.staff.filter(function(s){return s.active!=='no'&&!R.lines.some(function(l){return l.empId===s.id})});
   if(!fin&&missing.length)h+='<div class="acts">'+missing.map(function(s){return'<button type="button" class="btn sm" data-act="addline" data-id="'+esc(s.id)+'">+ '+esc(s.name)+'</button>'}).join('')+'</div>';
-  h+='<div class="acts">'+(fin?'<button type="button" class="btn" data-act="reopen">Reopen</button>':
+  h+='<div class="acts">'+(fin?'<button type="button" class="btn" data-act="reopen">Reopen</button>'+(paid?'':'<span class="sp"></span><button type="button" class="btn primary" data-act="markpaid">Mark paid</button>'):
     (R.runId?'<button type="button" class="btn danger" data-act="delrun">Delete draft</button>':'')+'<span class="sp"></span><button type="button" class="btn" data-act="fillhrs">Fill hours from log</button><button type="button" class="btn" data-act="save">Save draft</button><button type="button" class="btn primary" data-act="final">Finalise</button>')+
-    '<button type="button" class="btn" data-act="pdf">PDF payslips</button>'+(fin?'<span class="sp"></span><button type="button" class="btn primary" data-act="new">Start next pay run</button>':'')+'</div>';
+    '<button type="button" class="btn" data-act="pdf">PDF payslips</button>'+(paid?'<span class="sp"></span><button type="button" class="btn primary" data-act="new">Start next pay run</button>':'')+'</div>'+(fin&&!paid?'<div class="msg">Finalised — nothing is in the Register yet. Tap <b>Mark paid</b> once you have paid everyone: Chase and Rokar payments are then recorded, and loan repayments and bonuses updated.</div>':'');
   return h;
 }
 function fld(i,k,lab,v,dis){return'<div><label>'+lab+'</label><input inputmode="decimal" data-i="'+i+'" data-k="'+k+'" value="'+esc(v)+'"'+dis+'></div>'}
@@ -155,10 +155,13 @@ document.addEventListener('click',function(e){
   var tb=e.target.closest('[data-tab]');if(tb){S.tab=tb.getAttribute('data-tab');render();return}
   var b=e.target.closest('[data-act]');if(!b)return;var a=b.getAttribute('data-act');
   if(a==='new'){S.run=newRun();S.tab='run';render()}
-  else if(a==='addline'){var s=S.staff.filter(function(x){return x.id===b.getAttribute('data-id')})[0];var sf=s.type==='salary'?salFor(s,S.run.start,S.run.end):{amt:'',note:''};S.run.lines.push({empId:s.id,name:s.name,type:s.type,rate:s.rate,otRate:s.otRate,regHrs:'',otHrs:'',base:s.type==='salary'?String(sf.amt):'',bonus:'',reimb:'',deduct:'',note:sf.note,rokar:n(s.rokar)?String(n(s.rokar)):''});render()}
+  else if(a==='addline'){var s=S.staff.filter(function(x){return x.id===b.getAttribute('data-id')})[0];var sf=s.type==='salary'?salFor(s,S.run.start,S.run.end):{amt:'',note:''};S.run.lines.push({empId:s.id,name:s.name,type:s.type,rate:s.rate,otRate:s.otRate,regHrs:'',otHrs:'',base:s.type==='salary'?String(sf.amt):'',reimb:'',deduct:'',note:sf.note,rokar:n(s.rokar)?String(n(s.rokar)):'',bonus:pendBonus(s.id)||''});render()}
   else if(a==='dropline'){S.run.lines.splice(+b.getAttribute('data-i'),1);render()}
-  else if(a==='save'||a==='final'){if(a==='final'&&!confirm('Finalise this pay run? It locks the amounts and adds each payment to the Register (Chase / Rokar).'))return;saveRun(a==='final'?'final':'draft',b)}
-  else if(a==='reopen'){saveRun('draft',b,true)}
+  else if(a==='save'||a==='final'){if(a==='final'&&!confirm('Finalise this pay run? It locks the amounts. Nothing goes in the Register until you tap Mark paid.'))return;saveRun(a==='final'?'final':'draft',b)}
+  else if(a==='reopen'){if(S.run.status==='paid'&&!confirm('This run is already paid and in the Register. Reopening will not remove those Register lines — fix them there if amounts change. Reopen?'))return;saveRun('draft',b,true)}
+  else if(a==='markpaid'){markPaid(b)}
+  else if(a==='lnew'){loanForm()}
+  else if(a==='ldel'){if(!confirm('Delete this entry? (Any Register line stays — remove it there if needed.)'))return;call('deleteLoan',b.getAttribute('data-id')).then(function(r){take(r);toast('Deleted')}).catch(function(x){toast(x.message,true)})}
   else if(a==='delrun'){if(!confirm('Delete this draft pay run?'))return;call('deleteRun',S.run.runId).then(function(r){S.run=null;take(r);toast('Deleted')}).catch(function(x){toast(x.message,true)})}
   else if(a==='pdf'){pdf(S.run)}
   else if(a==='fillhrs'){var k=fillHours(S.run,false);render();toast(k?'Hours filled for '+k+' staff':'No logged hours in this period',!k)}
@@ -174,13 +177,36 @@ document.addEventListener('click',function(e){
 });
 function saveRun(status,b,reopen){
   var R=S.run;b.disabled=true;
-  (status==='final'?logToRegister(R):Promise.resolve(0)).then(function(k){
-    return call('saveRun',{runId:R.runId,start:R.start,end:R.end,payDate:R.payDate,status:status,reopen:!!reopen,lines:R.lines}).then(function(r){
+  return call('saveRun',{runId:R.runId,start:R.start,end:R.end,payDate:R.payDate,status:status,reopen:!!reopen,lines:R.lines}).then(function(r){
       take(r);S.run=clone(runs().filter(function(x){return x.runId===r.runId})[0]||R);render();
-      toast(status==='final'?'Finalised'+(k?' · '+k+' payments added to Chase / Rokar':''):reopen?'Reopened':'Saved')})})
+      toast(status==='final'?'Finalised':status==='paid'?'Marked paid':reopen?'Reopened':'Saved');return r})
     .catch(function(x){b.disabled=false;toast(x.message,true)});
 }
-/* On Finalise: add each person's net pay to the Register — Chase part to Chase checking (matched when the bank file is
+function regBal(){return JR.rpc('reg','boot',['']).then(function(r){return r.balances||{}}).catch(function(){return null})}
+/* Mark paid: shows Chase / Rokar balances, then records every payment in the Register (Chase part on Chase …7081 — matched
+   when the bank file is imported — and Rokar part on Rokar), logs loan repayments taken off pay and marks bonuses as paid. */
+function markPaid(b){
+  var R=S.run,ch=0,rk=0;R.lines.forEach(function(l){var p=calc(l).pay,x=Math.min(Math.max(n(l.rokar),0),p);rk+=x;ch+=p-x});ch=r2(ch);rk=r2(rk);
+  b.disabled=true;b.textContent='Checking balances…';
+  regBal().then(function(bal){
+    var msg='Mark this pay run as paid on '+fmtD(R.payDate||R.end)+'?\n\nChase …7081: '+money(ch)+(bal?' (balance '+money(bal.CH7081||0)+' → '+money((bal.CH7081||0)-ch)+')':'')+
+      '\nRokar: '+money(rk)+(bal?' (balance '+money(bal.CASH||0)+' → '+money((bal.CASH||0)-rk)+')':'')+
+      (bal&&((bal.CASH||0)-rk<0)?'\n\n⚠ Rokar would go below zero.':'')+(bal&&((bal.CH7081||0)-ch<0)?'\n\n⚠ Chase would go below zero.':'')+
+      '\n\nThis records '+R.lines.length+' payments in the Register.';
+    b.disabled=false;b.textContent='Mark paid';
+    if(!confirm(msg))return;
+    b.disabled=true;b.textContent='Recording…';
+    return logToRegister(R).then(function(k){return loanUpdates(R).then(function(){return k})}).then(function(k){return saveRun('paid',b).then(function(){if(k)toast('Paid · '+k+' payments in the Register')})});
+  }).catch(function(x){b.disabled=false;b.textContent='Mark paid';toast(x.message,true)});
+}
+function loanUpdates(R){
+  var date=R.payDate||R.end,jobs=[];
+  R.lines.forEach(function(l){var bal=loanBal(l.empId),d=Math.min(n(l.deduct),bal);
+    if(d>0)jobs.push({kind:'repay',empId:l.empId,date:date,amount:d,account:'Payroll',note:'Taken off pay '+fmtD(R.start)+' – '+fmtD(R.end),runId:R.runId||'run'});
+    S.loans.filter(function(x){return x.kind==='bonus'&&x.empId===l.empId&&!x.runId}).forEach(function(x){if(n(l.bonus)>0)jobs.push({id:x.id,kind:'bonus',empId:x.empId,date:x.date,amount:x.amount,account:x.account,note:x.note,runId:R.runId||'run'})})});
+  return jobs.reduce(function(p,j){return p.then(function(){return call('saveLoan',j).then(take)})},Promise.resolve());
+}
+/* On Mark paid: add each person's net pay to the Register — Chase part to Chase checking (matched when the bank file is
    imported, not added twice) and the Rokar part to the Rokar (cash) account. Lines already logged are skipped. */
 function logToRegister(R){
   var per=fmtD(R.start)+' – '+fmtD(R.end),date=R.payDate||R.end,k=0;
@@ -230,6 +256,40 @@ function addHours(b){
 }
 document.addEventListener('change',function(e){var t=e.target;if(t.hasAttribute&&t.hasAttribute('data-hp')){var P=hperiod();P[t.getAttribute('data-hp')]=t.value;render()}});
 
+/* ---------- loans & bonuses ---------- */
+function loanBal(id){var b=0;S.loans.forEach(function(x){if(x.empId!==id)return;if(x.kind==='loan')b+=n(x.amount);else if(x.kind==='repay')b-=n(x.amount)});return r2(Math.max(0,b))}
+function pendBonus(id){var b=0;S.loans.forEach(function(x){if(x.empId===id&&x.kind==='bonus'&&!x.runId)b+=n(x.amount)});return r2(b)}
+var KIND={loan:'Loan given',repay:'Repayment',bonus:'Bonus'};
+function vLoans(){
+  var h='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 style="margin:0">Loans & bonuses</h2><button type="button" class="btn primary sm" data-act="lnew">+ Add</button></div>'+
+    '<table style="margin-top:8px"><tr><th>Name</th><th class="r">Loan owed</th><th class="r">Bonus to pay</th></tr>'+
+    S.staff.filter(function(s){return s.active!=='no'||loanBal(s.id)}).map(function(s){var lb=loanBal(s.id),pb=pendBonus(s.id);return'<tr><td>'+esc(s.name)+'</td><td class="r">'+(lb?'<b>'+money(lb)+'</b>':'—')+'</td><td class="r">'+(pb?money(pb):'—')+'</td></tr>'}).join('')+'</table>'+
+    '<div class="small muted" style="margin-top:8px">A loan is paid back by putting an amount in “Advance / deduction” on the pay run — it is taken off the balance when you tap Mark paid. A bonus is added to that person’s next pay run.</div></div>';
+  var list=S.loans.slice().sort(function(a,b){return a.date<b.date?1:-1});
+  h+='<div class="list">'+(list.length?list.map(function(x){return'<div class="row"><div><b>'+esc(x.name)+'</b> · '+KIND[x.kind]+'<div class="small muted">'+fmtD(x.date)+(x.account?' · '+esc(x.account==='CH7081'?'Chase':x.account==='CASH'?'Rokar':x.account):'')+(x.kind==='bonus'?(x.runId?' · paid with pay run':' · on next pay run'):'')+(x.note?' · '+esc(x.note):'')+'</div></div>'+
+    '<div style="display:flex;gap:8px;align-items:center"><b class="'+(x.kind==='loan'?'':'')+'">'+(x.kind==='repay'?'−':'')+money(x.amount)+'</b><button type="button" class="btn sm" data-act="ldel" data-id="'+esc(x.id)+'">✕</button></div></div>'}).join(''):'<div class="row muted">Nothing yet.</div>')+'</div>';
+  return h;
+}
+function loanForm(){
+  var d=document.createElement('div');d.className='sheet';
+  d.innerHTML='<div class="box"><h2>Loan or bonus</h2><label>Who</label><select id="lw">'+S.staff.filter(function(s){return s.active!=='no'}).map(function(s){return'<option value="'+esc(s.id)+'">'+esc(s.name)+'</option>'}).join('')+'</select>'+
+    '<label>What</label><select id="lk"><option value="loan">Loan / advance given now</option><option value="bonus">Bonus — add to next pay run</option><option value="repay">Repayment received now (cash or bank)</option></select>'+
+    '<div class="grid"><div><label>Amount ($)</label><input id="la" inputmode="decimal"></div><div><label>Date</label><input type="date" id="ld" value="'+esc(S.today)+'"></div></div>'+
+    '<div id="lacc"><label>Paid from / into</label><select id="lc"><option value="CH7081">Chase …7081</option><option value="CASH">Rokar</option></select></div>'+
+    '<label>Note</label><input id="ln" placeholder="Optional">'+
+    '<div class="small muted" id="lhint" style="margin-top:6px"></div>'+
+    '<div class="acts"><span class="sp"></span><button type="button" class="btn" id="lx">Cancel</button><button type="button" class="btn primary" id="lv">Save</button></div></div>';
+  document.body.appendChild(d);var q=function(x){return d.querySelector(x)};
+  function sw(){var k=q('#lk').value;q('#lacc').hidden=k==='bonus';q('#lhint').textContent=k==='loan'?'Recorded in the Register now (money out of Chase or Rokar).':k==='repay'?'Recorded in the Register now (money into Chase or Rokar).':'Paid with their next pay run; recorded in the Register when you tap Mark paid.'}
+  q('#lk').onchange=sw;sw();q('#lx').onclick=function(){d.remove()};
+  q('#lv').onclick=function(){var b=this,k=q('#lk').value,amt=n(q('#la').value),st=S.staff.filter(function(s){return s.id===q('#lw').value})[0];
+    if(!(amt>0)){toast('Enter an amount.',true);return}
+    var o={kind:k,empId:st.id,date:q('#ld').value,amount:amt,account:k==='bonus'?'':q('#lc').value,note:q('#ln').value};
+    b.disabled=true;
+    var reg=k==='bonus'?Promise.resolve(''):JR.rpc('reg','add',[[{date:o.date,account:o.account,dir:k==='loan'?'out':'in',amount:amt,category:'Loans',type:k==='loan'?'Lent money':'Repayment received',party:st.name,notes:(k==='loan'?'Staff loan':'Staff loan repaid')+(o.note?' — '+o.note:''),uploadify:'',source:'manual'}]]).then(function(r){return(r&&r[0]&&r[0].id)||'logged'});
+    reg.then(function(id){o.regId=id;return call('saveLoan',o)}).then(function(r){d.remove();take(r);toast('Saved')}).catch(function(x){b.disabled=false;toast(x.message,true)})};
+}
+
 /* ---------- staff ---------- */
 function vStaff(){
   var rows=S.staff.map(function(s){var hr=s.type==='hourly';return'<tr data-act="staff" data-id="'+esc(s.id)+'" style="cursor:pointer"><td><b>'+esc(s.name)+'</b>'+(s.active==='no'?' <span class="pill">inactive</span>':'')+'</td><td>'+(hr?'Hourly':'Full time')+'</td>'+
@@ -264,10 +324,10 @@ function staffForm(s){
 /* ---------- history ---------- */
 function vHistory(){
   var rs=runs(),y=String(new Date().getFullYear()),ytd={};
-  rs.filter(function(r){return r.status==='final'&&(r.payDate||r.end).slice(0,4)===y}).forEach(function(r){r.lines.forEach(function(l){var o=ytd[l.name]||(ytd[l.name]={g:0,p:0,n:0});o.g+=n(l.gross);o.p+=n(l.pay);o.n++})});
+  rs.filter(function(r){return r.status!=='draft'&&(r.payDate||r.end).slice(0,4)===y}).forEach(function(r){r.lines.forEach(function(l){var o=ytd[l.name]||(ytd[l.name]={g:0,p:0,n:0});o.g+=n(l.gross);o.p+=n(l.pay);o.n++})});
   var h='<div class="card"><h2>'+y+' year to date</h2><p class="small muted">Final pay runs only.</p><table><tr><th>Name</th><th class="r">Runs</th><th class="r">Earned</th><th class="r">Net paid</th></tr>'+
     (Object.keys(ytd).length?Object.keys(ytd).sort().map(function(k){return'<tr><td>'+esc(k)+'</td><td class="r">'+ytd[k].n+'</td><td class="r">'+money(ytd[k].g)+'</td><td class="r">'+money(ytd[k].p)+'</td></tr>'}).join(''):'<tr><td colspan="4" class="muted">Nothing final yet this year.</td></tr>')+'</table></div>';
-  h+='<div class="list">'+(rs.length?rs.map(function(r){return'<div class="row" data-act="openrun" data-id="'+esc(r.runId)+'"><div><b>'+fmtD(r.start)+' – '+fmtD(r.end)+'</b> <span class="pill'+(r.status==='final'?' final':'')+'">'+(r.status==='final'?'Final':'Draft')+'</span><div class="small muted">Pay date '+fmtD(r.payDate)+' · '+r.lines.length+' staff</div></div><div style="text-align:right"><b>'+money(r.pay)+'</b><div class="small muted">earned '+money(r.gross)+'</div></div></div>'}).join(''):'<div class="row muted">No pay runs yet.</div>')+'</div>';
+  h+='<div class="list">'+(rs.length?rs.map(function(r){return'<div class="row" data-act="openrun" data-id="'+esc(r.runId)+'"><div><b>'+fmtD(r.start)+' – '+fmtD(r.end)+'</b> <span class="pill'+(r.status!=='draft'?' final':'')+'">'+(r.status==='paid'?'Paid':r.status==='final'?'Final · not paid':'Draft')+'</span><div class="small muted">Pay date '+fmtD(r.payDate)+' · '+r.lines.length+' staff</div></div><div style="text-align:right"><b>'+money(r.pay)+'</b><div class="small muted">earned '+money(r.gross)+'</div></div></div>'}).join(''):'<div class="row muted">No pay runs yet.</div>')+'</div>';
   return h;
 }
 
