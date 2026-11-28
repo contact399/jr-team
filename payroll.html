@@ -79,6 +79,7 @@ function toast(t,bad){var d=document.createElement('div');d.className='toast';d.
 function addDays(d,k){var x=new Date(d+'T12:00:00');x.setDate(x.getDate()+k);return x.toISOString().slice(0,10)}
 function fmtD(d){if(!d)return'';var x=new Date(d+'T12:00:00');return x.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}
 function per(a){return r2(n(a)/24)}
+function payDay(end){return +end.slice(8,10)<=15?end.slice(0,8)+'20':addDays(end,5)}
 var DN=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 function dow(d){return (new Date(d+'T12:00:00').getDay()+6)%7+1}
 function stdDay(s){var a=hm(s.from),b=hm(s.to);if(a==null||b==null)return 0;var m=b-a;if(m<0)m+=1440;return r2(Math.max(0,m-n(s.brk))/60)}
@@ -112,7 +113,7 @@ function render(){
 function newRun(){
   var last=runs()[0],P=periodOf(last?addDays(last.end,1):S.today),start=P.start,end=P.end;
   var lines=S.staff.filter(function(s){return s.active!=='no'&&!(s.start&&s.start>end)}).map(function(s){var sf=s.type==='salary'?salFor(s,start,end):{amt:'',note:''};return{empId:s.id,name:s.name,type:s.type,rate:s.rate,otRate:s.otRate,regHrs:'',otHrs:'',base:s.type==='salary'?String(sf.amt):'',bonus:'',reimb:'',deduct:'',note:sf.note}});
-  var R={runId:'',start:start,end:end,payDate:end,status:'draft',lines:lines};fillHours(R,true);return R;
+  var R={runId:'',start:start,end:end,payDate:payDay(end),status:'draft',lines:lines};fillHours(R,true);return R;
 }
 function vRun(){
   if(!S.staff.length)return'<div class="msg">Add your staff first on the <b>Staff</b> tab.</div>';
@@ -162,7 +163,7 @@ document.addEventListener('click',function(e){
     if(!list.length){toast('Nothing to add — those days are already logged.');return}
     if(!confirm('Log '+list.length+' standard days ('+r2(list.length*stdDay(st))+' h) for '+st.name+'? You can delete any day they were off.'))return;
     b.disabled=true;call('saveHoursMany',list).then(function(r){take(r);toast('Logged '+list.length+' days')}).catch(function(x){b.disabled=false;toast(x.message,true)})}
-  else if(a==='hdel'){if(!confirm('Delete this time entry?'))return;call('deleteHours',b.getAttribute('data-id')).then(function(r){take(r);toast('Deleted')}).catch(function(x){toast(x.message,true)})}
+  else if(a==='hdel'){var hx=S.hours.filter(function(x){return x.id===b.getAttribute('data-id')})[0]||{};if(!confirm(/^Standard/.test(hx.note||'')&&n(hx.hours)?'Mark '+fmtD(hx.date)+' as a day off?':hx.note==='Off'?'Undo the day off? The standard hours come back.':'Delete this time entry?'))return;call('deleteHours',b.getAttribute('data-id')).then(function(r){take(r);toast('Deleted')}).catch(function(x){toast(x.message,true)})}
   else if(a==='staff'){staffForm(S.staff.filter(function(x){return x.id===b.getAttribute('data-id')})[0]||null)}
   else if(a==='openrun'){var r=runs().filter(function(x){return x.runId===b.getAttribute('data-id')})[0];if(r){S.run=clone(r);S.tab='run';render()}}
 });
@@ -178,9 +179,11 @@ function saveRun(status,b,reopen){
 function monday(d){var x=new Date(d+'T12:00:00'),k=(x.getDay()+6)%7;x.setDate(x.getDate()-k);return x.toISOString().slice(0,10)}
 function logged(empId,start,end){var wk={},tot=0;S.hours.forEach(function(h){if(h.empId!==empId||h.date<start||h.date>end)return;var w=monday(h.date);wk[w]=(wk[w]||0)+n(h.hours);tot+=n(h.hours)});
   return{total:r2(tot),reg:r2(tot),ot:0,weeks:wk}}
-function fillHours(R,onlyEmpty){var k=0;R.lines.forEach(function(l){if(l.type!=='hourly')return;if(onlyEmpty&&(n(l.regHrs)||n(l.otHrs)))return;var g=logged(l.empId,R.start,R.end),st=S.staff.filter(function(x){return x.id===l.empId})[0];
-  if(g.total){l.regHrs=String(g.reg);l.otHrs='';if(/^Standard hours/.test(l.note||''))l.note='';k++;return}
-  var sd=st?schedDays(st,R.start,R.end):[];if(!sd.length)return;l.regHrs=String(r2(sd.length*stdDay(st)));l.otHrs='';l.note='Standard hours: '+sd.length+' days × '+stdDay(st)+' h';k++});return k}
+function fillHours(R,onlyEmpty){var k=0;R.lines.forEach(function(l){if(l.type!=='hourly')return;if(onlyEmpty&&(n(l.regHrs)||n(l.otHrs)))return;
+  var st=S.staff.filter(function(x){return x.id===l.empId})[0],have={},tot=0,logd=0,std=0;
+  S.hours.forEach(function(h){if(h.empId===l.empId&&h.date>=R.start&&h.date<=R.end){have[h.date]=1;tot+=n(h.hours);logd++}});
+  if(st)schedDays(st,R.start,R.end).forEach(function(d){if(!have[d]){tot+=stdDay(st);std++}});
+  if(!logd&&!std)return;l.regHrs=String(r2(tot));l.otHrs='';l.note=std?(logd?logd+' days logged + '+std+' standard days to come':'Standard hours: '+std+' days × '+stdDay(st)+' h'):'';k++});return k}
 function hperiod(){if(S.hp)return S.hp;var R=S.run;if(R&&R.status!=='final')return S.hp={start:R.start,end:R.end};var last=runs()[0];return S.hp=periodOf(last?addDays(last.end,1):S.today)}
 function hm(t){var m=/^(\d{1,2}):(\d{2})$/.exec(t||'');return m?(+m[1])*60+(+m[2]):null}
 function vHours(){
@@ -194,10 +197,10 @@ function vHours(){
   h+='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2 style="margin:0">Hours logged</h2><span class="small muted">'+fmtD(P.start)+' – '+fmtD(P.end)+'</span></div>'+
     '<div class="grid"><div><label>From</label><input type="date" data-hp="start" value="'+esc(P.start)+'"></div><div><label>To</label><input type="date" data-hp="end" value="'+esc(P.end)+'"></div></div>';
   hs.forEach(function(s){var g=logged(s.id,P.start,P.end),list=S.hours.filter(function(x){return x.empId===s.id&&x.date>=P.start&&x.date<=P.end}).sort(function(a,b){return a.date<b.date?-1:1});
-    h+='<div class="emp" style="margin-top:10px"><div class="hd"><b>'+esc(s.name)+'</b><span><b>'+g.total+' h</b>'+'</span></div>'+(schedText(s)?'<div class="small muted">Standard: '+esc(schedText(s))+' <button type="button" class="btn sm" data-act="hstd" data-id="'+esc(s.id)+'">Log standard hours to today</button></div>':'')+
-      (list.length?'<table>'+list.map(function(x){return'<tr><td>'+fmtD(x.date)+'</td><td class="small muted">'+(x.start&&x.end?esc(x.start)+'–'+esc(x.end):'')+(x.note?' · '+esc(x.note):'')+'</td><td class="r"><b>'+esc(x.hours)+' h</b></td><td class="r"><button type="button" class="btn sm" data-act="hdel" data-id="'+esc(x.id)+'">✕</button></td></tr>'}).join('')+'</table>':'<div class="small muted">No hours logged in this period.</div>')+
+    h+='<div class="emp" style="margin-top:10px"><div class="hd"><b>'+esc(s.name)+'</b><span><b>'+g.total+' h</b>'+'</span></div>'+(schedText(s)?'<div class="small muted">Standard: '+esc(schedText(s))+' <button type="button" class="btn sm" data-act="hstd" data-id="'+esc(s.id)+'">Log standard hours up to today</button></div>':'')+
+      (list.length?'<table>'+list.map(function(x){return'<tr><td>'+fmtD(x.date)+'</td><td class="small muted">'+(x.start&&x.end?esc(x.start)+'–'+esc(x.end):'')+(x.note?' · '+esc(x.note):'')+'</td><td class="r"><b>'+(x.note==='Off'?'Off':esc(x.hours)+' h')+'</b></td><td class="r"><button type="button" class="btn sm" data-act="hdel" data-id="'+esc(x.id)+'" title="'+(x.note==='Off'?'Undo day off':/^Standard/.test(x.note)?'Mark day off':'Delete')+'">'+(x.note==='Off'?'↺':'✕')+'</button></td></tr>'}).join('')+'</table>':'<div class="small muted">No hours logged in this period.</div>')+
       Object.keys(g.weeks).sort().map(function(w){return'<div class="small muted">Week of '+fmtD(w)+': '+r2(g.weeks[w])+' h</div>'}).join('')+'</div>'});
-  return h+'<div class="small muted" style="margin-top:8px">"Fill hours from log" on the pay run copies these in.</div></div>';
+  return h+'<div class="small muted" style="margin-top:8px">Standard days are logged automatically at the end of each week. Tap ✕ on a day to mark it off. "Fill hours from log" on the pay run copies these in.</div></div>';
 }
 function addHours(b){
   var s=$('hs').value,f=$('hf').value,hrs=n($('hh').value);
