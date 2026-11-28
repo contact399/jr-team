@@ -77,7 +77,9 @@ function call(fn){var a=[].slice.call(arguments,1);return JR.rpc('payroll',fn,a)
 function toast(t,bad){var d=document.createElement('div');d.className='toast';d.textContent=t;if(bad)d.style.background='var(--bad)';document.body.appendChild(d);setTimeout(function(){d.remove()},bad?5000:2200)}
 function addDays(d,k){var x=new Date(d+'T12:00:00');x.setDate(x.getDate()+k);return x.toISOString().slice(0,10)}
 function fmtD(d){if(!d)return'';var x=new Date(d+'T12:00:00');return x.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}
-function per(a){return r2(n(a)/26)}
+function per(a){return r2(n(a)/24)}
+function eom(d){var x=new Date(d.slice(0,7)+'-01T12:00:00');x.setMonth(x.getMonth()+1);x.setDate(0);return x.toISOString().slice(0,10)}
+function periodOf(d){return +d.slice(8,10)<=15?{start:d.slice(0,8)+'01',end:d.slice(0,8)+'15'}:{start:d.slice(0,8)+'16',end:eom(d)}}
 function days(a,b){return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/864e5)+1}
 function salFor(s,start,end){var full=per(s.rate);if(!s.start||s.start<=start)return{amt:full,note:''};if(s.start>end)return{amt:0,note:'Starts '+fmtD(s.start)};
   var d=days(s.start,end),tot=days(start,end);return{amt:r2(full*d/tot),note:'Prorated: started '+fmtD(s.start)+' ('+d+' of '+tot+' days)'}}
@@ -99,13 +101,13 @@ function render(){
 
 /* ---------- pay run ---------- */
 function newRun(){
-  var last=runs()[0],start=last?addDays(last.end,1):addDays(S.today,-13),end=addDays(start,13);
+  var last=runs()[0],P=periodOf(last?addDays(last.end,1):S.today),start=P.start,end=P.end;
   var lines=S.staff.filter(function(s){return s.active!=='no'&&!(s.start&&s.start>end)}).map(function(s){var sf=s.type==='salary'?salFor(s,start,end):{amt:'',note:''};return{empId:s.id,name:s.name,type:s.type,rate:s.rate,otRate:s.otRate,regHrs:'',otHrs:'',base:s.type==='salary'?String(sf.amt):'',bonus:'',reimb:'',deduct:'',note:sf.note}});
-  var R={runId:'',start:start,end:end,payDate:addDays(end,5),status:'draft',lines:lines};fillHours(R,true);return R;
+  var R={runId:'',start:start,end:end,payDate:end,status:'draft',lines:lines};fillHours(R,true);return R;
 }
 function vRun(){
   if(!S.staff.length)return'<div class="msg">Add your staff first on the <b>Staff</b> tab.</div>';
-  if(!S.run)return'<div class="card"><h2>No pay run open</h2><p class="muted">Start the next 2-week pay run. It picks up from the last one.</p><button class="btn primary" type="button" data-act="new">Start next pay run</button></div>';
+  if(!S.run)return'<div class="card"><h2>No pay run open</h2><p class="muted">Start the next pay run (1st–15th or 16th–end of month). It picks up from the last one.</p><button class="btn primary" type="button" data-act="new">Start next pay run</button></div>';
   var R=S.run,fin=R.status==='final',dis=fin?' disabled':'';
   var tg=0,tp=0;R.lines.forEach(function(l){var c=calc(l);tg+=c.gross;tp+=c.pay});
   var h='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 style="margin:0">'+(R.runId?'Pay run':'New pay run')+'</h2><span class="pill'+(fin?' final':'')+'">'+(fin?'Final':'Draft')+'</span></div>'+
@@ -113,7 +115,7 @@ function vRun(){
     '<div class="sum" style="margin-top:12px"><div><div class="l">Staff</div><div class="v">'+R.lines.length+'</div></div><div><div class="l">Earned</div><div class="v" id="tg">'+money(tg)+'</div></div><div><div class="l">Net pay to staff</div><div class="v" id="tp">'+money(tp)+'</div></div></div>'+
     '<div class="small muted" style="margin-top:6px">All amounts are net to the employee. Employer taxes are handled separately with the accountant.</div></div>';
   h+=R.lines.map(function(l,i){var c=calc(l),hr=l.type==='hourly';
-    return'<div class="emp" data-i="'+i+'"><div class="hd"><b>'+esc(l.name)+'</b><span class="sub">'+(hr?money(l.rate)+'/hr':'Salary '+money(l.rate)+'/yr · '+money(per(l.rate))+' per 2 weeks')+'</span></div><div class="f">'+
+    return'<div class="emp" data-i="'+i+'"><div class="hd"><b>'+esc(l.name)+'</b><span class="sub">'+(hr?money(l.rate)+'/hr':'Salary '+money(l.rate)+'/yr · '+money(per(l.rate))+' per pay run')+'</span></div><div class="f">'+
       (hr?fld(i,'regHrs','Hours',l.regHrs,dis):fld(i,'base','Salary this period ($)',l.base,dis))+
       fld(i,'bonus','Bonus ($)',l.bonus,dis)+fld(i,'reimb','Reimbursement ($)',l.reimb,dis)+fld(i,'deduct','Advance / deduction ($)',l.deduct,dis)+
       '</div><label>Note</label><input data-i="'+i+'" data-k="note" value="'+esc(l.note)+'"'+dis+'>'+
@@ -163,7 +165,7 @@ function monday(d){var x=new Date(d+'T12:00:00'),k=(x.getDay()+6)%7;x.setDate(x.
 function logged(empId,start,end){var wk={},tot=0;S.hours.forEach(function(h){if(h.empId!==empId||h.date<start||h.date>end)return;var w=monday(h.date);wk[w]=(wk[w]||0)+n(h.hours);tot+=n(h.hours)});
   return{total:r2(tot),reg:r2(tot),ot:0,weeks:wk}}
 function fillHours(R,onlyEmpty){var k=0;R.lines.forEach(function(l){if(l.type!=='hourly')return;var g=logged(l.empId,R.start,R.end);if(!g.total)return;if(onlyEmpty&&(n(l.regHrs)||n(l.otHrs)))return;l.regHrs=String(g.reg);l.otHrs='';k++});return k}
-function hperiod(){if(S.hp)return S.hp;var R=S.run;if(R&&R.status!=='final')return S.hp={start:R.start,end:R.end};var last=runs()[0],st=last?addDays(last.end,1):addDays(S.today,-13);return S.hp={start:st,end:addDays(st,13)}}
+function hperiod(){if(S.hp)return S.hp;var R=S.run;if(R&&R.status!=='final')return S.hp={start:R.start,end:R.end};var last=runs()[0];return S.hp=periodOf(last?addDays(last.end,1):S.today)}
 function hm(t){var m=/^(\d{1,2}):(\d{2})$/.exec(t||'');return m?(+m[1])*60+(+m[2]):null}
 function vHours(){
   var hs=S.staff.filter(function(s){return s.type==='hourly'&&s.active!=='no'});
@@ -194,7 +196,7 @@ document.addEventListener('change',function(e){var t=e.target;if(t.hasAttribute&
 function vStaff(){
   var rows=S.staff.map(function(s){var hr=s.type==='hourly';return'<tr data-act="staff" data-id="'+esc(s.id)+'" style="cursor:pointer"><td><b>'+esc(s.name)+'</b>'+(s.active==='no'?' <span class="pill">inactive</span>':'')+'</td><td>'+(hr?'Hourly':'Full time')+'</td>'+
     '<td class="r">'+(hr?money(s.rate):'—')+'</td><td class="r">'+(hr?'—':money(s.rate))+'</td><td class="r">'+(hr?'—':money(per(s.rate)))+'</td><td class="r muted">Edit ›</td></tr>'}).join('');
-  return'<div class="card" style="overflow-x:auto"><table><tr><th>Name</th><th>Type</th><th class="r">Hourly rate (net)</th><th class="r">Annual salary (net)</th><th class="r">Per 2 weeks</th><th></th></tr>'+
+  return'<div class="card" style="overflow-x:auto"><table><tr><th>Name</th><th>Type</th><th class="r">Hourly rate (net)</th><th class="r">Annual salary (net)</th><th class="r">Per pay run</th><th></th></tr>'+
     (rows||'<tr><td colspan="6" class="muted">No staff yet.</td></tr>')+'</table></div>'+
     '<div class="acts"><button type="button" class="btn primary" data-act="staff">+ Add staff</button></div>';
 }
@@ -210,7 +212,7 @@ function staffForm(s){
     '<div class="acts"><span class="sp"></span><button type="button" class="btn" id="sx">Cancel</button><button type="button" class="btn primary" id="sv">Save</button></div></div>';
   document.body.appendChild(d);var q=function(x){return d.querySelector(x)};
   d.querySelectorAll('[data-ty]').forEach(function(b){b.onclick=function(){q('#st').value=b.getAttribute('data-ty');sw()}});
-  function sw(){var h=q('#st').value==='hourly';d.querySelectorAll('[data-ty]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-ty')===q('#st').value)});q('#bh').hidden=!h;q('#bs').hidden=h;q('#spp').textContent=n(q('#srs').value)?'= '+money(per(q('#srs').value))+' per 2-week pay run':''}
+  function sw(){var h=q('#st').value==='hourly';d.querySelectorAll('[data-ty]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-ty')===q('#st').value)});q('#bh').hidden=!h;q('#bs').hidden=h;q('#spp').textContent=n(q('#srs').value)?'= '+money(per(q('#srs').value))+' per pay run (twice a month)':''}
   q('#srs').oninput=sw;sw();
   q('#sx').onclick=function(){d.remove()};
   q('#sv').onclick=function(){var b=this;b.disabled=true;
