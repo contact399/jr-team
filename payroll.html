@@ -50,6 +50,7 @@ input,select,textarea{font:inherit;font-size:16px;padding:9px;border:1px solid v
 table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
 td,th{padding:8px;border-bottom:1px solid var(--line);text-align:left}th{font-size:12px;color:var(--muted);font-weight:600}
 td.r,th.r{text-align:right}
+.seg{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden}.seg button{flex:1;border:0;background:var(--card);font:inherit;font-weight:600;padding:11px;color:var(--ink)}.seg button.on{background:var(--navy);color:#fff}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#1b1d21;color:#fff;padding:10px 16px;border-radius:999px;z-index:80;font-size:14px}
 .sheet{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:60;display:flex;align-items:flex-end;justify-content:center}
 .sheet .box{background:var(--card);width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px}
@@ -66,7 +67,7 @@ td.r,th.r{text-align:right}
 <script>
 (function(){
 'use strict';
-var S={tab:'run',staff:[],lines:[],run:null};
+var S={tab:'run',staff:[],lines:[],hours:[],run:null,hp:null};
 var $=function(id){return document.getElementById(id)};
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function n(v){return Number(String(v==null?'':v).replace(/[$,\s]/g,''))||0}
@@ -82,22 +83,22 @@ function calc(l){var rate=n(l.rate),base=l.type==='hourly'?r2(rate*n(l.regHrs)+r
 function runs(){var m={};S.lines.forEach(function(l){var r=m[l.runId]||(m[l.runId]={runId:l.runId,start:l.start,end:l.end,payDate:l.payDate,status:l.status,lines:[],gross:0,pay:0});r.lines.push(l);r.gross+=n(l.gross);r.pay+=n(l.pay);if(l.status==='final')r.status='final'});
   return Object.keys(m).map(function(k){return m[k]}).sort(function(a,b){return a.end<b.end?1:-1})}
 
-function take(r){S.staff=r.staff||[];S.lines=r.lines||[];S.today=r.today;if(r.sheetUrl){$('sheet').href=r.sheetUrl;$('sheet').hidden=false}
+function take(r){S.staff=r.staff||[];S.lines=r.lines||[];S.hours=r.hours||[];S.today=r.today;if(r.sheetUrl){$('sheet').href=r.sheetUrl;$('sheet').hidden=false}
   if(r.runId){S.run=runs().filter(function(x){return x.runId===r.runId})[0]||S.run}render()}
 function load(){return call('boot').then(function(r){take(r);if(!S.run)S.run=openDraft()||null;render()}).catch(function(e){$('main').innerHTML='<div class="msg bad">'+esc(e.message)+'</div>'})}
 function openDraft(){var d=runs().filter(function(r){return r.status!=='final'})[0];return d?clone(d):null}
 function clone(r){return JSON.parse(JSON.stringify(r))}
 
 function render(){
-  $('tabs').innerHTML=[['run','Pay run'],['staff','Staff'],['history','History']].map(function(t){return'<button type="button" data-tab="'+t[0]+'"'+(S.tab===t[0]?' class="on"':'')+'>'+t[1]+'</button>'}).join('');
-  $('main').innerHTML=S.tab==='staff'?vStaff():S.tab==='history'?vHistory():vRun();
+  $('tabs').innerHTML=[['run','Pay run'],['hours','Hours'],['staff','Staff'],['history','History']].map(function(t){return'<button type="button" data-tab="'+t[0]+'"'+(S.tab===t[0]?' class="on"':'')+'>'+t[1]+'</button>'}).join('');
+  $('main').innerHTML=S.tab==='hours'?vHours():S.tab==='staff'?vStaff():S.tab==='history'?vHistory():vRun();
 }
 
 /* ---------- pay run ---------- */
 function newRun(){
   var last=runs()[0],start=last?addDays(last.end,1):addDays(S.today,-13),end=addDays(start,13);
   var lines=S.staff.filter(function(s){return s.active!=='no'}).map(function(s){return{empId:s.id,name:s.name,type:s.type,rate:s.rate,otRate:s.otRate,regHrs:'',otHrs:'',base:s.type==='salary'?per(s.rate):'',bonus:'',reimb:'',deduct:'',note:''}});
-  return{runId:'',start:start,end:end,payDate:addDays(end,5),status:'draft',lines:lines};
+  var R={runId:'',start:start,end:end,payDate:addDays(end,5),status:'draft',lines:lines};fillHours(R,true);return R;
 }
 function vRun(){
   if(!S.staff.length)return'<div class="msg">Add your staff first on the <b>Staff</b> tab.</div>';
@@ -118,7 +119,7 @@ function vRun(){
   var missing=S.staff.filter(function(s){return s.active!=='no'&&!R.lines.some(function(l){return l.empId===s.id})});
   if(!fin&&missing.length)h+='<div class="acts">'+missing.map(function(s){return'<button type="button" class="btn sm" data-act="addline" data-id="'+esc(s.id)+'">+ '+esc(s.name)+'</button>'}).join('')+'</div>';
   h+='<div class="acts">'+(fin?'<button type="button" class="btn" data-act="reopen">Reopen</button>':
-    (R.runId?'<button type="button" class="btn danger" data-act="delrun">Delete draft</button>':'')+'<span class="sp"></span><button type="button" class="btn" data-act="save">Save draft</button><button type="button" class="btn primary" data-act="final">Finalise</button>')+
+    (R.runId?'<button type="button" class="btn danger" data-act="delrun">Delete draft</button>':'')+'<span class="sp"></span><button type="button" class="btn" data-act="fillhrs">Fill hours from log</button><button type="button" class="btn" data-act="save">Save draft</button><button type="button" class="btn primary" data-act="final">Finalise</button>')+
     '<button type="button" class="btn" data-act="pdf">PDF payslips</button>'+(fin?'<span class="sp"></span><button type="button" class="btn primary" data-act="new">Start next pay run</button>':'')+'</div>';
   return h;
 }
@@ -140,6 +141,9 @@ document.addEventListener('click',function(e){
   else if(a==='reopen'){saveRun('draft',b,true)}
   else if(a==='delrun'){if(!confirm('Delete this draft pay run?'))return;call('deleteRun',S.run.runId).then(function(r){S.run=null;take(r);toast('Deleted')}).catch(function(x){toast(x.message,true)})}
   else if(a==='pdf'){pdf(S.run)}
+  else if(a==='fillhrs'){var k=fillHours(S.run,false);render();toast(k?'Hours filled for '+k+' staff':'No logged hours in this period',!k)}
+  else if(a==='hadd'){addHours(b)}
+  else if(a==='hdel'){if(!confirm('Delete this time entry?'))return;call('deleteHours',b.getAttribute('data-id')).then(function(r){take(r);toast('Deleted')}).catch(function(x){toast(x.message,true)})}
   else if(a==='staff'){staffForm(S.staff.filter(function(x){return x.id===b.getAttribute('data-id')})[0]||null)}
   else if(a==='openrun'){var r=runs().filter(function(x){return x.runId===b.getAttribute('data-id')})[0];if(r){S.run=clone(r);S.tab='run';render()}}
 });
@@ -150,26 +154,64 @@ function saveRun(status,b,reopen){
     .catch(function(x){b.disabled=false;toast(x.message,true)});
 }
 
+
+/* ---------- hour log ---------- */
+function monday(d){var x=new Date(d+'T12:00:00'),k=(x.getDay()+6)%7;x.setDate(x.getDate()-k);return x.toISOString().slice(0,10)}
+function logged(empId,start,end){var wk={},tot=0;S.hours.forEach(function(h){if(h.empId!==empId||h.date<start||h.date>end)return;var w=monday(h.date);wk[w]=(wk[w]||0)+n(h.hours);tot+=n(h.hours)});
+  var ot=0;Object.keys(wk).forEach(function(w){ot+=Math.max(0,wk[w]-40)});return{total:r2(tot),reg:r2(tot-ot),ot:r2(ot),weeks:wk}}
+function fillHours(R,onlyEmpty){var k=0;R.lines.forEach(function(l){if(l.type!=='hourly')return;var g=logged(l.empId,R.start,R.end);if(!g.total)return;if(onlyEmpty&&(n(l.regHrs)||n(l.otHrs)))return;l.regHrs=String(g.reg);l.otHrs=g.ot?String(g.ot):'';k++});return k}
+function hperiod(){if(S.hp)return S.hp;var R=S.run;if(R&&R.status!=='final')return S.hp={start:R.start,end:R.end};var last=runs()[0],st=last?addDays(last.end,1):addDays(S.today,-13);return S.hp={start:st,end:addDays(st,13)}}
+function hm(t){var m=/^(\d{1,2}):(\d{2})$/.exec(t||'');return m?(+m[1])*60+(+m[2]):null}
+function vHours(){
+  var hs=S.staff.filter(function(s){return s.type==='hourly'&&s.active!=='no'});
+  if(!hs.length)return'<div class="msg">No hourly staff yet. Add someone as <b>Hourly</b> on the Staff tab.</div>';
+  var P=hperiod();
+  var h='<div class="card"><h2>Log hours</h2><div class="grid"><div><label>Who</label><select id="he">'+hs.map(function(s){return'<option value="'+esc(s.id)+'"'+(S.hlast===s.id?' selected':'')+'>'+esc(s.name)+'</option>'}).join('')+'</select></div>'+
+    '<div><label>Date</label><input type="date" id="hd" value="'+esc(S.hdate||S.today)+'"></div><div><label>Start</label><input type="time" id="hs"></div><div><label>End</label><input type="time" id="hf"></div>'+
+    '<div><label>Break (minutes)</label><input id="hb" inputmode="numeric" placeholder="0"></div><div><label>Or total hours</label><input id="hh" inputmode="decimal" placeholder="e.g. 8"></div></div>'+
+    '<label>Note</label><input id="hn" placeholder="Optional"><div class="acts"><span class="sp"></span><button type="button" class="btn primary" data-act="hadd">Add hours</button></div></div>';
+  h+='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2 style="margin:0">Hours logged</h2><span class="small muted">'+fmtD(P.start)+' – '+fmtD(P.end)+'</span></div>'+
+    '<div class="grid"><div><label>From</label><input type="date" data-hp="start" value="'+esc(P.start)+'"></div><div><label>To</label><input type="date" data-hp="end" value="'+esc(P.end)+'"></div></div>';
+  hs.forEach(function(s){var g=logged(s.id,P.start,P.end),list=S.hours.filter(function(x){return x.empId===s.id&&x.date>=P.start&&x.date<=P.end}).sort(function(a,b){return a.date<b.date?-1:1});
+    h+='<div class="emp" style="margin-top:10px"><div class="hd"><b>'+esc(s.name)+'</b><span><b>'+g.total+' h</b>'+(g.ot?' <span class="small muted">('+g.reg+' regular · '+g.ot+' overtime)</span>':'')+'</span></div>'+
+      (list.length?'<table>'+list.map(function(x){return'<tr><td>'+fmtD(x.date)+'</td><td class="small muted">'+(x.start&&x.end?esc(x.start)+'–'+esc(x.end):'')+(x.note?' · '+esc(x.note):'')+'</td><td class="r"><b>'+esc(x.hours)+' h</b></td><td class="r"><button type="button" class="btn sm" data-act="hdel" data-id="'+esc(x.id)+'">✕</button></td></tr>'}).join('')+'</table>':'<div class="small muted">No hours logged in this period.</div>')+
+      Object.keys(g.weeks).sort().map(function(w){return'<div class="small muted">Week of '+fmtD(w)+': '+r2(g.weeks[w])+' h'+(g.weeks[w]>40?' — '+r2(g.weeks[w]-40)+' h overtime':'')+'</div>'}).join('')+'</div>'});
+  return h+'<div class="small muted" style="margin-top:8px">Overtime = hours over 40 in a Monday–Sunday week. "Fill hours from log" on the pay run copies these in.</div></div>';
+}
+function addHours(b){
+  var s=$('hs').value,f=$('hf').value,hrs=n($('hh').value);
+  if(!hrs&&hm(s)!=null&&hm(f)!=null){var mins=hm(f)-hm(s);if(mins<0)mins+=1440;hrs=r2((mins-n($('hb').value))/60)}
+  if(!(hrs>0)){toast('Enter start and end times, or the hours.',true);return}
+  S.hlast=$('he').value;S.hdate=$('hd').value;b.disabled=true;
+  call('saveHours',{empId:$('he').value,date:$('hd').value,start:s,end:f,hours:hrs,note:$('hn').value}).then(function(r){take(r);toast('Logged '+hrs+' h')}).catch(function(x){b.disabled=false;toast(x.message,true)});
+}
+document.addEventListener('change',function(e){var t=e.target;if(t.hasAttribute&&t.hasAttribute('data-hp')){var P=hperiod();P[t.getAttribute('data-hp')]=t.value;render()}});
+
 /* ---------- staff ---------- */
 function vStaff(){
-  return'<div class="list">'+(S.staff.length?S.staff.map(function(s){return'<div class="row" data-act="staff" data-id="'+esc(s.id)+'"><div><b>'+esc(s.name)+'</b>'+(s.active==='no'?' <span class="pill">inactive</span>':'')+'<div class="small muted">'+(s.type==='hourly'?money(s.rate)+'/hr':'Salary '+money(s.rate)+'/yr · '+money(per(s.rate))+' per 2 weeks')+(s.start?' · since '+fmtD(s.start):'')+'</div></div><span class="muted">Edit ›</span></div>'}).join(''):'<div class="row muted">No staff yet.</div>')+'</div>'+
+  var rows=S.staff.map(function(s){var hr=s.type==='hourly';return'<tr data-act="staff" data-id="'+esc(s.id)+'" style="cursor:pointer"><td><b>'+esc(s.name)+'</b>'+(s.active==='no'?' <span class="pill">inactive</span>':'')+'</td><td>'+(hr?'Hourly':'Full time')+'</td>'+
+    '<td class="r">'+(hr?money(s.rate):'—')+'</td><td class="r">'+(hr?'—':money(s.rate))+'</td><td class="r">'+(hr?'—':money(per(s.rate)))+'</td><td class="r muted">Edit ›</td></tr>'}).join('');
+  return'<div class="card" style="overflow-x:auto"><table><tr><th>Name</th><th>Type</th><th class="r">Hourly rate</th><th class="r">Annual salary</th><th class="r">Per 2 weeks</th><th></th></tr>'+
+    (rows||'<tr><td colspan="6" class="muted">No staff yet.</td></tr>')+'</table></div>'+
     '<div class="acts"><button type="button" class="btn primary" data-act="staff">+ Add staff</button></div>';
 }
 function staffForm(s){
   s=s||{type:'salary',otRate:'1.5',active:'yes'};var d=document.createElement('div');d.className='sheet';
   d.innerHTML='<div class="box"><h2>'+(s.id?'Edit':'Add')+' staff</h2><label>Name</label><input id="sn" value="'+esc(s.name)+'">'+
-    '<label>Paid by</label><select id="st"><option value="salary"'+(s.type!=='hourly'?' selected':'')+'>Salary</option><option value="hourly"'+(s.type==='hourly'?' selected':'')+'>Hourly</option></select>'+
-    '<label id="srl">'+(s.type==='hourly'?'Current hourly rate ($)':'Current annual salary ($)')+'</label><input id="sr" inputmode="decimal" value="'+esc(s.rate)+'">'+
-    '<label>Overtime multiplier (hourly)</label><input id="so" inputmode="decimal" value="'+esc(s.otRate||'1.5')+'">'+
+    '<label>Employee type</label><input type="hidden" id="st" value="'+(s.type==='hourly'?'hourly':'salary')+'"><div class="seg"><button type="button" data-ty="salary">Full time (salary)</button><button type="button" data-ty="hourly">Hourly</button></div>'+
+    '<div id="bh"><label>Hourly rate ($ per hour)</label><input id="srh" inputmode="decimal" value="'+(s.type==='hourly'?esc(s.rate):'')+'"><label>Overtime multiplier</label><input id="so" inputmode="decimal" value="'+esc(s.otRate||'1.5')+'"></div>'+
+    '<div id="bs"><label>Annual salary ($ per year)</label><input id="srs" inputmode="decimal" value="'+(s.type!=='hourly'?esc(s.rate):'')+'"><div class="small muted" id="spp"></div></div>'+
     '<label>Start date</label><input type="date" id="ss" value="'+esc(s.start)+'">'+
     '<label>Status</label><select id="sa"><option value="yes">Active</option><option value="no"'+(s.active==='no'?' selected':'')+'>Inactive</option></select>'+
     '<label>Note</label><input id="snote" value="'+esc(s.note)+'">'+
     '<div class="acts"><span class="sp"></span><button type="button" class="btn" id="sx">Cancel</button><button type="button" class="btn primary" id="sv">Save</button></div></div>';
   document.body.appendChild(d);var q=function(x){return d.querySelector(x)};
-  q('#st').onchange=function(){q('#srl').textContent=this.value==='hourly'?'Current hourly rate ($)':'Current annual salary ($)'};
+  d.querySelectorAll('[data-ty]').forEach(function(b){b.onclick=function(){q('#st').value=b.getAttribute('data-ty');sw()}});
+  function sw(){var h=q('#st').value==='hourly';d.querySelectorAll('[data-ty]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-ty')===q('#st').value)});q('#bh').hidden=!h;q('#bs').hidden=h;q('#spp').textContent=n(q('#srs').value)?'= '+money(per(q('#srs').value))+' per 2-week pay run':''}
+  q('#srs').oninput=sw;sw();
   q('#sx').onclick=function(){d.remove()};
   q('#sv').onclick=function(){var b=this;b.disabled=true;
-    call('saveStaff',{id:s.id||'',name:q('#sn').value,type:q('#st').value,rate:n(q('#sr').value),otRate:n(q('#so').value)||1.5,start:q('#ss').value,active:q('#sa').value,note:q('#snote').value})
+    call('saveStaff',{id:s.id||'',name:q('#sn').value,type:q('#st').value,rate:n(q('#st').value==='hourly'?q('#srh').value:q('#srs').value),otRate:n(q('#so').value)||1.5,start:q('#ss').value,active:q('#sa').value,note:q('#snote').value})
       .then(function(r){d.remove();take(r);toast('Saved')}).catch(function(x){b.disabled=false;toast(x.message,true)})};
 }
 
