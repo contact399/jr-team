@@ -78,7 +78,7 @@ function call(fn){var a=[].slice.call(arguments,1);return JR.rpc('payroll',fn,a)
 function toast(t,bad){var d=document.createElement('div');d.className='toast';d.textContent=t;if(bad)d.style.background='var(--bad)';document.body.appendChild(d);setTimeout(function(){d.remove()},bad?5000:2200)}
 function addDays(d,k){var x=new Date(d+'T12:00:00');x.setDate(x.getDate()+k);return x.toISOString().slice(0,10)}
 function fmtD(d){if(!d)return'';var x=new Date(d+'T12:00:00');return x.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}
-function per(a){return r2(n(a)/24)}
+function per(a){return r2(n(a)/26)}   // paid every other Friday: 26 pay runs a year
 function split(l){var p=calc(l).pay,rk=Math.min(Math.max(n(l.rokar),0),p);return'Chase <b>'+money(r2(p-rk))+'</b> + Rokar <b>'+money(rk)+'</b> = <b>'+money(p)+'</b>'+(l.regIds?' · <span style="color:var(--ok)">✓ in Register</span>':'')}
 function payDay(end){return end}
 var DN=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
@@ -311,7 +311,7 @@ function staffForm(s){
     '<div class="acts"><span class="sp"></span><button type="button" class="btn" id="sx">Cancel</button><button type="button" class="btn primary" id="sv">Save</button></div></div>';
   document.body.appendChild(d);var q=function(x){return d.querySelector(x)};
   d.querySelectorAll('[data-ty]').forEach(function(b){b.onclick=function(){q('#st').value=b.getAttribute('data-ty');sw()}});
-  function sw(){var h=q('#st').value==='hourly';d.querySelectorAll('[data-ty]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-ty')===q('#st').value)});q('#bh').hidden=!h;q('#bs').hidden=h;q('#spp').textContent=n(q('#srs').value)?'= '+money(r2(n(q('#srs').value)/2))+' per pay run (every 2 weeks)':''}
+  function sw(){var h=q('#st').value==='hourly';d.querySelectorAll('[data-ty]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-ty')===q('#st').value)});q('#bh').hidden=!h;q('#bs').hidden=h;q('#spp').textContent=n(q('#srs').value)?'= '+money(r2(n(q('#srs').value)*12/26))+' per pay run (every 2 weeks)':''}
   q('#srs').oninput=sw;sw();
   function sd(){var x={from:q('#sfrom').value,to:q('#sto').value,brk:q('#sbrk').value};var h=stdDay(x);q('#sday').textContent=h?'= '+h+' hours a day':''}
   ['#sfrom','#sto','#sbrk'].forEach(function(k){q(k).oninput=sd});sd();
