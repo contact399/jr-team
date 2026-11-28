@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<title>JR Team · Payroll</title><script>window.JR_MOD="payroll";</script><script src="jr.js"></script>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://script.google.com"><link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
+<meta name="theme-color" content="#1F3D33"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{--bg:#f6f5f2;--card:#fff;--ink:#1b1d21;--muted:#62666d;--line:#e3e1dc;--gold:#a8790f;--gold-soft:#f6ecd4;--navy:#1f3864;
+  --ok:#1d7a46;--ok-soft:#e3f3e9;--bad:#b3261e;--bad-soft:#fbe6e4}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:14px 14px 80px}
+.crumb{font-size:13px;color:var(--muted);display:flex;gap:10px;align-items:center}
+.crumb a{color:var(--navy);text-decoration:none;font-weight:600}
+h1{font-size:28px;margin:4px 0 10px}
+h2{font-size:20px;margin:0 0 8px}
+.tabs{display:flex;gap:6px;margin:0 0 14px;flex-wrap:wrap}
+.tabs button{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 14px;border-radius:999px;font:inherit;font-weight:600}
+.tabs button.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+label{display:block;font-size:12px;color:var(--muted);margin:8px 0 3px}
+input,select,textarea{font:inherit;font-size:16px;padding:9px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);width:100%}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.btn{font:inherit;font-weight:600;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:10px 15px;cursor:pointer}
+.btn.primary{background:var(--navy);border-color:var(--navy);color:#fff}
+.btn.danger{color:var(--bad)}
+.btn.sm{padding:6px 11px;font-size:14px}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}.acts .sp{flex:1}
+.emp{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--card)}
+.emp .hd{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.emp .hd b{font-size:16px}
+.emp .sub{font-size:13px;color:var(--muted)}
+.emp .f{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
+.emp .tot{display:flex;justify-content:flex-end;gap:16px;margin-top:8px;font-variant-numeric:tabular-nums}
+.emp .tot b{font-size:17px}
+.sum{display:flex;gap:18px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.sum div{min-width:110px}.sum .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}.sum .v{font-size:22px;font-weight:700}
+.pill{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;background:var(--gold-soft);color:var(--gold);font-weight:600}
+.pill.final{background:var(--ok-soft);color:var(--ok)}
+.row{display:flex;justify-content:space-between;gap:10px;padding:11px 12px;border-bottom:1px solid var(--line);cursor:pointer;align-items:center}
+.list{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--card)}
+.list .row:last-child{border-bottom:0}
+.muted{color:var(--muted)}.small{font-size:13px}
+.msg{padding:12px;border-radius:12px;background:var(--gold-soft);margin:10px 0}
+.msg.bad{background:var(--bad-soft);color:var(--bad)}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+td,th{padding:8px;border-bottom:1px solid var(--line);text-align:left}th{font-size:12px;color:var(--muted);font-weight:600}
+td.r,th.r{text-align:right}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#1b1d21;color:#fff;padding:10px 16px;border-radius:999px;z-index:80;font-size:14px}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:60;display:flex;align-items:flex-end;justify-content:center}
+.sheet .box{background:var(--card);width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px}
+@media(min-width:700px){.sheet{align-items:center}.sheet .box{border-radius:18px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="crumb"><a href="register.html">‹ Register</a><span>›</span><span>Payroll</span><a id="sheet" target="_blank" rel="noopener" style="margin-left:auto" hidden>Open sheet</a></div>
+  <h1>Payroll</h1>
+  <div class="tabs" id="tabs"></div>
+  <div id="main"><div class="muted">Loading…</div></div>
+</div>
+<script>
+(function(){
+'use strict';
+var S={tab:'run',staff:[],lines:[],run:null};
+var $=function(id){return document.getElementById(id)};
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function n(v){return Number(String(v==null?'':v).replace(/[$,\s]/g,''))||0}
+function r2(v){return Math.round(v*100)/100}
+function money(v){return '$'+r2(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function call(fn){var a=[].slice.call(arguments,1);return JR.rpc('payroll',fn,a)}
+function toast(t,bad){var d=document.createElement('div');d.className='toast';d.textContent=t;if(bad)d.style.background='var(--bad)';document.body.appendChild(d);setTimeout(function(){d.remove()},bad?5000:2200)}
+function addDays(d,k){var x=new Date(d+'T12:00:00');x.setDate(x.getDate()+k);return x.toISOString().slice(0,10)}
+function fmtD(d){if(!d)return'';var x=new Date(d+'T12:00:00');return x.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}
+function per(a){return r2(n(a)/26)}
+function calc(l){var rate=n(l.rate),base=l.type==='hourly'?r2(rate*n(l.regHrs)+rate*(n(l.otRate)||1.5)*n(l.otHrs)):r2(n(l.base));var gross=r2(base+n(l.bonus));return{base:base,gross:gross,pay:r2(gross+n(l.reimb)-n(l.deduct))}}
+
+function runs(){var m={};S.lines.forEach(function(l){var r=m[l.runId]||(m[l.runId]={runId:l.runId,start:l.start,end:l.end,payDate:l.payDate,status:l.status,lines:[],gross:0,pay:0});r.lines.push(l);r.gross+=n(l.gross);r.pay+=n(l.pay);if(l.status==='final')r.status='final'});
+  return Object.keys(m).map(function(k){return m[k]}).sort(function(a,b){return a.end<b.end?1:-1})}
+
+function take(r){S.staff=r.staff||[];S.lines=r.lines||[];S.today=r.today;if(r.sheetUrl){$('sheet').href=r.sheetUrl;$('sheet').hidden=false}
+  if(r.runId){S.run=runs().filter(function(x){return x.runId===r.runId})[0]||S.run}render()}
+function load(){return call('boot').then(function(r){take(r);if(!S.run)S.run=openDraft()||null;render()}).catch(function(e){$('main').innerHTML='<div class="msg bad">'+esc(e.message)+'</div>'})}
+function openDraft(){var d=runs().filter(function(r){return r.status!=='final'})[0];return d?clone(d):null}
+function clone(r){return JSON.parse(JSON.stringify(r))}
+
+function render(){
+  $('tabs').innerHTML=[['run','Pay run'],['staff','Staff'],['history','History']].map(function(t){return'<button type="button" data-tab="'+t[0]+'"'+(S.tab===t[0]?' class="on"':'')+'>'+t[1]+'</button>'}).join('');
+  $('main').innerHTML=S.tab==='staff'?vStaff():S.tab==='history'?vHistory():vRun();
+}
+
+/* ---------- pay run ---------- */
+function newRun(){
+  var last=runs()[0],start=last?addDays(last.end,1):addDays(S.today,-13),end=addDays(start,13);
+  var lines=S.staff.filter(function(s){return s.active!=='no'}).map(function(s){return{empId:s.id,name:s.name,type:s.type,rate:s.rate,otRate:s.otRate,regHrs:'',otHrs:'',base:s.type==='salary'?per(s.rate):'',bonus:'',reimb:'',deduct:'',note:''}});
+  return{runId:'',start:start,end:end,payDate:addDays(end,5),status:'draft',lines:lines};
+}
+function vRun(){
+  if(!S.staff.length)return'<div class="msg">Add your staff first on the <b>Staff</b> tab.</div>';
+  if(!S.run)return'<div class="card"><h2>No pay run open</h2><p class="muted">Start the next 2-week pay run. It picks up from the last one.</p><button class="btn primary" type="button" data-act="new">Start next pay run</button></div>';
+  var R=S.run,fin=R.status==='final',dis=fin?' disabled':'';
+  var tg=0,tp=0;R.lines.forEach(function(l){var c=calc(l);tg+=c.gross;tp+=c.pay});
+  var h='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 style="margin:0">'+(R.runId?'Pay run':'New pay run')+'</h2><span class="pill'+(fin?' final':'')+'">'+(fin?'Final':'Draft')+'</span></div>'+
+    '<div class="grid"><div><label>Period start</label><input type="date" data-r="start" value="'+esc(R.start)+'"'+dis+'></div><div><label>Period end</label><input type="date" data-r="end" value="'+esc(R.end)+'"'+dis+'></div><div><label>Pay date</label><input type="date" data-r="payDate" value="'+esc(R.payDate)+'"'+dis+'></div></div>'+
+    '<div class="sum" style="margin-top:12px"><div><div class="l">Staff</div><div class="v">'+R.lines.length+'</div></div><div><div class="l">Gross pay</div><div class="v" id="tg">'+money(tg)+'</div></div><div><div class="l">To pay out</div><div class="v" id="tp">'+money(tp)+'</div></div></div>'+
+    '<div class="small muted" style="margin-top:6px">Before taxes. Withholding is done by your accountant / payroll provider.</div></div>';
+  h+=R.lines.map(function(l,i){var c=calc(l),hr=l.type==='hourly';
+    return'<div class="emp" data-i="'+i+'"><div class="hd"><b>'+esc(l.name)+'</b><span class="sub">'+(hr?money(l.rate)+'/hr · overtime ×'+esc(l.otRate||1.5):'Salary '+money(l.rate)+'/yr · '+money(per(l.rate))+' per 2 weeks')+'</span></div><div class="f">'+
+      (hr?fld(i,'regHrs','Regular hours',l.regHrs,dis)+fld(i,'otHrs','Overtime hours',l.otHrs,dis):fld(i,'base','Salary this period ($)',l.base,dis))+
+      fld(i,'bonus','Bonus ($)',l.bonus,dis)+fld(i,'reimb','Reimbursement ($)',l.reimb,dis)+fld(i,'deduct','Advance / deduction ($)',l.deduct,dis)+
+      '</div><label>Note</label><input data-i="'+i+'" data-k="note" value="'+esc(l.note)+'"'+dis+'>'+
+      '<div class="tot"><span class="muted">Gross <b id="g'+i+'">'+money(c.gross)+'</b></span><span>Pay <b id="p'+i+'">'+money(c.pay)+'</b></span></div>'+
+      (!fin?'<div style="text-align:right;margin-top:6px"><button type="button" class="btn sm" data-act="dropline" data-i="'+i+'">Remove from this run</button></div>':'')+'</div>'}).join('');
+  var missing=S.staff.filter(function(s){return s.active!=='no'&&!R.lines.some(function(l){return l.empId===s.id})});
+  if(!fin&&missing.length)h+='<div class="acts">'+missing.map(function(s){return'<button type="button" class="btn sm" data-act="addline" data-id="'+esc(s.id)+'">+ '+esc(s.name)+'</button>'}).join('')+'</div>';
+  h+='<div class="acts">'+(fin?'<button type="button" class="btn" data-act="reopen">Reopen</button>':
+    (R.runId?'<button type="button" class="btn danger" data-act="delrun">Delete draft</button>':'')+'<span class="sp"></span><button type="button" class="btn" data-act="save">Save draft</button><button type="button" class="btn primary" data-act="final">Finalise</button>')+
+    '<button type="button" class="btn" data-act="pdf">PDF payslips</button>'+(fin?'<span class="sp"></span><button type="button" class="btn primary" data-act="new">Start next pay run</button>':'')+'</div>';
+  return h;
+}
+function fld(i,k,lab,v,dis){return'<div><label>'+lab+'</label><input inputmode="decimal" data-i="'+i+'" data-k="'+k+'" value="'+esc(v)+'"'+dis+'></div>'}
+
+document.addEventListener('input',function(e){
+  var t=e.target;if(!S.run)return;
+  if(t.hasAttribute('data-r')){S.run[t.getAttribute('data-r')]=t.value;return}
+  if(t.hasAttribute('data-k')){var i=+t.getAttribute('data-i'),l=S.run.lines[i];l[t.getAttribute('data-k')]=t.value;var c=calc(l);$('g'+i).textContent=money(c.gross);$('p'+i).textContent=money(c.pay);
+    var tg=0,tp=0;S.run.lines.forEach(function(x){var y=calc(x);tg+=y.gross;tp+=y.pay});$('tg').textContent=money(tg);$('tp').textContent=money(tp)}
+});
+document.addEventListener('click',function(e){
+  var tb=e.target.closest('[data-tab]');if(tb){S.tab=tb.getAttribute('data-tab');render();return}
+  var b=e.target.closest('[data-act]');if(!b)return;var a=b.getAttribute('data-act');
+  if(a==='new'){S.run=newRun();S.tab='run';render()}
+  else if(a==='addline'){var s=S.staff.filter(function(x){return x.id===b.getAttribute('data-id')})[0];S.run.lines.push({empId:s.id,name:s.name,type:s.type,rate:s.rate,otRate:s.otRate,regHrs:'',otHrs:'',base:s.type==='salary'?per(s.rate):'',bonus:'',reimb:'',deduct:'',note:''});render()}
+  else if(a==='dropline'){S.run.lines.splice(+b.getAttribute('data-i'),1);render()}
+  else if(a==='save'||a==='final'){if(a==='final'&&!confirm('Finalise this pay run? It locks the amounts (you can reopen it later).'))return;saveRun(a==='final'?'final':'draft',b)}
+  else if(a==='reopen'){saveRun('draft',b,true)}
+  else if(a==='delrun'){if(!confirm('Delete this draft pay run?'))return;call('deleteRun',S.run.runId).then(function(r){S.run=null;take(r);toast('Deleted')}).catch(function(x){toast(x.message,true)})}
+  else if(a==='pdf'){pdf(S.run)}
+  else if(a==='staff'){staffForm(S.staff.filter(function(x){return x.id===b.getAttribute('data-id')})[0]||null)}
+  else if(a==='openrun'){var r=runs().filter(function(x){return x.runId===b.getAttribute('data-id')})[0];if(r){S.run=clone(r);S.tab='run';render()}}
+});
+function saveRun(status,b,reopen){
+  var R=S.run;b.disabled=true;
+  call('saveRun',{runId:R.runId,start:R.start,end:R.end,payDate:R.payDate,status:status,reopen:!!reopen,lines:R.lines})
+    .then(function(r){take(r);S.run=clone(runs().filter(function(x){return x.runId===r.runId})[0]||R);render();toast(status==='final'?'Finalised':reopen?'Reopened':'Saved')})
+    .catch(function(x){b.disabled=false;toast(x.message,true)});
+}
+
+/* ---------- staff ---------- */
+function vStaff(){
+  return'<div class="list">'+(S.staff.length?S.staff.map(function(s){return'<div class="row" data-act="staff" data-id="'+esc(s.id)+'"><div><b>'+esc(s.name)+'</b>'+(s.active==='no'?' <span class="pill">inactive</span>':'')+'<div class="small muted">'+(s.type==='hourly'?money(s.rate)+'/hr':'Salary '+money(s.rate)+'/yr · '+money(per(s.rate))+' per 2 weeks')+(s.start?' · since '+fmtD(s.start):'')+'</div></div><span class="muted">Edit ›</span></div>'}).join(''):'<div class="row muted">No staff yet.</div>')+'</div>'+
+    '<div class="acts"><button type="button" class="btn primary" data-act="staff">+ Add staff</button></div>';
+}
+function staffForm(s){
+  s=s||{type:'salary',otRate:'1.5',active:'yes'};var d=document.createElement('div');d.className='sheet';
+  d.innerHTML='<div class="box"><h2>'+(s.id?'Edit':'Add')+' staff</h2><label>Name</label><input id="sn" value="'+esc(s.name)+'">'+
+    '<label>Paid by</label><select id="st"><option value="salary"'+(s.type!=='hourly'?' selected':'')+'>Salary</option><option value="hourly"'+(s.type==='hourly'?' selected':'')+'>Hourly</option></select>'+
+    '<label id="srl">'+(s.type==='hourly'?'Current hourly rate ($)':'Current annual salary ($)')+'</label><input id="sr" inputmode="decimal" value="'+esc(s.rate)+'">'+
+    '<label>Overtime multiplier (hourly)</label><input id="so" inputmode="decimal" value="'+esc(s.otRate||'1.5')+'">'+
+    '<label>Start date</label><input type="date" id="ss" value="'+esc(s.start)+'">'+
+    '<label>Status</label><select id="sa"><option value="yes">Active</option><option value="no"'+(s.active==='no'?' selected':'')+'>Inactive</option></select>'+
+    '<label>Note</label><input id="snote" value="'+esc(s.note)+'">'+
+    '<div class="acts"><span class="sp"></span><button type="button" class="btn" id="sx">Cancel</button><button type="button" class="btn primary" id="sv">Save</button></div></div>';
+  document.body.appendChild(d);var q=function(x){return d.querySelector(x)};
+  q('#st').onchange=function(){q('#srl').textContent=this.value==='hourly'?'Current hourly rate ($)':'Current annual salary ($)'};
+  q('#sx').onclick=function(){d.remove()};
+  q('#sv').onclick=function(){var b=this;b.disabled=true;
+    call('saveStaff',{id:s.id||'',name:q('#sn').value,type:q('#st').value,rate:n(q('#sr').value),otRate:n(q('#so').value)||1.5,start:q('#ss').value,active:q('#sa').value,note:q('#snote').value})
+      .then(function(r){d.remove();take(r);toast('Saved')}).catch(function(x){b.disabled=false;toast(x.message,true)})};
+}
+
+/* ---------- history ---------- */
+function vHistory(){
+  var rs=runs(),y=String(new Date().getFullYear()),ytd={};
+  rs.filter(function(r){return r.status==='final'&&(r.payDate||r.end).slice(0,4)===y}).forEach(function(r){r.lines.forEach(function(l){var o=ytd[l.name]||(ytd[l.name]={g:0,p:0,n:0});o.g+=n(l.gross);o.p+=n(l.pay);o.n++})});
+  var h='<div class="card"><h2>'+y+' year to date</h2><p class="small muted">Final pay runs only.</p><table><tr><th>Name</th><th class="r">Runs</th><th class="r">Gross</th><th class="r">Paid out</th></tr>'+
+    (Object.keys(ytd).length?Object.keys(ytd).sort().map(function(k){return'<tr><td>'+esc(k)+'</td><td class="r">'+ytd[k].n+'</td><td class="r">'+money(ytd[k].g)+'</td><td class="r">'+money(ytd[k].p)+'</td></tr>'}).join(''):'<tr><td colspan="4" class="muted">Nothing final yet this year.</td></tr>')+'</table></div>';
+  h+='<div class="list">'+(rs.length?rs.map(function(r){return'<div class="row" data-act="openrun" data-id="'+esc(r.runId)+'"><div><b>'+fmtD(r.start)+' – '+fmtD(r.end)+'</b> <span class="pill'+(r.status==='final'?' final':'')+'">'+(r.status==='final'?'Final':'Draft')+'</span><div class="small muted">Pay date '+fmtD(r.payDate)+' · '+r.lines.length+' staff</div></div><div style="text-align:right"><b>'+money(r.pay)+'</b><div class="small muted">gross '+money(r.gross)+'</div></div></div>'}).join(''):'<div class="row muted">No pay runs yet.</div>')+'</div>';
+  return h;
+}
+
+/* ---------- PDF payslips ---------- */
+function jspdf(){return window.jspdf?Promise.resolve(window.jspdf):new Promise(function(res,rej){var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';s.onload=function(){res(window.jspdf)};s.onerror=function(){rej(new Error('Could not load the PDF maker.'))};document.head.appendChild(s)})}
+function pdf(R){
+  jspdf().then(function(J){
+    var doc=new J.jsPDF({unit:'pt',format:'letter'}),W=612,per=fmtD(R.start)+' – '+fmtD(R.end);
+    function head(t){doc.setFont('times','bold');doc.setFontSize(20);doc.text('Jupiter Rain, Inc.',50,60);doc.setFont('helvetica','normal');doc.setFontSize(10);doc.text('580 5th Avenue, Floor 21, New York, NY 10036',50,76);doc.setFontSize(14);doc.setFont('helvetica','bold');doc.text(t,50,110);doc.setFont('helvetica','normal');doc.setFontSize(10);doc.text('Pay period '+per+'   ·   Pay date '+fmtD(R.payDate)+(R.status!=='final'?'   ·   DRAFT':''),50,126)}
+    function line(y,a,b,bold){doc.setFont('helvetica',bold?'bold':'normal');doc.text(a,50,y);doc.text(b,W-50,y,{align:'right'})}
+    head('Payroll summary');var y=160,tg=0,tp=0;line(y,'Name','Gross  /  Pay',true);y+=18;
+    R.lines.forEach(function(l){var c=calc(l);tg+=c.gross;tp+=c.pay;line(y,l.name,money(c.gross)+'  /  '+money(c.pay));y+=16});
+    y+=6;line(y,'Total',money(tg)+'  /  '+money(tp),true);y+=24;doc.setFontSize(9);doc.text('Amounts are before tax withholding.',50,y);
+    R.lines.forEach(function(l){var c=calc(l),hr=l.type==='hourly';doc.addPage();head('Payslip — '+l.name);var y=160;doc.setFontSize(11);
+      if(hr){line(y,'Regular hours: '+n(l.regHrs)+' × '+money(l.rate),money(n(l.regHrs)*n(l.rate)));y+=18;
+        if(n(l.otHrs))line(y,'Overtime hours: '+n(l.otHrs)+' × '+money(n(l.rate)*(n(l.otRate)||1.5)),money(n(l.otHrs)*n(l.rate)*(n(l.otRate)||1.5))),y+=18}
+      else{line(y,'Salary',money(c.base));y+=18}
+      if(n(l.bonus)){line(y,'Bonus',money(l.bonus));y+=18}
+      line(y,'Gross pay',money(c.gross),true);y+=24;
+      if(n(l.reimb)){line(y,'Reimbursement',money(l.reimb));y+=18}
+      if(n(l.deduct)){line(y,'Advance / deduction','−'+money(l.deduct));y+=18}
+      line(y,'Pay (before tax withholding)',money(c.pay),true);y+=24;
+      if(l.note){doc.setFont('helvetica','normal');doc.text('Note: '+l.note,50,y)}});
+    var name='Payroll '+R.start+' to '+R.end+'.pdf',blob=doc.output('blob');
+    var f=new File([blob],name,{type:'application/pdf'});
+    if(navigator.canShare&&navigator.canShare({files:[f]}))navigator.share({files:[f],title:name}).catch(function(){});
+    else{var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click()}
+  }).catch(function(e){toast(e.message,true)});
+}
+
+load();
+})();
+</script>
+</body>
+</html>
