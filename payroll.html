@@ -110,8 +110,8 @@ function vRun(){
     '<div class="sum" style="margin-top:12px"><div><div class="l">Staff</div><div class="v">'+R.lines.length+'</div></div><div><div class="l">Gross pay</div><div class="v" id="tg">'+money(tg)+'</div></div><div><div class="l">To pay out</div><div class="v" id="tp">'+money(tp)+'</div></div></div>'+
     '<div class="small muted" style="margin-top:6px">Before taxes. Withholding is done by your accountant / payroll provider.</div></div>';
   h+=R.lines.map(function(l,i){var c=calc(l),hr=l.type==='hourly';
-    return'<div class="emp" data-i="'+i+'"><div class="hd"><b>'+esc(l.name)+'</b><span class="sub">'+(hr?money(l.rate)+'/hr · overtime ×'+esc(l.otRate||1.5):'Salary '+money(l.rate)+'/yr · '+money(per(l.rate))+' per 2 weeks')+'</span></div><div class="f">'+
-      (hr?fld(i,'regHrs','Regular hours',l.regHrs,dis)+fld(i,'otHrs','Overtime hours',l.otHrs,dis):fld(i,'base','Salary this period ($)',l.base,dis))+
+    return'<div class="emp" data-i="'+i+'"><div class="hd"><b>'+esc(l.name)+'</b><span class="sub">'+(hr?money(l.rate)+'/hr':'Salary '+money(l.rate)+'/yr · '+money(per(l.rate))+' per 2 weeks')+'</span></div><div class="f">'+
+      (hr?fld(i,'regHrs','Hours',l.regHrs,dis):fld(i,'base','Salary this period ($)',l.base,dis))+
       fld(i,'bonus','Bonus ($)',l.bonus,dis)+fld(i,'reimb','Reimbursement ($)',l.reimb,dis)+fld(i,'deduct','Advance / deduction ($)',l.deduct,dis)+
       '</div><label>Note</label><input data-i="'+i+'" data-k="note" value="'+esc(l.note)+'"'+dis+'>'+
       '<div class="tot"><span class="muted">Gross <b id="g'+i+'">'+money(c.gross)+'</b></span><span>Pay <b id="p'+i+'">'+money(c.pay)+'</b></span></div>'+
@@ -158,8 +158,8 @@ function saveRun(status,b,reopen){
 /* ---------- hour log ---------- */
 function monday(d){var x=new Date(d+'T12:00:00'),k=(x.getDay()+6)%7;x.setDate(x.getDate()-k);return x.toISOString().slice(0,10)}
 function logged(empId,start,end){var wk={},tot=0;S.hours.forEach(function(h){if(h.empId!==empId||h.date<start||h.date>end)return;var w=monday(h.date);wk[w]=(wk[w]||0)+n(h.hours);tot+=n(h.hours)});
-  var ot=0;Object.keys(wk).forEach(function(w){ot+=Math.max(0,wk[w]-40)});return{total:r2(tot),reg:r2(tot-ot),ot:r2(ot),weeks:wk}}
-function fillHours(R,onlyEmpty){var k=0;R.lines.forEach(function(l){if(l.type!=='hourly')return;var g=logged(l.empId,R.start,R.end);if(!g.total)return;if(onlyEmpty&&(n(l.regHrs)||n(l.otHrs)))return;l.regHrs=String(g.reg);l.otHrs=g.ot?String(g.ot):'';k++});return k}
+  return{total:r2(tot),reg:r2(tot),ot:0,weeks:wk}}
+function fillHours(R,onlyEmpty){var k=0;R.lines.forEach(function(l){if(l.type!=='hourly')return;var g=logged(l.empId,R.start,R.end);if(!g.total)return;if(onlyEmpty&&(n(l.regHrs)||n(l.otHrs)))return;l.regHrs=String(g.reg);l.otHrs='';k++});return k}
 function hperiod(){if(S.hp)return S.hp;var R=S.run;if(R&&R.status!=='final')return S.hp={start:R.start,end:R.end};var last=runs()[0],st=last?addDays(last.end,1):addDays(S.today,-13);return S.hp={start:st,end:addDays(st,13)}}
 function hm(t){var m=/^(\d{1,2}):(\d{2})$/.exec(t||'');return m?(+m[1])*60+(+m[2]):null}
 function vHours(){
@@ -173,10 +173,10 @@ function vHours(){
   h+='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2 style="margin:0">Hours logged</h2><span class="small muted">'+fmtD(P.start)+' – '+fmtD(P.end)+'</span></div>'+
     '<div class="grid"><div><label>From</label><input type="date" data-hp="start" value="'+esc(P.start)+'"></div><div><label>To</label><input type="date" data-hp="end" value="'+esc(P.end)+'"></div></div>';
   hs.forEach(function(s){var g=logged(s.id,P.start,P.end),list=S.hours.filter(function(x){return x.empId===s.id&&x.date>=P.start&&x.date<=P.end}).sort(function(a,b){return a.date<b.date?-1:1});
-    h+='<div class="emp" style="margin-top:10px"><div class="hd"><b>'+esc(s.name)+'</b><span><b>'+g.total+' h</b>'+(g.ot?' <span class="small muted">('+g.reg+' regular · '+g.ot+' overtime)</span>':'')+'</span></div>'+
+    h+='<div class="emp" style="margin-top:10px"><div class="hd"><b>'+esc(s.name)+'</b><span><b>'+g.total+' h</b>'+'</span></div>'+
       (list.length?'<table>'+list.map(function(x){return'<tr><td>'+fmtD(x.date)+'</td><td class="small muted">'+(x.start&&x.end?esc(x.start)+'–'+esc(x.end):'')+(x.note?' · '+esc(x.note):'')+'</td><td class="r"><b>'+esc(x.hours)+' h</b></td><td class="r"><button type="button" class="btn sm" data-act="hdel" data-id="'+esc(x.id)+'">✕</button></td></tr>'}).join('')+'</table>':'<div class="small muted">No hours logged in this period.</div>')+
-      Object.keys(g.weeks).sort().map(function(w){return'<div class="small muted">Week of '+fmtD(w)+': '+r2(g.weeks[w])+' h'+(g.weeks[w]>40?' — '+r2(g.weeks[w]-40)+' h overtime':'')+'</div>'}).join('')+'</div>'});
-  return h+'<div class="small muted" style="margin-top:8px">Overtime = hours over 40 in a Monday–Sunday week. "Fill hours from log" on the pay run copies these in.</div></div>';
+      Object.keys(g.weeks).sort().map(function(w){return'<div class="small muted">Week of '+fmtD(w)+': '+r2(g.weeks[w])+' h</div>'}).join('')+'</div>'});
+  return h+'<div class="small muted" style="margin-top:8px">"Fill hours from log" on the pay run copies these in.</div></div>';
 }
 function addHours(b){
   var s=$('hs').value,f=$('hf').value,hrs=n($('hh').value);
@@ -199,7 +199,7 @@ function staffForm(s){
   s=s||{type:'salary',otRate:'1.5',active:'yes'};var d=document.createElement('div');d.className='sheet';
   d.innerHTML='<div class="box"><h2>'+(s.id?'Edit':'Add')+' staff</h2><label>Name</label><input id="sn" value="'+esc(s.name)+'">'+
     '<label>Employee type</label><input type="hidden" id="st" value="'+(s.type==='hourly'?'hourly':'salary')+'"><div class="seg"><button type="button" data-ty="salary">Full time (salary)</button><button type="button" data-ty="hourly">Hourly</button></div>'+
-    '<div id="bh"><label>Hourly rate ($ per hour)</label><input id="srh" inputmode="decimal" value="'+(s.type==='hourly'?esc(s.rate):'')+'"><label>Overtime multiplier</label><input id="so" inputmode="decimal" value="'+esc(s.otRate||'1.5')+'"></div>'+
+    '<div id="bh"><label>Hourly rate ($ per hour)</label><input id="srh" inputmode="decimal" value="'+(s.type==='hourly'?esc(s.rate):'')+'"></div>'+
     '<div id="bs"><label>Annual salary ($ per year)</label><input id="srs" inputmode="decimal" value="'+(s.type!=='hourly'?esc(s.rate):'')+'"><div class="small muted" id="spp"></div></div>'+
     '<label>Start date</label><input type="date" id="ss" value="'+esc(s.start)+'">'+
     '<label>Status</label><select id="sa"><option value="yes">Active</option><option value="no"'+(s.active==='no'?' selected':'')+'>Inactive</option></select>'+
@@ -211,7 +211,7 @@ function staffForm(s){
   q('#srs').oninput=sw;sw();
   q('#sx').onclick=function(){d.remove()};
   q('#sv').onclick=function(){var b=this;b.disabled=true;
-    call('saveStaff',{id:s.id||'',name:q('#sn').value,type:q('#st').value,rate:n(q('#st').value==='hourly'?q('#srh').value:q('#srs').value),otRate:n(q('#so').value)||1.5,start:q('#ss').value,active:q('#sa').value,note:q('#snote').value})
+    call('saveStaff',{id:s.id||'',name:q('#sn').value,type:q('#st').value,rate:n(q('#st').value==='hourly'?q('#srh').value:q('#srs').value),otRate:1.5,start:q('#ss').value,active:q('#sa').value,note:q('#snote').value})
       .then(function(r){d.remove();take(r);toast('Saved')}).catch(function(x){b.disabled=false;toast(x.message,true)})};
 }
 
@@ -236,8 +236,7 @@ function pdf(R){
     R.lines.forEach(function(l){var c=calc(l);tg+=c.gross;tp+=c.pay;line(y,l.name,money(c.gross)+'  /  '+money(c.pay));y+=16});
     y+=6;line(y,'Total',money(tg)+'  /  '+money(tp),true);y+=24;doc.setFontSize(9);doc.text('Amounts are before tax withholding.',50,y);
     R.lines.forEach(function(l){var c=calc(l),hr=l.type==='hourly';doc.addPage();head('Payslip — '+l.name);var y=160;doc.setFontSize(11);
-      if(hr){line(y,'Regular hours: '+n(l.regHrs)+' × '+money(l.rate),money(n(l.regHrs)*n(l.rate)));y+=18;
-        if(n(l.otHrs))line(y,'Overtime hours: '+n(l.otHrs)+' × '+money(n(l.rate)*(n(l.otRate)||1.5)),money(n(l.otHrs)*n(l.rate)*(n(l.otRate)||1.5))),y+=18}
+      if(hr){line(y,'Hours: '+n(l.regHrs)+' × '+money(l.rate),money(n(l.regHrs)*n(l.rate)));y+=18}
       else{line(y,'Salary',money(c.base));y+=18}
       if(n(l.bonus)){line(y,'Bonus',money(l.bonus));y+=18}
       line(y,'Gross pay',money(c.gross),true);y+=24;
