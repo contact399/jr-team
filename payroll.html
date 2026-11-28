@@ -107,14 +107,14 @@ function vRun(){
   var tg=0,tp=0;R.lines.forEach(function(l){var c=calc(l);tg+=c.gross;tp+=c.pay});
   var h='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 style="margin:0">'+(R.runId?'Pay run':'New pay run')+'</h2><span class="pill'+(fin?' final':'')+'">'+(fin?'Final':'Draft')+'</span></div>'+
     '<div class="grid"><div><label>Period start</label><input type="date" data-r="start" value="'+esc(R.start)+'"'+dis+'></div><div><label>Period end</label><input type="date" data-r="end" value="'+esc(R.end)+'"'+dis+'></div><div><label>Pay date</label><input type="date" data-r="payDate" value="'+esc(R.payDate)+'"'+dis+'></div></div>'+
-    '<div class="sum" style="margin-top:12px"><div><div class="l">Staff</div><div class="v">'+R.lines.length+'</div></div><div><div class="l">Gross pay</div><div class="v" id="tg">'+money(tg)+'</div></div><div><div class="l">To pay out</div><div class="v" id="tp">'+money(tp)+'</div></div></div>'+
-    '<div class="small muted" style="margin-top:6px">Before taxes. Withholding is done by your accountant / payroll provider.</div></div>';
+    '<div class="sum" style="margin-top:12px"><div><div class="l">Staff</div><div class="v">'+R.lines.length+'</div></div><div><div class="l">Earned</div><div class="v" id="tg">'+money(tg)+'</div></div><div><div class="l">Net pay to staff</div><div class="v" id="tp">'+money(tp)+'</div></div></div>'+
+    '<div class="small muted" style="margin-top:6px">All amounts are net to the employee. Employer taxes are handled separately with the accountant.</div></div>';
   h+=R.lines.map(function(l,i){var c=calc(l),hr=l.type==='hourly';
     return'<div class="emp" data-i="'+i+'"><div class="hd"><b>'+esc(l.name)+'</b><span class="sub">'+(hr?money(l.rate)+'/hr':'Salary '+money(l.rate)+'/yr · '+money(per(l.rate))+' per 2 weeks')+'</span></div><div class="f">'+
       (hr?fld(i,'regHrs','Hours',l.regHrs,dis):fld(i,'base','Salary this period ($)',l.base,dis))+
       fld(i,'bonus','Bonus ($)',l.bonus,dis)+fld(i,'reimb','Reimbursement ($)',l.reimb,dis)+fld(i,'deduct','Advance / deduction ($)',l.deduct,dis)+
       '</div><label>Note</label><input data-i="'+i+'" data-k="note" value="'+esc(l.note)+'"'+dis+'>'+
-      '<div class="tot"><span class="muted">Gross <b id="g'+i+'">'+money(c.gross)+'</b></span><span>Pay <b id="p'+i+'">'+money(c.pay)+'</b></span></div>'+
+      '<div class="tot"><span class="muted">Earned <b id="g'+i+'">'+money(c.gross)+'</b></span><span>Net pay <b id="p'+i+'">'+money(c.pay)+'</b></span></div>'+
       (!fin?'<div style="text-align:right;margin-top:6px"><button type="button" class="btn sm" data-act="dropline" data-i="'+i+'">Remove from this run</button></div>':'')+'</div>'}).join('');
   var missing=S.staff.filter(function(s){return s.active!=='no'&&!R.lines.some(function(l){return l.empId===s.id})});
   if(!fin&&missing.length)h+='<div class="acts">'+missing.map(function(s){return'<button type="button" class="btn sm" data-act="addline" data-id="'+esc(s.id)+'">+ '+esc(s.name)+'</button>'}).join('')+'</div>';
@@ -191,7 +191,7 @@ document.addEventListener('change',function(e){var t=e.target;if(t.hasAttribute&
 function vStaff(){
   var rows=S.staff.map(function(s){var hr=s.type==='hourly';return'<tr data-act="staff" data-id="'+esc(s.id)+'" style="cursor:pointer"><td><b>'+esc(s.name)+'</b>'+(s.active==='no'?' <span class="pill">inactive</span>':'')+'</td><td>'+(hr?'Hourly':'Full time')+'</td>'+
     '<td class="r">'+(hr?money(s.rate):'—')+'</td><td class="r">'+(hr?'—':money(s.rate))+'</td><td class="r">'+(hr?'—':money(per(s.rate)))+'</td><td class="r muted">Edit ›</td></tr>'}).join('');
-  return'<div class="card" style="overflow-x:auto"><table><tr><th>Name</th><th>Type</th><th class="r">Hourly rate</th><th class="r">Annual salary</th><th class="r">Per 2 weeks</th><th></th></tr>'+
+  return'<div class="card" style="overflow-x:auto"><table><tr><th>Name</th><th>Type</th><th class="r">Hourly rate (net)</th><th class="r">Annual salary (net)</th><th class="r">Per 2 weeks</th><th></th></tr>'+
     (rows||'<tr><td colspan="6" class="muted">No staff yet.</td></tr>')+'</table></div>'+
     '<div class="acts"><button type="button" class="btn primary" data-act="staff">+ Add staff</button></div>';
 }
@@ -199,8 +199,8 @@ function staffForm(s){
   s=s||{type:'salary',otRate:'1.5',active:'yes'};var d=document.createElement('div');d.className='sheet';
   d.innerHTML='<div class="box"><h2>'+(s.id?'Edit':'Add')+' staff</h2><label>Name</label><input id="sn" value="'+esc(s.name)+'">'+
     '<label>Employee type</label><input type="hidden" id="st" value="'+(s.type==='hourly'?'hourly':'salary')+'"><div class="seg"><button type="button" data-ty="salary">Full time (salary)</button><button type="button" data-ty="hourly">Hourly</button></div>'+
-    '<div id="bh"><label>Hourly rate ($ per hour)</label><input id="srh" inputmode="decimal" value="'+(s.type==='hourly'?esc(s.rate):'')+'"></div>'+
-    '<div id="bs"><label>Annual salary ($ per year)</label><input id="srs" inputmode="decimal" value="'+(s.type!=='hourly'?esc(s.rate):'')+'"><div class="small muted" id="spp"></div></div>'+
+    '<div id="bh"><label>Hourly rate, net ($ per hour)</label><input id="srh" inputmode="decimal" value="'+(s.type==='hourly'?esc(s.rate):'')+'"></div>'+
+    '<div id="bs"><label>Annual salary, net ($ per year)</label><input id="srs" inputmode="decimal" value="'+(s.type!=='hourly'?esc(s.rate):'')+'"><div class="small muted" id="spp"></div></div>'+
     '<label>Start date</label><input type="date" id="ss" value="'+esc(s.start)+'">'+
     '<label>Status</label><select id="sa"><option value="yes">Active</option><option value="no"'+(s.active==='no'?' selected':'')+'>Inactive</option></select>'+
     '<label>Note</label><input id="snote" value="'+esc(s.note)+'">'+
@@ -219,9 +219,9 @@ function staffForm(s){
 function vHistory(){
   var rs=runs(),y=String(new Date().getFullYear()),ytd={};
   rs.filter(function(r){return r.status==='final'&&(r.payDate||r.end).slice(0,4)===y}).forEach(function(r){r.lines.forEach(function(l){var o=ytd[l.name]||(ytd[l.name]={g:0,p:0,n:0});o.g+=n(l.gross);o.p+=n(l.pay);o.n++})});
-  var h='<div class="card"><h2>'+y+' year to date</h2><p class="small muted">Final pay runs only.</p><table><tr><th>Name</th><th class="r">Runs</th><th class="r">Gross</th><th class="r">Paid out</th></tr>'+
+  var h='<div class="card"><h2>'+y+' year to date</h2><p class="small muted">Final pay runs only.</p><table><tr><th>Name</th><th class="r">Runs</th><th class="r">Earned</th><th class="r">Net paid</th></tr>'+
     (Object.keys(ytd).length?Object.keys(ytd).sort().map(function(k){return'<tr><td>'+esc(k)+'</td><td class="r">'+ytd[k].n+'</td><td class="r">'+money(ytd[k].g)+'</td><td class="r">'+money(ytd[k].p)+'</td></tr>'}).join(''):'<tr><td colspan="4" class="muted">Nothing final yet this year.</td></tr>')+'</table></div>';
-  h+='<div class="list">'+(rs.length?rs.map(function(r){return'<div class="row" data-act="openrun" data-id="'+esc(r.runId)+'"><div><b>'+fmtD(r.start)+' – '+fmtD(r.end)+'</b> <span class="pill'+(r.status==='final'?' final':'')+'">'+(r.status==='final'?'Final':'Draft')+'</span><div class="small muted">Pay date '+fmtD(r.payDate)+' · '+r.lines.length+' staff</div></div><div style="text-align:right"><b>'+money(r.pay)+'</b><div class="small muted">gross '+money(r.gross)+'</div></div></div>'}).join(''):'<div class="row muted">No pay runs yet.</div>')+'</div>';
+  h+='<div class="list">'+(rs.length?rs.map(function(r){return'<div class="row" data-act="openrun" data-id="'+esc(r.runId)+'"><div><b>'+fmtD(r.start)+' – '+fmtD(r.end)+'</b> <span class="pill'+(r.status==='final'?' final':'')+'">'+(r.status==='final'?'Final':'Draft')+'</span><div class="small muted">Pay date '+fmtD(r.payDate)+' · '+r.lines.length+' staff</div></div><div style="text-align:right"><b>'+money(r.pay)+'</b><div class="small muted">earned '+money(r.gross)+'</div></div></div>'}).join(''):'<div class="row muted">No pay runs yet.</div>')+'</div>';
   return h;
 }
 
@@ -232,17 +232,17 @@ function pdf(R){
     var doc=new J.jsPDF({unit:'pt',format:'letter'}),W=612,per=fmtD(R.start)+' – '+fmtD(R.end);
     function head(t){doc.setFont('times','bold');doc.setFontSize(20);doc.text('Jupiter Rain, Inc.',50,60);doc.setFont('helvetica','normal');doc.setFontSize(10);doc.text('580 5th Avenue, Floor 21, New York, NY 10036',50,76);doc.setFontSize(14);doc.setFont('helvetica','bold');doc.text(t,50,110);doc.setFont('helvetica','normal');doc.setFontSize(10);doc.text('Pay period '+per+'   ·   Pay date '+fmtD(R.payDate)+(R.status!=='final'?'   ·   DRAFT':''),50,126)}
     function line(y,a,b,bold){doc.setFont('helvetica',bold?'bold':'normal');doc.text(a,50,y);doc.text(b,W-50,y,{align:'right'})}
-    head('Payroll summary');var y=160,tg=0,tp=0;line(y,'Name','Gross  /  Pay',true);y+=18;
+    head('Payroll summary');var y=160,tg=0,tp=0;line(y,'Name','Earned  /  Net pay',true);y+=18;
     R.lines.forEach(function(l){var c=calc(l);tg+=c.gross;tp+=c.pay;line(y,l.name,money(c.gross)+'  /  '+money(c.pay));y+=16});
-    y+=6;line(y,'Total',money(tg)+'  /  '+money(tp),true);y+=24;doc.setFontSize(9);doc.text('Amounts are before tax withholding.',50,y);
+    y+=6;line(y,'Total',money(tg)+'  /  '+money(tp),true);y+=24;doc.setFontSize(9);doc.text('All amounts are net to the employee.',50,y);
     R.lines.forEach(function(l){var c=calc(l),hr=l.type==='hourly';doc.addPage();head('Payslip — '+l.name);var y=160;doc.setFontSize(11);
       if(hr){line(y,'Hours: '+n(l.regHrs)+' × '+money(l.rate),money(n(l.regHrs)*n(l.rate)));y+=18}
       else{line(y,'Salary',money(c.base));y+=18}
       if(n(l.bonus)){line(y,'Bonus',money(l.bonus));y+=18}
-      line(y,'Gross pay',money(c.gross),true);y+=24;
+      line(y,'Earned',money(c.gross),true);y+=24;
       if(n(l.reimb)){line(y,'Reimbursement',money(l.reimb));y+=18}
       if(n(l.deduct)){line(y,'Advance / deduction','−'+money(l.deduct));y+=18}
-      line(y,'Pay (before tax withholding)',money(c.pay),true);y+=24;
+      line(y,'Net pay',money(c.pay),true);y+=24;
       if(l.note){doc.setFont('helvetica','normal');doc.text('Note: '+l.note,50,y)}});
     var name='Payroll '+R.start+' to '+R.end+'.pdf',blob=doc.output('blob');
     var f=new File([blob],name,{type:'application/pdf'});
