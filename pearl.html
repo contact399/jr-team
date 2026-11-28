@@ -97,7 +97,7 @@ function calc(s){
   const pearls=(s.pearls||[]).map(p=>{const c=pearlCarat(p);return{c,chau:c==null?null:c*c*K.chau}});
   const valid=pearls.filter(p=>p.c!=null),n=valid.length;
   const aCt=n?valid.reduce((a,p)=>a+p.c,0):null, aChau=n?valid.reduce((a,p)=>a+p.chau,0):null;
-  const certCount=parseInt(s.certCount)||null, w=num(s.certWeight), dRaw=String(s.deduction==null?'':s.deduction).trim(), needClasp=!!w&&dRaw===''&&s.clasp!=='N', ded=parseFloat(dRaw)||0;
+  const certCount=parseInt(s.certCount)||null, w=num(s.certWeight), dRaw=String(s.deduction==null?'':s.deduction).trim(), needClasp=!!w&&dRaw===''&&s.clasp!=='N', ded=needClasp?(s.unit==='ct'?K.g2ct:1):(parseFloat(dRaw)||0);
   const bCt=w?(s.unit==='ct'?(w-ded):(w-ded)*K.g2ct):null, bN=certCount||n||null;
   const avg=bCt&&bN?bCt/bN:null, per=avg?avg*avg*K.chau:null, bChau=per?per*bN:null;
   return{needClasp,pearls,n,aCt,aChau,certCount,bCt,bN,avg,per,bChau,wG:w&&s.unit!=='ct'?w-ded:null,
@@ -195,7 +195,7 @@ async function openSku(sku){
       field('certCount','Pearl count on cert',{n:true,inputmode:'numeric'}),
       field('certWeight','Total weight on cert',{n:true,inputmode:'decimal'}),
       field('unit','Weight unit',{select:[['g','grams (g)'],['ct','carats (ct)']]}),
-      field('deduction','Clasp / silk weight (same unit, 0 if none)',{n:true,inputmode:'decimal'})),
+      field('deduction','Clasp / silk weight (same unit, 0 if none; blank = 1 g)',{n:true,inputmode:'decimal'})),
     field('notes','Notes'));
 
   const tb=el('tbody');
@@ -270,12 +270,12 @@ async function openSku(sku){
     const flags=[];
     if(r.certCount&&r.n&&r.n!==r.certCount)flags.push(['warn','Pearl count mismatch: '+r.n+' measured vs '+r.certCount+' on cert.']);
     else if(r.certCount&&r.n===r.certCount)flags.push(['ok','Pearl count matches the cert.']);
-    if(r.needClasp)flags.push(['warn','No clasp / silk weight entered, so the weight result below includes the clasp. Enter it (0 if none) for a pearls-only figure.']);
+    if(r.needClasp)flags.push(['warn','No clasp / silk weight entered, so 1 g is assumed for the clasp. Enter the real weight (0 if none) to change it.']);
     if(r.diffCt!=null&&r.bCt){const pc=r.diffCt/r.bCt;flags.push(Math.abs(pc)>0.1?['warn','Method A carat is '+f(pc*100,1)+'% off the cert weight. Recheck sizes, drop/baroque shapes or drill holes.']:['ok','Method A carat is within '+f(Math.abs(pc*100),1)+'% of the cert weight.'])}
     res.replaceChildren(el('h2',{},'Results'),
       el('div',{class:'sec'},el('div',{class:'eyebrow'},'Method A · by mm'),L('Pearls measured',r.n||'—'),L('Total carat',f(r.aCt,2)),L('Total chau',f(r.aChau,2),'big')),
       el('div',{class:'sec'},el('div',{class:'eyebrow'},'Method B · estimated from weight'),
-        L(r.needClasp?'Weight (clasp included)':'Pearls-only weight',r.wG!=null?f(r.wG,2)+' g / '+f(r.bCt,2)+' ct':(r.bCt!=null?f(r.bCt,2)+' ct':'—')),
+        L(r.needClasp?'Pearls-only weight (1 g clasp assumed)':'Pearls-only weight',r.wG!=null?f(r.wG,2)+' g / '+f(r.bCt,2)+' ct':(r.bCt!=null?f(r.bCt,2)+' ct':'—')),
         L('Pearl count used',r.bN||'—'),L('Average carat',f(r.avg,3)),L('Chau per pearl',f(r.per,3)),L('Estimated strand chau',f(r.bChau,2),'big'),
         el('div',{class:'hint'},'Runs low on graduated strands.')),
       el('div',{class:'sec'},el('div',{class:'eyebrow'},'Comparison'),
