@@ -79,8 +79,8 @@ function toast(t,bad){var d=document.createElement('div');d.className='toast';d.
 function addDays(d,k){var x=new Date(d+'T12:00:00');x.setDate(x.getDate()+k);return x.toISOString().slice(0,10)}
 function fmtD(d){if(!d)return'';var x=new Date(d+'T12:00:00');return x.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}
 function per(a){return r2(n(a)/24)}
-function split(l){var p=calc(l).pay,rk=Math.min(Math.max(n(l.rokar),0),p);return'From Chase <b>'+money(r2(p-rk))+'</b> · From Rokar <b>'+money(rk)+'</b>'+(l.regIds?' · <span style="color:var(--ok)">✓ in Register</span>':'')}
-function payDay(end){return +end.slice(8,10)<=15?end.slice(0,8)+'20':addDays(end,5)}
+function split(l){var p=calc(l).pay,rk=Math.min(Math.max(n(l.rokar),0),p);return'Chase <b>'+money(r2(p-rk))+'</b> + Rokar <b>'+money(rk)+'</b> = <b>'+money(p)+'</b>'+(l.regIds?' · <span style="color:var(--ok)">✓ in Register</span>':'')}
+function payDay(end){return end}
 var DN=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 function dow(d){return (new Date(d+'T12:00:00').getDay()+6)%7+1}
 function stdDay(s){var a=hm(s.from),b=hm(s.to);if(a==null||b==null)return 0;var m=b-a;if(m<0)m+=1440;return r2(Math.max(0,m-n(s.brk))/60)}
@@ -90,7 +90,8 @@ function schedText(s){var ds=String(s.days||'').split(',').filter(Boolean).map(N
   var run=ds.length>1&&ds[ds.length-1]-ds[0]===ds.length-1?DN[ds[0]-1]+'–'+DN[ds[ds.length-1]-1]:ds.map(function(x){return DN[x-1]}).join(', ');
   return run+' '+s.from+'–'+s.to+(n(s.brk)?' (−'+n(s.brk)+' min break)':'')+' · '+stdDay(s)+' h/day'}
 function eom(d){var x=new Date(d.slice(0,7)+'-01T12:00:00');x.setMonth(x.getMonth()+1);x.setDate(0);return x.toISOString().slice(0,10)}
-function periodOf(d){return +d.slice(8,10)<=15?{start:d.slice(0,8)+'01',end:d.slice(0,8)+'15'}:{start:d.slice(0,8)+'16',end:eom(d)}}
+var PAY_ANCHOR='2026-11-20';   // a pay Friday; pay runs are every 2nd Friday, covering the 14 days up to that Friday
+function periodOf(d){var k=Math.ceil((new Date(d+'T12:00:00')-new Date(PAY_ANCHOR+'T12:00:00'))/864e5/14),end=addDays(PAY_ANCHOR,k*14);return{start:addDays(end,-13),end:end}}
 function days(a,b){return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/864e5)+1}
 function salFor(s,start,end){var full=per(s.rate);if(!s.start||s.start<=start)return{amt:full,note:''};if(s.start>end)return{amt:0,note:'Starts '+fmtD(s.start)};
   var d=days(s.start,end),tot=days(start,end);return{amt:r2(full*d/tot),note:'Prorated: started '+fmtD(s.start)+' ('+d+' of '+tot+' days)'}}
@@ -118,7 +119,7 @@ function newRun(){
 }
 function vRun(){
   if(!S.staff.length)return'<div class="msg">Add your staff first on the <b>Staff</b> tab.</div>';
-  if(!S.run)return'<div class="card"><h2>No pay run open</h2><p class="muted">Start the next pay run (1st–15th or 16th–end of month). It picks up from the last one.</p><button class="btn primary" type="button" data-act="new">Start next pay run</button></div>';
+  if(!S.run)return'<div class="card"><h2>No pay run open</h2><p class="muted">Start the next pay run (every other Friday, covering the 2 weeks up to that Friday). It picks up from the last one.</p><button class="btn primary" type="button" data-act="new">Start next pay run</button></div>';
   var R=S.run,fin=R.status==='final',dis=fin?' disabled':'';
   var tg=0,tp=0;R.lines.forEach(function(l){var c=calc(l);tg+=c.gross;tp+=c.pay});
   var h='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 style="margin:0">'+(R.runId?'Pay run':'New pay run')+'</h2><span class="pill'+(fin?' final':'')+'">'+(fin?'Final':'Draft')+'</span></div>'+
@@ -128,7 +129,7 @@ function vRun(){
   h+=R.lines.map(function(l,i){var c=calc(l),hr=l.type==='hourly';
     return'<div class="emp" data-i="'+i+'"><div class="hd"><b>'+esc(l.name)+'</b><span class="sub">'+(hr?money(l.rate)+'/hr':'Salary '+money(r2(n(l.rate)/12))+'/month · '+money(per(l.rate))+' per pay run')+'</span></div><div class="f">'+
       (hr?fld(i,'regHrs','Hours',l.regHrs,dis):fld(i,'base','Salary this period ($)',l.base,dis))+
-      fld(i,'bonus','Bonus ($)',l.bonus,dis)+fld(i,'reimb','Reimbursement ($)',l.reimb,dis)+fld(i,'deduct','Advance / deduction ($)',l.deduct,dis)+fld(i,'rokar','Paid from Rokar ($)',l.rokar,dis)+
+      fld(i,'bonus','Bonus ($)',l.bonus,dis)+fld(i,'reimb','Reimbursement ($)',l.reimb,dis)+fld(i,'deduct','Advance / deduction ($)',l.deduct,dis)+fld(i,'chase','From Chase ($)',String(r2(calc(l).pay-Math.min(Math.max(n(l.rokar),0),calc(l).pay))),dis)+fld(i,'rokar','From Rokar ($)',l.rokar||'0',dis)+
       '</div><label>Note</label><input data-i="'+i+'" data-k="note" value="'+esc(l.note)+'"'+dis+'>'+
       '<div class="tot"><span class="muted">Earned <b id="g'+i+'">'+money(c.gross)+'</b></span><span>Net pay <b id="p'+i+'">'+money(c.pay)+'</b></span></div><div class="small muted" style="text-align:right" id="sp'+i+'">'+split(l)+'</div><div></div>'+
       (!fin?'<div style="text-align:right;margin-top:6px"><button type="button" class="btn sm" data-act="dropline" data-i="'+i+'">Remove from this run</button></div>':'')+'</div>'}).join('');
@@ -144,7 +145,10 @@ function fld(i,k,lab,v,dis){return'<div><label>'+lab+'</label><input inputmode="
 document.addEventListener('input',function(e){
   var t=e.target;if(!S.run)return;
   if(t.hasAttribute('data-r')){S.run[t.getAttribute('data-r')]=t.value;return}
-  if(t.hasAttribute('data-k')){var i=+t.getAttribute('data-i'),l=S.run.lines[i];l[t.getAttribute('data-k')]=t.value;var c=calc(l);$('g'+i).textContent=money(c.gross);$('p'+i).textContent=money(c.pay);$('sp'+i).innerHTML=split(l);
+  if(t.hasAttribute('data-k')){var i=+t.getAttribute('data-i'),l=S.run.lines[i],kk=t.getAttribute('data-k');
+    if(kk==='chase'){var pp=calc(l).pay;l.rokar=String(r2(Math.max(0,pp-n(t.value))));var rb=document.querySelector('[data-i="'+i+'"][data-k="rokar"]');if(rb)rb.value=l.rokar}
+    else{l[kk]=t.value;var cb=document.querySelector('[data-i="'+i+'"][data-k="chase"]');if(cb&&kk!=='note'){var pp2=calc(l).pay;cb.value=String(r2(pp2-Math.min(Math.max(n(l.rokar),0),pp2)))}}
+    var c=calc(l);$('g'+i).textContent=money(c.gross);$('p'+i).textContent=money(c.pay);$('sp'+i).innerHTML=split(l);
     var tg=0,tp=0;S.run.lines.forEach(function(x){var y=calc(x);tg+=y.gross;tp+=y.pay});$('tg').textContent=money(tg);$('tp').textContent=money(tp)}
 });
 document.addEventListener('click',function(e){
@@ -246,7 +250,7 @@ function staffForm(s){
     '<div class="acts"><span class="sp"></span><button type="button" class="btn" id="sx">Cancel</button><button type="button" class="btn primary" id="sv">Save</button></div></div>';
   document.body.appendChild(d);var q=function(x){return d.querySelector(x)};
   d.querySelectorAll('[data-ty]').forEach(function(b){b.onclick=function(){q('#st').value=b.getAttribute('data-ty');sw()}});
-  function sw(){var h=q('#st').value==='hourly';d.querySelectorAll('[data-ty]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-ty')===q('#st').value)});q('#bh').hidden=!h;q('#bs').hidden=h;q('#spp').textContent=n(q('#srs').value)?'= '+money(r2(n(q('#srs').value)/2))+' per pay run (twice a month)':''}
+  function sw(){var h=q('#st').value==='hourly';d.querySelectorAll('[data-ty]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-ty')===q('#st').value)});q('#bh').hidden=!h;q('#bs').hidden=h;q('#spp').textContent=n(q('#srs').value)?'= '+money(r2(n(q('#srs').value)/2))+' per pay run (every 2 weeks)':''}
   q('#srs').oninput=sw;sw();
   function sd(){var x={from:q('#sfrom').value,to:q('#sto').value,brk:q('#sbrk').value};var h=stdDay(x);q('#sday').textContent=h?'= '+h+' hours a day':''}
   ['#sfrom','#sto','#sbrk'].forEach(function(k){q(k).oninput=sd});sd();
