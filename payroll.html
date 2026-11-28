@@ -51,6 +51,7 @@ table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
 td,th{padding:8px;border-bottom:1px solid var(--line);text-align:left}th{font-size:12px;color:var(--muted);font-weight:600}
 td.r,th.r{text-align:right}
 .seg{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden}.seg button{flex:1;border:0;background:var(--card);font:inherit;font-weight:600;padding:11px;color:var(--ink)}.seg button.on{background:var(--navy);color:#fff}
+.days{display:flex;flex-wrap:wrap;gap:6px}.dchk{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:999px;padding:6px 10px;margin:0;font-size:14px;color:var(--ink)}.dchk input{width:auto}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#1b1d21;color:#fff;padding:10px 16px;border-radius:999px;z-index:80;font-size:14px}
 .sheet{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:60;display:flex;align-items:flex-end;justify-content:center}
 .sheet .box{background:var(--card);width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px}
@@ -78,6 +79,14 @@ function toast(t,bad){var d=document.createElement('div');d.className='toast';d.
 function addDays(d,k){var x=new Date(d+'T12:00:00');x.setDate(x.getDate()+k);return x.toISOString().slice(0,10)}
 function fmtD(d){if(!d)return'';var x=new Date(d+'T12:00:00');return x.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}
 function per(a){return r2(n(a)/24)}
+var DN=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+function dow(d){return (new Date(d+'T12:00:00').getDay()+6)%7+1}
+function stdDay(s){var a=hm(s.from),b=hm(s.to);if(a==null||b==null)return 0;var m=b-a;if(m<0)m+=1440;return r2(Math.max(0,m-n(s.brk))/60)}
+function schedDays(s,start,end){var ds=String(s.days||'').split(',').filter(Boolean).map(Number),out=[];if(!ds.length||!stdDay(s))return out;
+  for(var d=start;d<=end;d=addDays(d,1)){if(s.start&&d<s.start)continue;if(ds.indexOf(dow(d))>=0)out.push(d)}return out}
+function schedText(s){var ds=String(s.days||'').split(',').filter(Boolean).map(Number).sort();if(!ds.length||!stdDay(s))return'';
+  var run=ds.length>1&&ds[ds.length-1]-ds[0]===ds.length-1?DN[ds[0]-1]+'–'+DN[ds[ds.length-1]-1]:ds.map(function(x){return DN[x-1]}).join(', ');
+  return run+' '+s.from+'–'+s.to+(n(s.brk)?' (−'+n(s.brk)+' min break)':'')+' · '+stdDay(s)+' h/day'}
 function eom(d){var x=new Date(d.slice(0,7)+'-01T12:00:00');x.setMonth(x.getMonth()+1);x.setDate(0);return x.toISOString().slice(0,10)}
 function periodOf(d){return +d.slice(8,10)<=15?{start:d.slice(0,8)+'01',end:d.slice(0,8)+'15'}:{start:d.slice(0,8)+'16',end:eom(d)}}
 function days(a,b){return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/864e5)+1}
@@ -115,7 +124,7 @@ function vRun(){
     '<div class="sum" style="margin-top:12px"><div><div class="l">Staff</div><div class="v">'+R.lines.length+'</div></div><div><div class="l">Earned</div><div class="v" id="tg">'+money(tg)+'</div></div><div><div class="l">Net pay to staff</div><div class="v" id="tp">'+money(tp)+'</div></div></div>'+
     '<div class="small muted" style="margin-top:6px">All amounts are net to the employee. Employer taxes are handled separately with the accountant.</div></div>';
   h+=R.lines.map(function(l,i){var c=calc(l),hr=l.type==='hourly';
-    return'<div class="emp" data-i="'+i+'"><div class="hd"><b>'+esc(l.name)+'</b><span class="sub">'+(hr?money(l.rate)+'/hr':'Salary '+money(l.rate)+'/yr · '+money(per(l.rate))+' per pay run')+'</span></div><div class="f">'+
+    return'<div class="emp" data-i="'+i+'"><div class="hd"><b>'+esc(l.name)+'</b><span class="sub">'+(hr?money(l.rate)+'/hr':'Salary '+money(r2(n(l.rate)/12))+'/month · '+money(per(l.rate))+' per pay run')+'</span></div><div class="f">'+
       (hr?fld(i,'regHrs','Hours',l.regHrs,dis):fld(i,'base','Salary this period ($)',l.base,dis))+
       fld(i,'bonus','Bonus ($)',l.bonus,dis)+fld(i,'reimb','Reimbursement ($)',l.reimb,dis)+fld(i,'deduct','Advance / deduction ($)',l.deduct,dis)+
       '</div><label>Note</label><input data-i="'+i+'" data-k="note" value="'+esc(l.note)+'"'+dis+'>'+
@@ -148,6 +157,11 @@ document.addEventListener('click',function(e){
   else if(a==='pdf'){pdf(S.run)}
   else if(a==='fillhrs'){var k=fillHours(S.run,false);render();toast(k?'Hours filled for '+k+' staff':'No logged hours in this period',!k)}
   else if(a==='hadd'){addHours(b)}
+  else if(a==='hstd'){var st=S.staff.filter(function(x){return x.id===b.getAttribute('data-id')})[0],P=hperiod(),to=P.end<S.today?P.end:S.today;
+    var have={};S.hours.forEach(function(x){if(x.empId===st.id)have[x.date]=1});var list=schedDays(st,P.start,to).filter(function(d){return!have[d]}).map(function(d){return{empId:st.id,date:d,start:st.from,end:st.to,hours:stdDay(st),note:'Standard'}});
+    if(!list.length){toast('Nothing to add — those days are already logged.');return}
+    if(!confirm('Log '+list.length+' standard days ('+r2(list.length*stdDay(st))+' h) for '+st.name+'? You can delete any day they were off.'))return;
+    b.disabled=true;call('saveHoursMany',list).then(function(r){take(r);toast('Logged '+list.length+' days')}).catch(function(x){b.disabled=false;toast(x.message,true)})}
   else if(a==='hdel'){if(!confirm('Delete this time entry?'))return;call('deleteHours',b.getAttribute('data-id')).then(function(r){take(r);toast('Deleted')}).catch(function(x){toast(x.message,true)})}
   else if(a==='staff'){staffForm(S.staff.filter(function(x){return x.id===b.getAttribute('data-id')})[0]||null)}
   else if(a==='openrun'){var r=runs().filter(function(x){return x.runId===b.getAttribute('data-id')})[0];if(r){S.run=clone(r);S.tab='run';render()}}
@@ -164,7 +178,9 @@ function saveRun(status,b,reopen){
 function monday(d){var x=new Date(d+'T12:00:00'),k=(x.getDay()+6)%7;x.setDate(x.getDate()-k);return x.toISOString().slice(0,10)}
 function logged(empId,start,end){var wk={},tot=0;S.hours.forEach(function(h){if(h.empId!==empId||h.date<start||h.date>end)return;var w=monday(h.date);wk[w]=(wk[w]||0)+n(h.hours);tot+=n(h.hours)});
   return{total:r2(tot),reg:r2(tot),ot:0,weeks:wk}}
-function fillHours(R,onlyEmpty){var k=0;R.lines.forEach(function(l){if(l.type!=='hourly')return;var g=logged(l.empId,R.start,R.end);if(!g.total)return;if(onlyEmpty&&(n(l.regHrs)||n(l.otHrs)))return;l.regHrs=String(g.reg);l.otHrs='';k++});return k}
+function fillHours(R,onlyEmpty){var k=0;R.lines.forEach(function(l){if(l.type!=='hourly')return;if(onlyEmpty&&(n(l.regHrs)||n(l.otHrs)))return;var g=logged(l.empId,R.start,R.end),st=S.staff.filter(function(x){return x.id===l.empId})[0];
+  if(g.total){l.regHrs=String(g.reg);l.otHrs='';if(/^Standard hours/.test(l.note||''))l.note='';k++;return}
+  var sd=st?schedDays(st,R.start,R.end):[];if(!sd.length)return;l.regHrs=String(r2(sd.length*stdDay(st)));l.otHrs='';l.note='Standard hours: '+sd.length+' days × '+stdDay(st)+' h';k++});return k}
 function hperiod(){if(S.hp)return S.hp;var R=S.run;if(R&&R.status!=='final')return S.hp={start:R.start,end:R.end};var last=runs()[0];return S.hp=periodOf(last?addDays(last.end,1):S.today)}
 function hm(t){var m=/^(\d{1,2}):(\d{2})$/.exec(t||'');return m?(+m[1])*60+(+m[2]):null}
 function vHours(){
@@ -178,7 +194,7 @@ function vHours(){
   h+='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2 style="margin:0">Hours logged</h2><span class="small muted">'+fmtD(P.start)+' – '+fmtD(P.end)+'</span></div>'+
     '<div class="grid"><div><label>From</label><input type="date" data-hp="start" value="'+esc(P.start)+'"></div><div><label>To</label><input type="date" data-hp="end" value="'+esc(P.end)+'"></div></div>';
   hs.forEach(function(s){var g=logged(s.id,P.start,P.end),list=S.hours.filter(function(x){return x.empId===s.id&&x.date>=P.start&&x.date<=P.end}).sort(function(a,b){return a.date<b.date?-1:1});
-    h+='<div class="emp" style="margin-top:10px"><div class="hd"><b>'+esc(s.name)+'</b><span><b>'+g.total+' h</b>'+'</span></div>'+
+    h+='<div class="emp" style="margin-top:10px"><div class="hd"><b>'+esc(s.name)+'</b><span><b>'+g.total+' h</b>'+'</span></div>'+(schedText(s)?'<div class="small muted">Standard: '+esc(schedText(s))+' <button type="button" class="btn sm" data-act="hstd" data-id="'+esc(s.id)+'">Log standard hours to today</button></div>':'')+
       (list.length?'<table>'+list.map(function(x){return'<tr><td>'+fmtD(x.date)+'</td><td class="small muted">'+(x.start&&x.end?esc(x.start)+'–'+esc(x.end):'')+(x.note?' · '+esc(x.note):'')+'</td><td class="r"><b>'+esc(x.hours)+' h</b></td><td class="r"><button type="button" class="btn sm" data-act="hdel" data-id="'+esc(x.id)+'">✕</button></td></tr>'}).join('')+'</table>':'<div class="small muted">No hours logged in this period.</div>')+
       Object.keys(g.weeks).sort().map(function(w){return'<div class="small muted">Week of '+fmtD(w)+': '+r2(g.weeks[w])+' h</div>'}).join('')+'</div>'});
   return h+'<div class="small muted" style="margin-top:8px">"Fill hours from log" on the pay run copies these in.</div></div>';
@@ -195,8 +211,8 @@ document.addEventListener('change',function(e){var t=e.target;if(t.hasAttribute&
 /* ---------- staff ---------- */
 function vStaff(){
   var rows=S.staff.map(function(s){var hr=s.type==='hourly';return'<tr data-act="staff" data-id="'+esc(s.id)+'" style="cursor:pointer"><td><b>'+esc(s.name)+'</b>'+(s.active==='no'?' <span class="pill">inactive</span>':'')+'</td><td>'+(hr?'Hourly':'Full time')+'</td>'+
-    '<td class="r">'+(hr?money(s.rate):'—')+'</td><td class="r">'+(hr?'—':money(s.rate))+'</td><td class="r">'+(hr?'—':money(per(s.rate)))+'</td><td class="r muted">Edit ›</td></tr>'}).join('');
-  return'<div class="card" style="overflow-x:auto"><table><tr><th>Name</th><th>Type</th><th class="r">Hourly rate (net)</th><th class="r">Annual salary (net)</th><th class="r">Per pay run</th><th></th></tr>'+
+    '<td class="r">'+(hr?money(s.rate)+(schedText(s)?'<div class="small muted">'+esc(schedText(s))+'</div>':''):'—')+'</td><td class="r">'+(hr?'—':money(r2(n(s.rate)/12)))+'</td><td class="r">'+(hr?'—':money(per(s.rate)))+'</td><td class="r muted">Edit ›</td></tr>'}).join('');
+  return'<div class="card" style="overflow-x:auto"><table><tr><th>Name</th><th>Type</th><th class="r">Hourly rate (net)</th><th class="r">Monthly salary (net)</th><th class="r">Per pay run</th><th></th></tr>'+
     (rows||'<tr><td colspan="6" class="muted">No staff yet.</td></tr>')+'</table></div>'+
     '<div class="acts"><button type="button" class="btn primary" data-act="staff">+ Add staff</button></div>';
 }
@@ -204,19 +220,21 @@ function staffForm(s){
   s=s||{type:'salary',otRate:'1.5',active:'yes'};var d=document.createElement('div');d.className='sheet';
   d.innerHTML='<div class="box"><h2>'+(s.id?'Edit':'Add')+' staff</h2><label>Name</label><input id="sn" value="'+esc(s.name)+'">'+
     '<label>Employee type</label><input type="hidden" id="st" value="'+(s.type==='hourly'?'hourly':'salary')+'"><div class="seg"><button type="button" data-ty="salary">Full time (salary)</button><button type="button" data-ty="hourly">Hourly</button></div>'+
-    '<div id="bh"><label>Hourly rate, net ($ per hour)</label><input id="srh" inputmode="decimal" value="'+(s.type==='hourly'?esc(s.rate):'')+'"></div>'+
-    '<div id="bs"><label>Annual salary, net ($ per year)</label><input id="srs" inputmode="decimal" value="'+(s.type!=='hourly'?esc(s.rate):'')+'"><div class="small muted" id="spp"></div></div>'+
+    '<div id="bh"><label>Hourly rate, net ($ per hour)</label><input id="srh" inputmode="decimal" value="'+(s.type==='hourly'?esc(s.rate):'')+'"><label>Standard days</label><div class="days">'+DN.map(function(d,i){var on=String(s.days||'').split(',').indexOf(String(i+1))>=0;return'<label class="dchk"><input type="checkbox" data-day="'+(i+1)+'"'+(on?' checked':'')+'> '+d+'</label>'}).join('')+'</div><div class="grid"><div><label>From</label><input type="time" id="sfrom" value="'+esc(s.from||'')+'"></div><div><label>To</label><input type="time" id="sto" value="'+esc(s.to||'')+'"></div><div><label>Break (min)</label><input id="sbrk" inputmode="numeric" value="'+esc(s.brk||'0')+'"></div></div><div class="small muted" id="sday"></div></div>'+
+    '<div id="bs"><label>Monthly salary, net ($ per month)</label><input id="srs" inputmode="decimal" value="'+(s.type!=='hourly'&&n(s.rate)?r2(n(s.rate)/12):'')+'"><div class="small muted" id="spp"></div></div>'+
     '<label>Start date</label><input type="date" id="ss" value="'+esc(s.start)+'">'+
     '<label>Status</label><select id="sa"><option value="yes">Active</option><option value="no"'+(s.active==='no'?' selected':'')+'>Inactive</option></select>'+
     '<label>Note</label><input id="snote" value="'+esc(s.note)+'">'+
     '<div class="acts"><span class="sp"></span><button type="button" class="btn" id="sx">Cancel</button><button type="button" class="btn primary" id="sv">Save</button></div></div>';
   document.body.appendChild(d);var q=function(x){return d.querySelector(x)};
   d.querySelectorAll('[data-ty]').forEach(function(b){b.onclick=function(){q('#st').value=b.getAttribute('data-ty');sw()}});
-  function sw(){var h=q('#st').value==='hourly';d.querySelectorAll('[data-ty]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-ty')===q('#st').value)});q('#bh').hidden=!h;q('#bs').hidden=h;q('#spp').textContent=n(q('#srs').value)?'= '+money(per(q('#srs').value))+' per pay run (twice a month)':''}
+  function sw(){var h=q('#st').value==='hourly';d.querySelectorAll('[data-ty]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-ty')===q('#st').value)});q('#bh').hidden=!h;q('#bs').hidden=h;q('#spp').textContent=n(q('#srs').value)?'= '+money(r2(n(q('#srs').value)/2))+' per pay run (twice a month)':''}
   q('#srs').oninput=sw;sw();
+  function sd(){var x={from:q('#sfrom').value,to:q('#sto').value,brk:q('#sbrk').value};var h=stdDay(x);q('#sday').textContent=h?'= '+h+' hours a day':''}
+  ['#sfrom','#sto','#sbrk'].forEach(function(k){q(k).oninput=sd});sd();
   q('#sx').onclick=function(){d.remove()};
   q('#sv').onclick=function(){var b=this;b.disabled=true;
-    call('saveStaff',{id:s.id||'',name:q('#sn').value,type:q('#st').value,rate:n(q('#st').value==='hourly'?q('#srh').value:q('#srs').value),otRate:1.5,start:q('#ss').value,active:q('#sa').value,note:q('#snote').value})
+    call('saveStaff',{id:s.id||'',name:q('#sn').value,type:q('#st').value,rate:n(q('#st').value==='hourly'?q('#srh').value:n(q('#srs').value)*12),otRate:1.5,days:[].map.call(d.querySelectorAll('[data-day]:checked'),function(x){return x.getAttribute('data-day')}).join(','),from:q('#sfrom').value,to:q('#sto').value,brk:n(q('#sbrk').value),start:q('#ss').value,active:q('#sa').value,note:q('#snote').value})
       .then(function(r){d.remove();take(r);toast('Saved')}).catch(function(x){b.disabled=false;toast(x.message,true)})};
 }
 
