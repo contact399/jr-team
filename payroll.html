@@ -114,7 +114,7 @@ function render(){
 /* ---------- pay run ---------- */
 function newRun(){
   var last=runs()[0],P=periodOf(last?addDays(last.end,1):S.today),start=P.start,end=P.end;
-  var lines=S.staff.filter(function(s){return s.active!=='no'&&!(s.start&&s.start>end)}).map(function(s){var sf=s.type==='salary'?salFor(s,start,end):{amt:'',note:''};return{empId:s.id,name:s.name,type:s.type,rate:s.rate,otRate:s.otRate,regHrs:'',otHrs:'',base:s.type==='salary'?String(sf.amt):'',bonus:'',reimb:'',deduct:'',note:sf.note}});
+  var lines=S.staff.filter(function(s){return s.active!=='no'&&!(s.start&&s.start>end)}).map(function(s){var sf=s.type==='salary'?salFor(s,start,end):{amt:'',note:''};return{empId:s.id,name:s.name,type:s.type,rate:s.rate,otRate:s.otRate,regHrs:'',otHrs:'',base:s.type==='salary'?String(sf.amt):'',bonus:'',reimb:'',deduct:'',note:sf.note,rokar:n(s.rokar)?String(n(s.rokar)):''}});
   var R={runId:'',start:start,end:end,payDate:payDay(end),status:'draft',lines:lines};fillHours(R,true);return R;
 }
 function vRun(){
@@ -129,7 +129,7 @@ function vRun(){
   h+=R.lines.map(function(l,i){var c=calc(l),hr=l.type==='hourly';
     return'<div class="emp" data-i="'+i+'"><div class="hd"><b>'+esc(l.name)+'</b><span class="sub">'+(hr?money(l.rate)+'/hr':'Salary '+money(r2(n(l.rate)/12))+'/month · '+money(per(l.rate))+' per pay run')+'</span></div><div class="f">'+
       (hr?fld(i,'regHrs','Hours',l.regHrs,dis):fld(i,'base','Salary this period ($)',l.base,dis))+
-      fld(i,'bonus','Bonus ($)',l.bonus,dis)+fld(i,'reimb','Reimbursement ($)',l.reimb,dis)+fld(i,'deduct','Advance / deduction ($)',l.deduct,dis)+fld(i,'chase','From Chase ($)',String(r2(calc(l).pay-Math.min(Math.max(n(l.rokar),0),calc(l).pay))),dis)+fld(i,'rokar','From Rokar ($)',l.rokar||'0',dis)+
+      fld(i,'bonus','Bonus ($)',l.bonus,dis)+fld(i,'reimb','Reimbursement ($)',l.reimb,dis)+fld(i,'deduct','Advance / deduction ($)',l.deduct,dis)+fld(i,'chase','From Chase ($)',String(r2(calc(l).pay-Math.min(Math.max(n(l.rokar),0),calc(l).pay))),dis)+fld(i,'rokar','From Rokar ($)',String(Math.min(Math.max(n(l.rokar),0),calc(l).pay)),dis)+
       '</div><label>Note</label><input data-i="'+i+'" data-k="note" value="'+esc(l.note)+'"'+dis+'>'+
       '<div class="tot"><span class="muted">Earned <b id="g'+i+'">'+money(c.gross)+'</b></span><span>Net pay <b id="p'+i+'">'+money(c.pay)+'</b></span></div><div class="small muted" style="text-align:right" id="sp'+i+'">'+split(l)+'</div><div></div>'+
       (!fin?'<div style="text-align:right;margin-top:6px"><button type="button" class="btn sm" data-act="dropline" data-i="'+i+'">Remove from this run</button></div>':'')+'</div>'}).join('');
@@ -155,7 +155,7 @@ document.addEventListener('click',function(e){
   var tb=e.target.closest('[data-tab]');if(tb){S.tab=tb.getAttribute('data-tab');render();return}
   var b=e.target.closest('[data-act]');if(!b)return;var a=b.getAttribute('data-act');
   if(a==='new'){S.run=newRun();S.tab='run';render()}
-  else if(a==='addline'){var s=S.staff.filter(function(x){return x.id===b.getAttribute('data-id')})[0];var sf=s.type==='salary'?salFor(s,S.run.start,S.run.end):{amt:'',note:''};S.run.lines.push({empId:s.id,name:s.name,type:s.type,rate:s.rate,otRate:s.otRate,regHrs:'',otHrs:'',base:s.type==='salary'?String(sf.amt):'',bonus:'',reimb:'',deduct:'',note:sf.note});render()}
+  else if(a==='addline'){var s=S.staff.filter(function(x){return x.id===b.getAttribute('data-id')})[0];var sf=s.type==='salary'?salFor(s,S.run.start,S.run.end):{amt:'',note:''};S.run.lines.push({empId:s.id,name:s.name,type:s.type,rate:s.rate,otRate:s.otRate,regHrs:'',otHrs:'',base:s.type==='salary'?String(sf.amt):'',bonus:'',reimb:'',deduct:'',note:sf.note,rokar:n(s.rokar)?String(n(s.rokar)):''});render()}
   else if(a==='dropline'){S.run.lines.splice(+b.getAttribute('data-i'),1);render()}
   else if(a==='save'||a==='final'){if(a==='final'&&!confirm('Finalise this pay run? It locks the amounts and adds each payment to the Register (Chase / Rokar).'))return;saveRun(a==='final'?'final':'draft',b)}
   else if(a==='reopen'){saveRun('draft',b,true)}
@@ -233,9 +233,9 @@ document.addEventListener('change',function(e){var t=e.target;if(t.hasAttribute&
 /* ---------- staff ---------- */
 function vStaff(){
   var rows=S.staff.map(function(s){var hr=s.type==='hourly';return'<tr data-act="staff" data-id="'+esc(s.id)+'" style="cursor:pointer"><td><b>'+esc(s.name)+'</b>'+(s.active==='no'?' <span class="pill">inactive</span>':'')+'</td><td>'+(hr?'Hourly':'Full time')+'</td>'+
-    '<td class="r">'+(hr?money(s.rate)+(schedText(s)?'<div class="small muted">'+esc(schedText(s))+'</div>':''):'—')+'</td><td class="r">'+(hr?'—':money(r2(n(s.rate)/12)))+'</td><td class="r">'+(hr?'—':money(per(s.rate)))+'</td><td class="r muted">Edit ›</td></tr>'}).join('');
-  return'<div class="card" style="overflow-x:auto"><table><tr><th>Name</th><th>Type</th><th class="r">Hourly rate (net)</th><th class="r">Monthly salary (net)</th><th class="r">Per pay run</th><th></th></tr>'+
-    (rows||'<tr><td colspan="6" class="muted">No staff yet.</td></tr>')+'</table></div>'+
+    '<td class="r">'+(hr?money(s.rate)+(schedText(s)?'<div class="small muted">'+esc(schedText(s))+'</div>':''):'—')+'</td><td class="r">'+(hr?'—':money(r2(n(s.rate)/12)))+'</td><td class="r">'+(hr?'—':money(per(s.rate)))+'</td><td class="r">'+(n(s.rokar)>=99999?'All':n(s.rokar)?money(s.rokar):'—')+'</td><td class="r muted">Edit ›</td></tr>'}).join('');
+  return'<div class="card" style="overflow-x:auto"><table><tr><th>Name</th><th>Type</th><th class="r">Hourly rate (net)</th><th class="r">Monthly salary (net)</th><th class="r">Per pay run</th><th class="r">From Rokar</th><th></th></tr>'+
+    (rows||'<tr><td colspan="7" class="muted">No staff yet.</td></tr>')+'</table></div>'+
     '<div class="acts"><button type="button" class="btn primary" data-act="staff">+ Add staff</button></div>';
 }
 function staffForm(s){
@@ -246,6 +246,7 @@ function staffForm(s){
     '<div id="bs"><label>Monthly salary, net ($ per month)</label><input id="srs" inputmode="decimal" value="'+(s.type!=='hourly'&&n(s.rate)?r2(n(s.rate)/12):'')+'"><div class="small muted" id="spp"></div></div>'+
     '<label>Start date</label><input type="date" id="ss" value="'+esc(s.start)+'">'+
     '<label>Status</label><select id="sa"><option value="yes">Active</option><option value="no"'+(s.active==='no'?' selected':'')+'>Inactive</option></select>'+
+    '<label>Paid from Rokar each pay run ($)</label><input id="srk" inputmode="decimal" placeholder="0 = all from Chase, type all = all from Rokar" value="'+(n(s.rokar)>=99999?'all':n(s.rokar)?esc(s.rokar):'')+'">'+
     '<label>Note</label><input id="snote" value="'+esc(s.note)+'">'+
     '<div class="acts"><span class="sp"></span><button type="button" class="btn" id="sx">Cancel</button><button type="button" class="btn primary" id="sv">Save</button></div></div>';
   document.body.appendChild(d);var q=function(x){return d.querySelector(x)};
@@ -256,7 +257,7 @@ function staffForm(s){
   ['#sfrom','#sto','#sbrk'].forEach(function(k){q(k).oninput=sd});sd();
   q('#sx').onclick=function(){d.remove()};
   q('#sv').onclick=function(){var b=this;b.disabled=true;
-    call('saveStaff',{id:s.id||'',name:q('#sn').value,type:q('#st').value,rate:n(q('#st').value==='hourly'?q('#srh').value:n(q('#srs').value)*12),otRate:1.5,days:[].map.call(d.querySelectorAll('[data-day]:checked'),function(x){return x.getAttribute('data-day')}).join(','),from:q('#sfrom').value,to:q('#sto').value,brk:n(q('#sbrk').value),start:q('#ss').value,active:q('#sa').value,note:q('#snote').value})
+    call('saveStaff',{id:s.id||'',name:q('#sn').value,type:q('#st').value,rate:n(q('#st').value==='hourly'?q('#srh').value:n(q('#srs').value)*12),otRate:1.5,days:[].map.call(d.querySelectorAll('[data-day]:checked'),function(x){return x.getAttribute('data-day')}).join(','),from:q('#sfrom').value,to:q('#sto').value,brk:n(q('#sbrk').value),rokar:/all/i.test(q('#srk').value)?99999:n(q('#srk').value),start:q('#ss').value,active:q('#sa').value,note:q('#snote').value})
       .then(function(r){d.remove();take(r);toast('Saved')}).catch(function(x){b.disabled=false;toast(x.message,true)})};
 }
 
