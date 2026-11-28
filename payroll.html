@@ -78,6 +78,9 @@ function toast(t,bad){var d=document.createElement('div');d.className='toast';d.
 function addDays(d,k){var x=new Date(d+'T12:00:00');x.setDate(x.getDate()+k);return x.toISOString().slice(0,10)}
 function fmtD(d){if(!d)return'';var x=new Date(d+'T12:00:00');return x.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}
 function per(a){return r2(n(a)/26)}
+function days(a,b){return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/864e5)+1}
+function salFor(s,start,end){var full=per(s.rate);if(!s.start||s.start<=start)return{amt:full,note:''};if(s.start>end)return{amt:0,note:'Starts '+fmtD(s.start)};
+  var d=days(s.start,end),tot=days(start,end);return{amt:r2(full*d/tot),note:'Prorated: started '+fmtD(s.start)+' ('+d+' of '+tot+' days)'}}
 function calc(l){var rate=n(l.rate),base=l.type==='hourly'?r2(rate*n(l.regHrs)+rate*(n(l.otRate)||1.5)*n(l.otHrs)):r2(n(l.base));var gross=r2(base+n(l.bonus));return{base:base,gross:gross,pay:r2(gross+n(l.reimb)-n(l.deduct))}}
 
 function runs(){var m={};S.lines.forEach(function(l){var r=m[l.runId]||(m[l.runId]={runId:l.runId,start:l.start,end:l.end,payDate:l.payDate,status:l.status,lines:[],gross:0,pay:0});r.lines.push(l);r.gross+=n(l.gross);r.pay+=n(l.pay);if(l.status==='final')r.status='final'});
@@ -97,7 +100,7 @@ function render(){
 /* ---------- pay run ---------- */
 function newRun(){
   var last=runs()[0],start=last?addDays(last.end,1):addDays(S.today,-13),end=addDays(start,13);
-  var lines=S.staff.filter(function(s){return s.active!=='no'}).map(function(s){return{empId:s.id,name:s.name,type:s.type,rate:s.rate,otRate:s.otRate,regHrs:'',otHrs:'',base:s.type==='salary'?per(s.rate):'',bonus:'',reimb:'',deduct:'',note:''}});
+  var lines=S.staff.filter(function(s){return s.active!=='no'&&!(s.start&&s.start>end)}).map(function(s){var sf=s.type==='salary'?salFor(s,start,end):{amt:'',note:''};return{empId:s.id,name:s.name,type:s.type,rate:s.rate,otRate:s.otRate,regHrs:'',otHrs:'',base:s.type==='salary'?String(sf.amt):'',bonus:'',reimb:'',deduct:'',note:sf.note}});
   var R={runId:'',start:start,end:end,payDate:addDays(end,5),status:'draft',lines:lines};fillHours(R,true);return R;
 }
 function vRun(){
@@ -135,7 +138,7 @@ document.addEventListener('click',function(e){
   var tb=e.target.closest('[data-tab]');if(tb){S.tab=tb.getAttribute('data-tab');render();return}
   var b=e.target.closest('[data-act]');if(!b)return;var a=b.getAttribute('data-act');
   if(a==='new'){S.run=newRun();S.tab='run';render()}
-  else if(a==='addline'){var s=S.staff.filter(function(x){return x.id===b.getAttribute('data-id')})[0];S.run.lines.push({empId:s.id,name:s.name,type:s.type,rate:s.rate,otRate:s.otRate,regHrs:'',otHrs:'',base:s.type==='salary'?per(s.rate):'',bonus:'',reimb:'',deduct:'',note:''});render()}
+  else if(a==='addline'){var s=S.staff.filter(function(x){return x.id===b.getAttribute('data-id')})[0];var sf=s.type==='salary'?salFor(s,S.run.start,S.run.end):{amt:'',note:''};S.run.lines.push({empId:s.id,name:s.name,type:s.type,rate:s.rate,otRate:s.otRate,regHrs:'',otHrs:'',base:s.type==='salary'?String(sf.amt):'',bonus:'',reimb:'',deduct:'',note:sf.note});render()}
   else if(a==='dropline'){S.run.lines.splice(+b.getAttribute('data-i'),1);render()}
   else if(a==='save'||a==='final'){if(a==='final'&&!confirm('Finalise this pay run? It locks the amounts (you can reopen it later).'))return;saveRun(a==='final'?'final':'draft',b)}
   else if(a==='reopen'){saveRun('draft',b,true)}
