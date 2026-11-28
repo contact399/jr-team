@@ -102,7 +102,7 @@ function call(fn){ var a = [].slice.call(arguments, 1); return JR.rpc('reg', fn,
 function toast(t, bad){ var d = document.createElement('div'); d.className = 'toast'; d.textContent = t; if (bad) d.style.background = 'var(--bad)'; document.body.appendChild(d); setTimeout(function(){ d.remove(); }, bad ? 5000 : 2500); }
 function acct(k){ for (var i = 0; i < S.accounts.length; i++) if (S.accounts[i].key === k) return S.accounts[i]; return { key: k, name: k, kind: 'checking' }; }
 function aname(k){ var a = acct(k); return a.name || k; }
-function short(k){ var a = acct(k); return a.kind === 'cash' ? 'Cash' : (a.bank === 'Bank of America' ? 'BofA' : a.bank || k) + (a.last4 ? ' …' + a.last4 : ''); }
+function short(k){ var a = acct(k); return a.kind === 'cash' ? (a.name || 'Rokar') : (a.bank === 'Bank of America' ? 'BofA' : a.bank || k) + (a.last4 ? ' …' + a.last4 : ''); }
 function today(){ return S.today || new Date().toISOString().slice(0,10); }
 function upsert(list){ (list||[]).forEach(function(r){ var i = S.rows.findIndex(function(x){ return x.id === r.id; }); if (i >= 0) S.rows[i] = r; else S.rows.push(r);
   if (r.category === 'Loans' || r.category === 'Paid for others') { var j = S.loans.findIndex(function(x){ return x.id === r.id; }); if (j >= 0) S.loans[j] = r; else S.loans.push(r); } }); recount(); }
@@ -127,7 +127,7 @@ function load(year){
 $('year').addEventListener('change', function(){ load(this.value); });
 
 /* ---------- tabs ---------- */
-var TABS = [['review','Review'],['register','Register'],['uploadify','Uploadify'],['cash','Cash'],['loans','Loans & owed'],['import','Import'],['reports','Reports'],['accounts','Accounts']];
+var TABS = [['review','Review'],['register','Register'],['uploadify','Uploadify'],['cash','Rokar'],['loans','Loans & owed'],['import','Import'],['reports','Reports'],['accounts','Accounts']];
 function renderTabs(){
   $('tabs').innerHTML = TABS.map(function(t){
     var n = t[0] === 'review' ? S.counts.review : t[0] === 'uploadify' ? S.counts.uploadify : 0;
@@ -237,10 +237,10 @@ VIEWS.cash = function(){
   var bal = S.balances.CASH || 0, rows = S.rows.filter(function(r){ return r.account === 'CASH' && r.status !== 'void'; }).sort(function(a,b){ return a.date < b.date ? 1 : a.date > b.date ? -1 : (a.id < b.id ? 1 : -1); });
   var last = S.years[S.years.length - 1] || S.year, running = bal, showRun = S.year >= last;
   var counts = rows.filter(function(r){ return r.type === 'Cash count'; });
-  return '<div class="card"><div class="small muted" style="text-transform:uppercase;letter-spacing:.05em;font-weight:600">Cash in the register</div><div class="big">' + money(bal) + '</div>' +
-    '<div class="small muted">' + (counts.length ? 'Last counted ' + esc(counts[0].date) : 'Not counted yet. Tap “Count cash” to set the starting amount.') + '</div>' +
-    '<div class="row" style="margin-top:10px"><button type="button" class="btn" data-act="add" data-kind="cash">+ Cash in / out</button><button type="button" class="btn ghost" data-act="count">Count cash</button></div></div>' +
-    (rows.length ? '<div class="card">' + rows.map(function(r){ var h = txLine(r, showRun ? 'bal ' + money(running) : ''); running -= signed(r); return h; }).join('') + '</div>' : '<div class="msg info">No cash movements in ' + esc(S.year) + ' yet. ATM withdrawals from the bank files land here by themselves.</div>');
+  return '<div class="card"><div class="small muted" style="text-transform:uppercase;letter-spacing:.05em;font-weight:600">Rokar balance</div><div class="big">' + money(bal) + '</div>' +
+    '<div class="small muted">' + (counts.length ? 'Last counted ' + esc(counts[0].date) : 'Not counted yet. Tap “Count Rokar” to set the starting amount.') + '</div>' +
+    '<div class="row" style="margin-top:10px"><button type="button" class="btn" data-act="add" data-kind="cash">+ Rokar in / out</button><button type="button" class="btn ghost" data-act="count">Count Rokar</button></div></div>' +
+    (rows.length ? '<div class="card">' + rows.map(function(r){ var h = txLine(r, showRun ? 'bal ' + money(running) : ''); running -= signed(r); return h; }).join('') + '</div>' : '<div class="msg info">No Rokar movements in ' + esc(S.year) + ' yet. ATM withdrawals from the bank files land here by themselves.</div>');
 };
 
 VIEWS.loans = function(){
@@ -370,7 +370,7 @@ function showImport(){
       '<label>Which account is this?</label><select data-imp-acct="' + i + '"><option value="">— pick the account —</option>' + S.accounts.filter(function(a){ return a.kind !== 'cash'; }).map(function(a){ return '<option value="' + esc(a.key) + '"' + (info.account === a.key ? ' selected' : '') + '>' + esc(a.name) + '</option>'; }).join('') + '</select>' +
       (info.account ? '<div class="tbl" style="margin-top:10px"><table>' +
         '<tr><td>Sales &amp; bills → Uploadify queue</td><td><b>' + b.upl + '</b></td></tr>' +
-        '<tr><td>Cash withdrawals → cash register</td><td><b>' + b.cash + '</b></td></tr>' +
+        '<tr><td>Cash withdrawals → Rokar</td><td><b>' + b.cash + '</b></td></tr>' +
         '<tr><td>Expenses, taxes, fees, payroll → register only</td><td><b>' + b.bank + '</b></td></tr>' +
         '<tr><td>Own transfers &amp; card payments → not counted as income or cost</td><td><b>' + b.transfer + '</b></td></tr>' +
         '<tr><td>Need you → Review tab</td><td><b>' + b.review + '</b></td></tr>' +
@@ -402,7 +402,7 @@ function acctOptions(val, filter){ return S.accounts.filter(filter || function()
 function addForm(kind, preset){
   preset = preset || {};
   ED = { kind: kind || 'cash', dir: preset.dir || 'in', loanType: preset.loanType || 'Lent money' };
-  var k = ED.kind, h = '<h3>Add to the register</h3><div class="seg" style="margin-bottom:10px">' + [['cash','Cash'],['loan','Loan'],['others','Paid for others'],['bank','Check / wire / other']].map(function(x){ return '<button type="button" data-act="kind" data-v="' + x[0] + '"' + (k === x[0] ? ' class="on"' : '') + '>' + x[1] + '</button>'; }).join('') + '</div>';
+  var k = ED.kind, h = '<h3>Add to the register</h3><div class="seg" style="margin-bottom:10px">' + [['cash','Rokar'],['loan','Loan'],['others','Paid for others'],['bank','Check / wire / other']].map(function(x){ return '<button type="button" data-act="kind" data-v="' + x[0] + '"' + (k === x[0] ? ' class="on"' : '') + '>' + x[1] + '</button>'; }).join('') + '</div>';
   if (k === 'others') {
     ED.othersType = preset.back ? 'Paid back to us' : 'Paid for them';
     h += '<div class="seg" style="margin-bottom:4px">' + ['Paid for them','Paid back to us'].map(function(t){ return '<button type="button" data-act="otype" data-v="' + t + '"' + (ED.othersType === t ? ' class="on"' : '') + '>' + t + '</button>'; }).join('') + '</div>' +
@@ -413,7 +413,7 @@ function addForm(kind, preset){
     h += '<label>What happened?</label><div class="seg" style="grid-auto-flow:row;grid-template-columns:1fr 1fr">' + ['Lent money','Borrowed','Repayment received','We repaid'].map(function(t){ return '<button type="button" data-act="ltype" data-v="' + t + '"' + (ED.loanType === t ? ' class="on"' : '') + '>' + t + ' · ' + C.LOAN_DIR[t] + '</button>'; }).join('') + '</div>' +
       '<label>Person / company</label><input id="f-party" list="loan-people" value="' + esc(preset.party || '') + '"><datalist id="loan-people">' + uniq(S.loans.map(function(r){ return r.party; })).map(function(p){ return '<option value="' + esc(p) + '">'; }).join('') + '</datalist>' +
       '<label>Paid from / into</label><select id="f-acct">' + acctOptions(preset.account || 'CASH', function(a){ return a.kind !== 'card'; }) + '</select>' +
-      '<div class="small muted">Cash moves the cash register. A bank account: when that bank file is imported, the same line is matched to this entry instead of being added twice.</div>';
+      '<div class="small muted">Rokar moves the Rokar balance. A bank account: when that bank file is imported, the same line is matched to this entry instead of being added twice.</div>';
   } else {
     h += '<div class="seg" style="margin-bottom:4px"><button type="button" data-act="dir" data-v="in"' + (ED.dir === 'in' ? ' class="on"' : '') + '>Money in</button><button type="button" data-act="dir" data-v="out"' + (ED.dir === 'out' ? ' class="on"' : '') + '>Money out</button></div>';
     if (k === 'bank') h += '<label>Account</label><select id="f-acct">' + acctOptions(preset.account || 'CH7081', function(a){ return a.kind !== 'cash'; }) + '</select>';
@@ -445,7 +445,7 @@ function addSave(btn){
 }
 function bumpBal(list, sign){ (list || []).forEach(function(r){ S.balances[r.account] = Math.round(((S.balances[r.account] || 0) + (sign || 1) * signed(r)) * 100) / 100; }); }
 function countForm(){
-  openSheet('<h3>Count cash</h3><p class="small muted">Count what is in the drawer and type the total. The app records the difference so the register matches.</p>' +
+  openSheet('<h3>Count Rokar</h3><p class="small muted">Count what is in the drawer and type the total. The app records the difference so the register matches.</p>' +
     '<div class="msg info">The register says ' + money(S.balances.CASH || 0) + '</div><label>Counted amount ($)</label><input id="f-count" inputmode="decimal" style="font-size:20px;font-weight:700"><label>Date</label><input id="f-date" type="date" value="' + today() + '">' +
     '<button type="button" class="btn full" data-act="countSave">Save count</button><button type="button" class="btn ghost full" data-act="close">Cancel</button>');
 }
@@ -455,7 +455,7 @@ function countSave(btn){
   if (Math.abs(diff) < 0.005) { closeSheet(); return toast('Matches the register. Nothing to change.'); }
   btn.disabled = true;
   call('add', [{ date: $('f-date').value, account: 'CASH', dir: diff > 0 ? 'in' : 'out', amount: Math.abs(diff), category: 'Adjustments', type: 'Cash count', party: 'Cash count', notes: 'Counted ' + money(c) + ', register said ' + money(S.balances.CASH || 0), uploadify: '', source: 'manual' }])
-    .then(function(r){ upsert(r); bumpBal(r); closeSheet(); toast('Cash register set to ' + money(c)); render(); }).catch(function(x){ toast(x.message, 1); btn.disabled = false; });
+    .then(function(r){ upsert(r); bumpBal(r); closeSheet(); toast('Rokar set to ' + money(c)); render(); }).catch(function(x){ toast(x.message, 1); btn.disabled = false; });
 }
 function editForm(id){
   var r = S.rows.filter(function(x){ return x.id === id; })[0] || S.loans.filter(function(x){ return x.id === id; })[0]; if (!r) return;
