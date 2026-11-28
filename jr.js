@@ -12,7 +12,8 @@
     { id: 'melt', label: 'Melt', href: 'melt.html' },
     { id: 'pearl', label: 'Pearl Chau', href: 'pearl.html' },
     { id: 'reg', label: 'Register', href: 'register.html' },
-    { id: 'calls', label: 'Requests', href: 'calls.html' }
+    { id: 'calls', label: 'Requests', href: 'calls.html' },
+    { id: 'petty', label: 'Petty cash', href: 'petty.html', sub: 'reg' }   // shown on its own only to people without Register
   ];
   function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }
@@ -149,8 +150,9 @@
     if (LUX) { var br = document.createElement('span'); br.className = 'br'; br.textContent = 'Jupiter Rain'; b.appendChild(br); }
     APPS.forEach(function (a) {
       if (allowed && allowed.indexOf(a.id) < 0) return;
+      if (a.sub && (!allowed || allowed.indexOf(a.sub) >= 0)) return;
       var x = document.createElement('a'); x.href = a.href; x.textContent = a.label;
-      if (a.id === MOD) x.setAttribute('aria-current', 'page');
+      if (a.id === MOD || (a.id === 'reg' && MOD === 'petty')) x.setAttribute('aria-current', 'page');
       b.appendChild(x);
     });
     var sp = document.createElement('span'); sp.className = 'sp'; b.appendChild(sp);

@@ -132,7 +132,7 @@ function renderTabs(){
   $('tabs').innerHTML = TABS.map(function(t){
     var n = t[0] === 'review' ? S.counts.review : t[0] === 'uploadify' ? S.counts.uploadify : 0;
     return '<button type="button" data-tab="' + t[0] + '"' + (S.tab === t[0] ? ' class="on" aria-current="page"' : '') + '>' + t[1] + (n ? '<span class="badge">' + n + '</span>' : '') + '</button>';
-  }).join('');
+  }).join('') + '<button type="button" onclick="location.href=\'petty.html\'">Petty cash</button>';
 }
 function render(){ renderTabs(); var f = VIEWS[S.tab] || VIEWS.register; $('main').innerHTML = f(); window.scrollTo(0, 0); after(); }
 function after(){ var fi = $('files'); if (fi) fi.addEventListener('change', function(){ readFiles(this.files); }); }

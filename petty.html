@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<title>JR Team · Petty cash</title><script>window.JR_MOD="petty";</script><script src="jr.js"></script>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://script.google.com"><link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
+<meta name="theme-color" content="#1F3D33"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{--bg:#f6f5f2;--card:#fff;--ink:#1b1d21;--muted:#62666d;--line:#e3e1dc;--gold:#a8790f;--gold-soft:#f6ecd4;--navy:#1f3864;
+  --ok:#1d7a46;--ok-soft:#e3f3e9;--bad:#b3261e;--bad-soft:#fbe6e4}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:760px;margin:0 auto;padding:14px 14px calc(96px + env(safe-area-inset-bottom,0px))}
+.crumb{font-size:13px;color:var(--muted);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.crumb a{color:var(--navy);text-decoration:none;font-weight:600}
+h1{font-size:28px;margin:4px 0 12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.bal{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:14px}
+.bal .l{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.bal .v{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums}
+.bal .v.neg{color:var(--bad)}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px}
+.filters button{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:7px 13px;border-radius:999px;font:inherit;font-size:14px}
+.filters button.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.mon{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:16px 2px 6px;display:flex;justify-content:space-between}
+.row{display:flex;gap:10px;align-items:center;padding:11px 12px;border-bottom:1px solid var(--line);background:var(--card);cursor:pointer}
+.list{border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.list .row:last-child{border-bottom:0}
+.row .d{width:44px;text-align:center;font-size:12px;color:var(--muted);line-height:1.2}
+.row .d b{display:block;font-size:18px;color:var(--ink)}
+.row .m{flex:1;min-width:0}
+.row .p{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .s{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .a{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.row .a.in{color:var(--ok)}
+.row.void{opacity:.45}.row.void .a{text-decoration:line-through}
+.rc{font-size:12px;border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:var(--muted);margin-left:6px}
+.btn{font:inherit;font-weight:600;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:11px 16px;cursor:pointer}
+.btn.primary{background:var(--navy);border-color:var(--navy);color:#fff}
+.btn.danger{color:var(--bad)}
+.fab{position:fixed;right:16px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:20;box-shadow:0 6px 18px rgba(0,0,0,.18);padding:14px 20px;border-radius:999px}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:60;display:flex;align-items:flex-end;justify-content:center}
+.sheet .box{background:var(--card);width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom,0px))}
+@media(min-width:700px){.sheet{align-items:center}.sheet .box{border-radius:18px}}
+.box h2{margin:0 0 8px;font-size:22px}
+label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+input,select,textarea{font:inherit;font-size:16px;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);width:100%}
+.seg{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.seg button{flex:1;border:0;background:var(--card);font:inherit;font-weight:600;padding:11px;color:var(--ink)}
+.seg button.on.out{background:var(--bad-soft);color:var(--bad)}
+.seg button.on.in{background:var(--ok-soft);color:var(--ok)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.acts{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.acts .sp{flex:1}
+.thumb{max-width:100%;max-height:220px;border-radius:10px;margin-top:8px;display:block}
+.msg{padding:12px;border-radius:12px;background:var(--gold-soft);margin:10px 0}
+.msg.bad{background:var(--bad-soft);color:var(--bad)}
+.empty{color:var(--muted);text-align:center;padding:30px 10px}
+.viewer img{width:100%;border-radius:10px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:#1b1d21;color:#fff;padding:10px 16px;border-radius:999px;z-index:80;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="crumb" id="crumb"></div>
+  <h1>Petty cash</h1>
+  <div id="main"><div class="empty">Loading…</div></div>
+</div>
+<button type="button" class="btn primary fab" id="add" hidden>+ Add entry</button>
+<script>
+(function(){
+'use strict';
+var S={rows:[],cats:[],balance:0,me:'',filter:'all'};
+var $=function(id){return document.getElementById(id)};
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function money(n){var v=Math.abs(Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});return(Number(n)<0?'−$':'$')+v}
+function call(fn){var a=[].slice.call(arguments,1);return JR.rpc('petty',fn,a)}
+function toast(t,bad){var d=document.createElement('div');d.className='toast';d.textContent=t;if(bad)d.style.background='var(--bad)';document.body.appendChild(d);setTimeout(function(){d.remove()},bad?5000:2200)}
+var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function take(r){S.rows=r.rows||[];S.cats=r.cats||[];S.balance=r.balance;S.me=r.me;S.today=r.today;S.sheetUrl=r.sheetUrl;render()}
+function load(){return call('boot').then(take).catch(function(e){$('main').innerHTML='<div class="msg bad">'+esc(e.message)+'</div><button class="btn" id="retry" type="button">Try again</button>';var b=$('retry');if(b)b.onclick=load})}
+
+function render(){
+  $('crumb').innerHTML=S.me==='Karan'?'<a href="register.html">‹ Register</a><span>›</span><span>Petty cash</span>'+(S.sheetUrl?'<a href="'+esc(S.sheetUrl)+'" target="_blank" rel="noopener" style="margin-left:auto">Open sheet</a>':''):'<span>Signed in as '+esc(S.me)+'</span>';
+  $('add').hidden=false;
+  var live=S.rows.filter(function(r){return r.status!=='void'});
+  var mIn=0,mOut=0,ym=(S.today||'').slice(0,7);
+  live.forEach(function(r){if(r.date.slice(0,7)===ym){if(r.dir==='in')mIn+=+r.amount;else mOut+=+r.amount}});
+  var h='<div class="card bal"><div><div class="l">Cash in the box</div><div class="v'+(S.balance<0?' neg':'')+'">'+money(S.balance)+'</div></div>'+
+    '<div style="text-align:right;font-size:13px;color:var(--muted)">This month<br><span style="color:var(--ok)">+'+money(mIn)+'</span> · <span style="color:var(--bad)">−'+money(mOut).replace('$','$')+'</span></div></div>';
+  h+='<div class="filters">'+[['all','All'],['out','Spent'],['in','Cash added'],['norc','No receipt']].map(function(f){return'<button type="button" data-f="'+f[0]+'"'+(S.filter===f[0]?' class="on"':'')+'>'+f[1]+'</button>'}).join('')+'</div>';
+  var list=S.rows.filter(function(r){return S.filter==='all'||(S.filter==='norc'?(r.dir==='out'&&!r.receipt&&r.status!=='void'):r.dir===S.filter)});
+  if(!list.length)h+='<div class="empty">'+(S.rows.length?'Nothing here.':'No entries yet. Tap <b>+ Add entry</b> to start — add the cash in the box first as “Cash added”.')+'</div>';
+  var cur='',tot=0,buf='';
+  function flush(){if(cur)h+='<div class="mon"><span>'+cur+'</span></div><div class="list">'+buf+'</div>';buf=''}
+  list.forEach(function(r){
+    var k=MON[+r.date.slice(5,7)-1]+' '+r.date.slice(0,4);
+    if(k!==cur){flush();cur=k}
+    buf+='<div class="row'+(r.status==='void'?' void':'')+'" data-id="'+esc(r.id)+'"><div class="d"><b>'+(+r.date.slice(8,10))+'</b>'+MON[+r.date.slice(5,7)-1]+'</div>'+
+      '<div class="m"><div class="p">'+esc(r.party||(r.dir==='in'?'Cash added':'—'))+'</div><div class="s">'+esc([r.category,r.note].filter(Boolean).join(' · '))+(r.by&&S.me==='Karan'?' · '+esc(r.by):'')+'</div></div>'+
+      '<div class="a'+(r.dir==='in'?' in':'')+'">'+(r.dir==='in'?'+':'−')+money(r.amount)+(r.receipt?'<span class="rc" title="Receipt">📎</span>':'')+'</div></div>';
+  });
+  flush();
+  $('main').innerHTML=h;
+}
+
+document.addEventListener('click',function(e){
+  var f=e.target.closest('[data-f]');if(f){S.filter=f.getAttribute('data-f');render();return}
+  var r=e.target.closest('.row[data-id]');if(r){var o=S.rows.filter(function(x){return x.id===r.getAttribute('data-id')})[0];if(o)form(o);return}
+});
+$('add').onclick=function(){form(null)};
+
+function shrink(file){return new Promise(function(res,rej){
+  var fr=new FileReader();fr.onerror=rej;fr.onload=function(){var img=new Image();img.onerror=function(){rej(new Error('Could not read that photo.'))};img.onload=function(){
+    var max=1600,w=img.width,h=img.height,s=Math.min(1,max/Math.max(w,h));var c=document.createElement('canvas');c.width=Math.round(w*s);c.height=Math.round(h*s);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);var u=c.toDataURL('image/jpeg',0.72);res({b64:u.split(',')[1],mime:'image/jpeg',url:u})};img.src=fr.result};fr.readAsDataURL(file)})}
+
+function form(o){
+  var isNew=!o;o=o||{dir:'out',date:S.today,amount:'',party:'',category:'',note:''};
+  var dir=o.dir,photo=null;
+  var d=document.createElement('div');d.className='sheet';
+  d.innerHTML='<div class="box" role="dialog" aria-label="Petty cash entry"><h2>'+(isNew?'New entry':'Edit entry')+'</h2>'+
+    '<div class="seg"><button type="button" data-d="out" class="out">Cash out (spent)</button><button type="button" data-d="in" class="in">Cash in (added)</button></div>'+
+    '<div class="two"><div><label>Date</label><input type="date" id="pd" value="'+esc(o.date)+'"></div><div><label>Amount ($)</label><input id="pa" inputmode="decimal" placeholder="0.00" value="'+esc(o.amount)+'"></div></div>'+
+    '<label id="ppl">Paid to</label><input id="pp" value="'+esc(o.party)+'" placeholder="Shop / person" autocomplete="off">'+
+    '<label>Category</label><select id="pc"><option value="">—</option>'+S.cats.map(function(c){return'<option'+(c===o.category?' selected':'')+'>'+esc(c)+'</option>'}).join('')+'</select>'+
+    '<label>Note</label><input id="pn" value="'+esc(o.note)+'" placeholder="What was it for?">'+
+    '<label>Receipt photo</label><input type="file" id="pf" accept="image/*" capture="environment"><div id="pv"></div>'+
+    (o.receipt?'<button type="button" class="btn" id="seer" style="margin-top:8px">View saved receipt</button>':'')+
+    '<div id="perr"></div><div class="acts">'+(!isNew?'<button type="button" class="btn danger" id="pvoid">'+(o.status==='void'?'Restore':'Void')+'</button>':'')+
+    '<span class="sp"></span><button type="button" class="btn" id="pcancel">Cancel</button><button type="button" class="btn primary" id="psave">Save</button></div></div>';
+  document.body.appendChild(d);
+  var q=function(s){return d.querySelector(s)};
+  function seg(){[].forEach.call(d.querySelectorAll('[data-d]'),function(b){b.classList.toggle('on',b.getAttribute('data-d')===dir)});q('#ppl').textContent=dir==='in'?'Received from':'Paid to'}
+  seg();
+  d.querySelectorAll('[data-d]').forEach(function(b){b.onclick=function(){dir=b.getAttribute('data-d');if(dir==='in'&&!q('#pc').value)q('#pc').value='Cash added';seg()}});
+  function close(){d.remove()}
+  d.addEventListener('click',function(e){if(e.target===d)close()});
+  q('#pcancel').onclick=close;
+  q('#pf').onchange=function(){var f=this.files[0];if(!f)return;q('#pv').textContent='Reading photo…';shrink(f).then(function(p){photo=p;q('#pv').innerHTML='<img class="thumb" alt="Receipt" src="'+p.url+'">'}).catch(function(e){q('#pv').textContent=e.message})};
+  if(q('#seer'))q('#seer').onclick=function(){viewReceipt(o.receipt)};
+  if(q('#pvoid'))q('#pvoid').onclick=function(){var undo=o.status==='void';if(!undo&&!confirm('Void this entry? It stays in the list, crossed out, and no longer counts.'))return;
+    call('voidEntry',o.id,undo).then(function(r){close();take(r);toast(undo?'Restored':'Voided')}).catch(function(e){toast(e.message,true)})};
+  q('#psave').onclick=function(){
+    var b=this,amt=q('#pa').value.replace(/[$,\s]/g,'');
+    if(!(parseFloat(amt)>0)){q('#perr').innerHTML='<div class="msg bad">Enter an amount.</div>';return}
+    if(isNew&&dir==='out'&&!photo&&!confirm('No receipt photo. Save anyway?'))return;
+    b.disabled=true;b.textContent='Saving…';
+    call('save',{id:isNew?'':o.id,dir:dir,date:q('#pd').value,amount:amt,party:q('#pp').value.trim(),category:q('#pc').value,note:q('#pn').value.trim(),photo:photo?{b64:photo.b64,mime:photo.mime}:null})
+      .then(function(r){close();take(r);toast('Saved')})
+      .catch(function(e){b.disabled=false;b.textContent='Save';q('#perr').innerHTML='<div class="msg bad">'+esc(e.message)+'</div>'});
+  };
+}
+
+function viewReceipt(id){
+  var d=document.createElement('div');d.className='sheet';d.innerHTML='<div class="box viewer"><h2>Receipt</h2><div id="rv">Loading…</div><div class="acts"><span class="sp"></span><button type="button" class="btn" id="rx">Close</button></div></div>';
+  document.body.appendChild(d);d.querySelector('#rx').onclick=function(){d.remove()};d.addEventListener('click',function(e){if(e.target===d)d.remove()});
+  call('receipt',id).then(function(r){d.querySelector('#rv').innerHTML='<img alt="Receipt" src="data:'+esc(r.mime)+';base64,'+r.b64+'">'}).catch(function(e){d.querySelector('#rv').textContent=e.message});
+}
+
+load();
+})();
+</script>
+</body>
+</html>

@@ -216,6 +216,7 @@ let newSec="Urgent Admin";const openEd=new Set();let packages=[],requests=[],lin
 const $=id=>document.getElementById(id);
 const el=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e};
 const say=t=>{$("status").textContent=t||""};
+if(load("jr_name")==="Maggie"&&load("jr_token"))location.replace("petty.html");
 const fmt=s=>{if(!s)return"";const[y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString("en-US",{month:"short",day:"numeric"})};
 const sortOpen=(a,b)=>((a.due||"9999").localeCompare(b.due||"9999"))||((a.added||"").localeCompare(b.added||""));
 function store(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}}
@@ -239,7 +240,7 @@ function loginView(msg){hideRail();
   const box=el("div","login");let pick=load("jr_name")||"";
   box.append(el("div","l","Who are you?"));
   const names=el("div","names");
-  const draw=()=>{names.innerHTML="";PEOPLE.forEach(p=>{const b=el("button",null,p);b.type="button";b.setAttribute("aria-pressed",String(p===pick));b.addEventListener("click",()=>{pick=p;draw();pin.focus()});names.append(b)})};
+  const draw=()=>{names.innerHTML="";[...PEOPLE,"Maggie"].forEach(p=>{const b=el("button",null,p);b.type="button";b.setAttribute("aria-pressed",String(p===pick));b.addEventListener("click",()=>{pick=p;draw();pin.focus()});names.append(b)})};
   box.append(names);
   box.append(el("div","l","Your 4-digit PIN"));
   const pin=document.createElement("input");pin.className="pin";pin.id="pin";pin.inputMode="numeric";pin.maxLength=4;pin.autocomplete="off";pin.setAttribute("aria-label","PIN");
@@ -249,7 +250,7 @@ function loginView(msg){hideRail();
     go.disabled=true;go.textContent="Signing in…";
     try{const r=await call("login",pick,pin.value);
       if(r.error){err.textContent=r.error;go.disabled=false;go.textContent="Sign in";pin.value="";return}
-      token=r.token;store("jr_token",token);store("jr_name",r.name);tab=r.name;await api("list")}
+      token=r.token;store("jr_token",token);store("jr_name",r.name);if(r.name==="Maggie"){location.replace("petty.html");return}tab=r.name;await api("list")}
     catch(e){err.textContent="Couldn't reach the server. Try again.";go.disabled=false;go.textContent="Sign in"}};
   go.addEventListener("click",submit);pin.addEventListener("input",()=>{pin.value=pin.value.replace(/\D/g,"");if(pin.value.length===4)submit()});
   draw();m.append(box);
