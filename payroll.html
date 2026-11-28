@@ -79,6 +79,7 @@ function toast(t,bad){var d=document.createElement('div');d.className='toast';d.
 function addDays(d,k){var x=new Date(d+'T12:00:00');x.setDate(x.getDate()+k);return x.toISOString().slice(0,10)}
 function fmtD(d){if(!d)return'';var x=new Date(d+'T12:00:00');return x.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}
 function per(a){return r2(n(a)/24)}
+function split(l){var p=calc(l).pay,rk=Math.min(Math.max(n(l.rokar),0),p);return'From Chase <b>'+money(r2(p-rk))+'</b> · From Rokar <b>'+money(rk)+'</b>'+(l.regIds?' · <span style="color:var(--ok)">✓ in Register</span>':'')}
 function payDay(end){return +end.slice(8,10)<=15?end.slice(0,8)+'20':addDays(end,5)}
 var DN=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 function dow(d){return (new Date(d+'T12:00:00').getDay()+6)%7+1}
@@ -127,9 +128,9 @@ function vRun(){
   h+=R.lines.map(function(l,i){var c=calc(l),hr=l.type==='hourly';
     return'<div class="emp" data-i="'+i+'"><div class="hd"><b>'+esc(l.name)+'</b><span class="sub">'+(hr?money(l.rate)+'/hr':'Salary '+money(r2(n(l.rate)/12))+'/month · '+money(per(l.rate))+' per pay run')+'</span></div><div class="f">'+
       (hr?fld(i,'regHrs','Hours',l.regHrs,dis):fld(i,'base','Salary this period ($)',l.base,dis))+
-      fld(i,'bonus','Bonus ($)',l.bonus,dis)+fld(i,'reimb','Reimbursement ($)',l.reimb,dis)+fld(i,'deduct','Advance / deduction ($)',l.deduct,dis)+
+      fld(i,'bonus','Bonus ($)',l.bonus,dis)+fld(i,'reimb','Reimbursement ($)',l.reimb,dis)+fld(i,'deduct','Advance / deduction ($)',l.deduct,dis)+fld(i,'rokar','Paid from Rokar ($)',l.rokar,dis)+
       '</div><label>Note</label><input data-i="'+i+'" data-k="note" value="'+esc(l.note)+'"'+dis+'>'+
-      '<div class="tot"><span class="muted">Earned <b id="g'+i+'">'+money(c.gross)+'</b></span><span>Net pay <b id="p'+i+'">'+money(c.pay)+'</b></span></div>'+
+      '<div class="tot"><span class="muted">Earned <b id="g'+i+'">'+money(c.gross)+'</b></span><span>Net pay <b id="p'+i+'">'+money(c.pay)+'</b></span></div><div class="small muted" style="text-align:right" id="sp'+i+'">'+split(l)+'</div><div></div>'+
       (!fin?'<div style="text-align:right;margin-top:6px"><button type="button" class="btn sm" data-act="dropline" data-i="'+i+'">Remove from this run</button></div>':'')+'</div>'}).join('');
   var missing=S.staff.filter(function(s){return s.active!=='no'&&!R.lines.some(function(l){return l.empId===s.id})});
   if(!fin&&missing.length)h+='<div class="acts">'+missing.map(function(s){return'<button type="button" class="btn sm" data-act="addline" data-id="'+esc(s.id)+'">+ '+esc(s.name)+'</button>'}).join('')+'</div>';
@@ -143,7 +144,7 @@ function fld(i,k,lab,v,dis){return'<div><label>'+lab+'</label><input inputmode="
 document.addEventListener('input',function(e){
   var t=e.target;if(!S.run)return;
   if(t.hasAttribute('data-r')){S.run[t.getAttribute('data-r')]=t.value;return}
-  if(t.hasAttribute('data-k')){var i=+t.getAttribute('data-i'),l=S.run.lines[i];l[t.getAttribute('data-k')]=t.value;var c=calc(l);$('g'+i).textContent=money(c.gross);$('p'+i).textContent=money(c.pay);
+  if(t.hasAttribute('data-k')){var i=+t.getAttribute('data-i'),l=S.run.lines[i];l[t.getAttribute('data-k')]=t.value;var c=calc(l);$('g'+i).textContent=money(c.gross);$('p'+i).textContent=money(c.pay);$('sp'+i).innerHTML=split(l);
     var tg=0,tp=0;S.run.lines.forEach(function(x){var y=calc(x);tg+=y.gross;tp+=y.pay});$('tg').textContent=money(tg);$('tp').textContent=money(tp)}
 });
 document.addEventListener('click',function(e){
@@ -152,7 +153,7 @@ document.addEventListener('click',function(e){
   if(a==='new'){S.run=newRun();S.tab='run';render()}
   else if(a==='addline'){var s=S.staff.filter(function(x){return x.id===b.getAttribute('data-id')})[0];var sf=s.type==='salary'?salFor(s,S.run.start,S.run.end):{amt:'',note:''};S.run.lines.push({empId:s.id,name:s.name,type:s.type,rate:s.rate,otRate:s.otRate,regHrs:'',otHrs:'',base:s.type==='salary'?String(sf.amt):'',bonus:'',reimb:'',deduct:'',note:sf.note});render()}
   else if(a==='dropline'){S.run.lines.splice(+b.getAttribute('data-i'),1);render()}
-  else if(a==='save'||a==='final'){if(a==='final'&&!confirm('Finalise this pay run? It locks the amounts (you can reopen it later).'))return;saveRun(a==='final'?'final':'draft',b)}
+  else if(a==='save'||a==='final'){if(a==='final'&&!confirm('Finalise this pay run? It locks the amounts and adds each payment to the Register (Chase / Rokar).'))return;saveRun(a==='final'?'final':'draft',b)}
   else if(a==='reopen'){saveRun('draft',b,true)}
   else if(a==='delrun'){if(!confirm('Delete this draft pay run?'))return;call('deleteRun',S.run.runId).then(function(r){S.run=null;take(r);toast('Deleted')}).catch(function(x){toast(x.message,true)})}
   else if(a==='pdf'){pdf(S.run)}
@@ -169,9 +170,23 @@ document.addEventListener('click',function(e){
 });
 function saveRun(status,b,reopen){
   var R=S.run;b.disabled=true;
-  call('saveRun',{runId:R.runId,start:R.start,end:R.end,payDate:R.payDate,status:status,reopen:!!reopen,lines:R.lines})
-    .then(function(r){take(r);S.run=clone(runs().filter(function(x){return x.runId===r.runId})[0]||R);render();toast(status==='final'?'Finalised':reopen?'Reopened':'Saved')})
+  (status==='final'?logToRegister(R):Promise.resolve(0)).then(function(k){
+    return call('saveRun',{runId:R.runId,start:R.start,end:R.end,payDate:R.payDate,status:status,reopen:!!reopen,lines:R.lines}).then(function(r){
+      take(r);S.run=clone(runs().filter(function(x){return x.runId===r.runId})[0]||R);render();
+      toast(status==='final'?'Finalised'+(k?' · '+k+' payments added to Chase / Rokar':''):reopen?'Reopened':'Saved')})})
     .catch(function(x){b.disabled=false;toast(x.message,true)});
+}
+/* On Finalise: add each person's net pay to the Register — Chase part to Chase checking (matched when the bank file is
+   imported, not added twice) and the Rokar part to the Rokar (cash) account. Lines already logged are skipped. */
+function logToRegister(R){
+  var per=fmtD(R.start)+' – '+fmtD(R.end),date=R.payDate||R.end,k=0;
+  return R.lines.reduce(function(p,l){return p.then(function(){
+    if(l.regIds)return;var pay=calc(l).pay,rk=Math.min(Math.max(n(l.rokar),0),pay),ch=r2(pay-rk),es=[];
+    if(ch>0)es.push({date:date,account:'CH7081',dir:'out',amount:ch,category:'Expenses',type:'Payroll',party:l.name,notes:'Payroll '+per,uploadify:'',source:'manual'});
+    if(rk>0)es.push({date:date,account:'CASH',dir:'out',amount:rk,category:'Expenses',type:'Payroll',party:l.name,notes:'Payroll '+per+' (Rokar)',uploadify:'',source:'manual'});
+    if(!es.length)return;
+    return JR.rpc('reg','add',[es]).then(function(r){l.regIds=(r||[]).map(function(x){return x.id}).join(',')||'logged';k+=es.length});
+  })},Promise.resolve()).then(function(){return k});
 }
 
 
